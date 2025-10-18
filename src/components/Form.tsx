@@ -1,9 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { TrashIcon, CloseIcon } from '../ui';
+import type { CSSProperties } from 'react';
+import { Box, Button, IconButton, Paper, Stack, TextField, Tooltip, Typography } from '@mui/material';
+import InputAdornment from '@mui/material/InputAdornment';
+import type { Theme } from '@mui/material/styles';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import CloseIcon from '@mui/icons-material/Close';
 import type { PurchaseOrder, LineItem } from '../types/PurchaseOrder';
-import './Form.css';
 import DropZone from './DropZone';
 import { makeLineItemField } from '../types/fieldIds';
 import { addBlankLineItem as poAddBlankLineItem, removeLineItem, computeNextLineNumber, ensureLineNumberExists, insertBlankLineItem } from '../utils/purchaseOrderMutations';
@@ -14,6 +19,64 @@ import ColumnMappingDialog from './dialogs/ColumnMappingDialog';
 import RowMappingDialog from './dialogs/RowMappingDialog';
 import { LINE_ITEM_COLUMNS, humanizeColumnKey, type LineItemColumnKey } from '../types/lineItemColumns';
 import { predictRow, sanitizeText, commitMapping, predictColumn, commitColumnAssignments } from '../utils/formUtils';
+
+type BasicFieldKey = Exclude<keyof PurchaseOrder, 'lineItems'>;
+
+interface BasicFieldConfig {
+    id: BasicFieldKey;
+    label: string;
+    kind: 'text' | 'textarea';
+    multiline?: boolean;
+    rows?: number;
+    placeholder: string;
+}
+
+const BASIC_FIELD_CONFIGS: BasicFieldConfig[] = [
+    {
+        id: 'documentNumber',
+        label: 'Document Number',
+        kind: 'text',
+        placeholder: 'Document Number',
+    },
+    {
+        id: 'customerNumber',
+        label: 'Customer Number',
+        kind: 'text',
+        placeholder: 'Customer Number',
+    },
+    {
+        id: 'shipToAddress',
+        label: 'Ship To Address',
+        kind: 'textarea',
+        multiline: true,
+        rows: 3,
+        placeholder: 'Ship To Address',
+    },
+];
+
+const COLUMN_DROP_ZONE_BASE: CSSProperties = {
+    width: '100%',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: 'rgba(120, 144, 156, 0.45)',
+    borderRadius: 10,
+    background: 'rgba(248, 250, 252, 0.85)',
+    padding: '6px 8px',
+    fontWeight: 600,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textAlign: 'center',
+    minHeight: 40,
+    transition: 'border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease',
+    boxShadow: 'inset 0 0 0 0 rgba(25,118,210,0.08)',
+};
+
+const COLUMN_DROP_ZONE_ACTIVE: CSSProperties = {
+    borderColor: 'rgba(25,118,210,0.65)',
+    background: 'rgba(227,242,253,0.82)',
+    boxShadow: 'inset 0 0 0 1px rgba(25,118,210,0.35)',
+};
 
 interface FormProps {
     onUpdate: (purchaseOrder: PurchaseOrder) => void; // optional external side-effects
@@ -29,21 +92,12 @@ interface MultiFieldDragPayload {
     boundingBoxIds?: string[];
 }
 
-function getFieldKind(target: EventTarget | null): string | undefined {
-    if (!target)
-        return undefined;
-    
-    if (!(target instanceof HTMLElement))
-        return undefined;
-    
-    const el = target.closest('[data-field-kind]') as (HTMLElement | null);
-    const kind = el?.getAttribute('data-field-kind');
-    
-    if (kind === 'text' || kind === 'textarea' || kind === 'integer' || kind === 'decimal')
-        return kind;
-
-    return undefined;
-}
+const LINE_ITEM_FIELD_LABEL: Record<'sku' | 'description' | 'quantity' | 'unitPrice', string> = {
+    sku: 'SKU',
+    description: 'Description',
+    quantity: 'Quantity',
+    unitPrice: 'Unit Price',
+};
 
 const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocus, focusedBoundingBoxId }) => {
     const { fieldSources, reverseIndex, purchaseOrder, applyTransaction } = useMapping();
@@ -51,6 +105,9 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
     const [columnMappingDialog, setColumnMappingDialog] = useState<null | { lineNumber: number; drag: MultiFieldDragData; proposed: Record<string, LineItemColumnKey | ''> }>(null);
     const [rowMappingDialog, setRowMappingDialog] = useState<null | { column: LineItemColumnKey; drag: MultiFieldDragData; proposedRows: Record<string, number | null> }>(null);
     const [addButtonDragActive, setAddButtonDragActive] = useState(false);
+    const [activeRowDropLine, setActiveRowDropLine] = useState<number | null>(null);
+    const [activeColumnDrop, setActiveColumnDrop] = useState<{ lineNumber: number; field: LineItemColumnKey } | null>(null);
+    const [activeBasicDrop, setActiveBasicDrop] = useState<BasicFieldKey | null>(null);
     // Track which input is currently focused within this form (selection)
     const [focusedFieldIdLocal, setFocusedFieldIdLocal] = useState<string | null>(null);
 
@@ -75,13 +132,41 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         return s;
     }, [focusedBoundingBoxId, fieldSources, reverseIndex]);
 
-    // Helper: build class list for a given fieldId
-    const getInputClass = (base: string, fieldId: string) => {
+    const isFieldHighlighted = (fieldId: string) => {
         const hasOwnLinks = linkedFieldIdSet.has(fieldId);
         const isFormFocused = focusedFieldIdLocal === fieldId;
         const linkedViaFocusedBox = focusedLinkedFieldIds.has(fieldId);
-        const shouldHighlight = (hasOwnLinks && isFormFocused) || linkedViaFocusedBox;
-        return `${base}${shouldHighlight ? ' focused-linked' : ''}`;
+        return (hasOwnLinks && isFormFocused) || linkedViaFocusedBox;
+    };
+
+    const getTextFieldSx = (fieldId: string) => {
+        const highlight = isFieldHighlighted(fieldId);
+        return {
+            '& .MuiOutlinedInput-root': {
+                borderRadius: 1.5,
+                backgroundColor: highlight ? 'rgba(76,175,80,0.15)' : 'background.paper',
+                transition: 'box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease',
+                '& fieldset': {
+                    borderWidth: highlight ? 2 : 1,
+                    borderColor: highlight ? '#4caf50' : 'divider',
+                },
+                '&:hover fieldset': {
+                    borderColor: highlight ? '#2e7d32' : 'primary.main',
+                },
+                '&.Mui-focused fieldset': {
+                    borderColor: highlight ? '#2e7d32' : 'primary.main',
+                    boxShadow: highlight ? '0 0 0 2px rgba(46,125,50,0.25)' : '0 0 0 2px rgba(25,118,210,0.18)',
+                },
+            },
+            '& input[type="number"]': {
+                appearance: 'textfield',
+                MozAppearance: 'textfield',
+            },
+            '& input[type="number"]::-webkit-outer-spin-button, & input[type="number"]::-webkit-inner-spin-button': {
+                WebkitAppearance: 'none',
+                margin: 0,
+            },
+        };
     };
 
     useEffect(() => {
@@ -207,26 +292,29 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         onFieldFocus && onFieldFocus(null);
     };
 
-    const handleBasicDrop = (e: React.DragEvent, targetField: string) => {
+    const handleBasicDrop = (e: React.DragEvent, targetField: string, fieldKind: 'text' | 'textarea') => {
         e.preventDefault();
         const data = e.dataTransfer.getData('application/json');
         if (!data) { console.warn('No drag data found'); return; }
         let dragData: any; try { dragData = JSON.parse(data); } catch { return; }
         const mappingUpdates = dragData.boundingBoxIds ? [{ fieldId: targetField, sourceIds: dragData.boundingBoxIds as string[] }] : [];
-        const kind = getFieldKind(e.target) ?? 'text';
-        const processedText = sanitizeText(dragData.text, kind);
+        const processedText = sanitizeText(dragData.text, fieldKind);
         const updated = { ...purchaseOrder, [targetField]: processedText };
         applyTransaction({ mappingUpdates, purchaseOrder: updated }); // no onUpdate duplication
     };
 
-    const handleLineItemDrop = (e: React.DragEvent, lineNumber: number, targetField: string) => {
+    const handleLineItemDrop = (
+        e: React.DragEvent,
+        lineNumber: number,
+        targetField: string,
+        fieldKind: 'text' | 'textarea' | 'integer' | 'decimal'
+    ) => {
         e.preventDefault();
         const data = e.dataTransfer.getData('application/json');
         if (!data) { console.warn('No drag data found'); return; }
         let dragData: any; try { dragData = JSON.parse(data); } catch { return; }
         const mappingUpdates = dragData.boundingBoxIds ? [{ fieldId: makeLineItemField(lineNumber, targetField as any), sourceIds: dragData.boundingBoxIds as string[] }] : [];
-        const kind = getFieldKind(e.target) ?? 'text';
-        const processedText = sanitizeText(dragData.text, kind);
+        const processedText = sanitizeText(dragData.text, fieldKind);
         const updatedItems = purchaseOrder.lineItems.map(item => item.lineNumber === lineNumber ? { ...item, [targetField]: processedText } : item);
         const updated = { ...purchaseOrder, lineItems: updatedItems };
         applyTransaction({ mappingUpdates, purchaseOrder: updated }); // single history entry
@@ -420,312 +508,428 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
     const cancelRowMapping = () => setRowMappingDialog(null);
 
     const applyMultiFieldMapping = () => {
-    if (!columnMappingDialog) return;
-    const { lineNumber, drag, proposed } = columnMappingDialog;
+        if (!columnMappingDialog) return;
+        const { lineNumber, drag, proposed } = columnMappingDialog;
         let poAfter = purchaseOrder;
         const tempUpdates: { fieldId: string; sourceIds: string[] }[] = [];
-        commitMapping({ lineNumber, pairs: drag.pairs, proposed, purchaseOrder, onUpdate: (po)=>{ poAfter = po; }, onFieldSourceUpdate: (fid, ids)=> tempUpdates.push({ fieldId: fid, sourceIds: ids }) });
+        commitMapping({
+            lineNumber,
+            pairs: drag.pairs,
+            proposed,
+            purchaseOrder,
+            onUpdate: (po) => { poAfter = po; },
+            onFieldSourceUpdate: (fid, ids) => tempUpdates.push({ fieldId: fid, sourceIds: ids }),
+        });
         if (poAfter !== purchaseOrder || tempUpdates.length) {
             applyTransaction({ mappingUpdates: tempUpdates, purchaseOrder: poAfter });
         }
-    setColumnMappingDialog(null);
+        setColumnMappingDialog(null);
     };
 
     const cancelMultiFieldMapping = () => setColumnMappingDialog(null);
 
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
+    const renderClearAdornment = (show: boolean, onClear: () => void): React.ReactNode => {
+        if (!show) return undefined;
+        return (
+            <InputAdornment position="end">
+                <Tooltip title="Clear field">
+                    <IconButton
+                        size="small"
+                        edge="end"
+                        aria-label="Clear field"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            onClear();
+                        }}
+                    >
+                        <CloseIcon fontSize="small" />
+                    </IconButton>
+                </Tooltip>
+            </InputAdornment>
+        );
     };
 
-    const getDropZoneStyle = (isActive: boolean) => ({
-        border: isActive ? '2px dashed #007bff' : '2px dashed transparent',
-        borderRadius: '4px',
-        padding: '2px',
-        transition: 'border-color 0.2s ease'
-    });
+    const applyDropHighlightSx = (base: Record<string, any>): Record<string, any> => {
+        const root = { ...(base['& .MuiOutlinedInput-root'] ?? {}) };
+        const fieldset = { ...(root['& fieldset'] ?? {}) };
+        const hoverFieldset = { ...(root['&:hover fieldset'] ?? {}) };
+        const focusedFieldset = { ...(root['&.Mui-focused fieldset'] ?? {}) };
+
+        return {
+            ...base,
+            '& .MuiOutlinedInput-root': {
+                ...root,
+                backgroundColor: 'rgba(227,242,253,0.82)',
+                boxShadow: 'inset 0 0 0 1px rgba(25,118,210,0.35)',
+                '& fieldset': {
+                    ...fieldset,
+                    borderWidth: 1,
+                    borderColor: 'rgba(25,118,210,0.65)',
+                },
+                '&:hover fieldset': {
+                    ...hoverFieldset,
+                    borderColor: 'rgba(25,118,210,0.65)',
+                },
+                '&.Mui-focused fieldset': {
+                    ...focusedFieldset,
+                    borderColor: 'rgba(25,118,210,0.65)',
+                    boxShadow: 'inset 0 0 0 1px rgba(25,118,210,0.35)',
+                },
+            },
+        };
+    };
+
+    const renderLineItemInput = (item: LineItem, field: 'sku' | 'description' | 'quantity' | 'unitPrice') => {
+        const fieldId = makeLineItemField(item.lineNumber, field);
+        const kind: 'text' | 'textarea' | 'integer' | 'decimal' =
+            field === 'description'
+                ? 'textarea'
+                : field === 'quantity'
+                    ? 'integer'
+                    : field === 'unitPrice'
+                        ? 'decimal'
+                        : 'text';
+        const value = item[field];
+        const showClear = kind === 'integer' || kind === 'decimal'
+            ? value !== 0
+            : typeof value === 'string' && value.trim() !== '';
+
+        const handleClear = () => clearLineItemField(item.lineNumber, field, kind);
+
+        const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+            const raw = event.target.value;
+            if (kind === 'integer') {
+                if (raw === '') {
+                    handleLineItemChange(item.lineNumber, field, 0, kind, { explicitClear: true });
+                } else {
+                    handleLineItemChange(item.lineNumber, field, parseInt(raw, 10) || 0, kind);
+                }
+                return;
+            }
+            if (kind === 'decimal') {
+                if (raw === '') {
+                    handleLineItemChange(item.lineNumber, field, 0, kind, { explicitClear: true });
+                } else {
+                    handleLineItemChange(item.lineNumber, field, parseFloat(raw) || 0, kind);
+                }
+                return;
+            }
+            handleLineItemChange(item.lineNumber, field, raw, kind);
+        };
+
+        const isColumnDropActive =
+            activeColumnDrop?.lineNumber === item.lineNumber && activeColumnDrop.field === field;
+        const baseSx = getTextFieldSx(fieldId);
+        const mergedSx = isColumnDropActive ? applyDropHighlightSx(baseSx) : baseSx;
+
+        return (
+            <TextField
+                key={fieldId}
+                fullWidth
+                size="small"
+                variant="outlined"
+                value={value as string | number}
+                type={kind === 'integer' || kind === 'decimal' ? 'number' : 'text'}
+                placeholder={LINE_ITEM_FIELD_LABEL[field]}
+                aria-label={`${LINE_ITEM_FIELD_LABEL[field]} for line ${item.lineNumber}`}
+                multiline={kind === 'textarea'}
+                minRows={kind === 'textarea' ? 2 : undefined}
+                sx={mergedSx}
+                onChange={handleChange}
+                onFocus={() => { setFocusedFieldIdLocal(fieldId); onFieldFocus?.(fieldId); }}
+                onBlur={() => { setFocusedFieldIdLocal(null); onFieldFocus?.(null); }}
+                onDragOver={(e) => {
+                    if (e.dataTransfer.types.includes('application/json')) {
+                        e.preventDefault();
+                        if (!isColumnDropActive) {
+                            setActiveColumnDrop({ lineNumber: item.lineNumber, field });
+                        }
+                    }
+                }}
+                onDragLeave={(e) => {
+                    const next = e.relatedTarget as Node | null;
+                    if (next && (e.currentTarget as HTMLElement).contains(next)) {
+                        return;
+                    }
+                    setActiveColumnDrop((prev) =>
+                        prev && prev.lineNumber === item.lineNumber && prev.field === field ? null : prev
+                    );
+                }}
+                onDrop={(e) => {
+                    setActiveColumnDrop(null);
+                    handleLineItemDrop(e, item.lineNumber, field, kind);
+                }}
+                InputProps={{
+                    endAdornment: renderClearAdornment(showClear, handleClear),
+                    inputProps: {
+                        'data-field-kind': kind,
+                        ...(kind === 'integer' || kind === 'decimal'
+                            ? { min: 0, step: kind === 'decimal' ? 0.01 : 1, style: { textAlign: 'right' } }
+                            : {}),
+                    },
+                }}
+            />
+        );
+    };
+
+    const renderLineItemCard = (item: LineItem) => {
+        const isRowDropActive = activeRowDropLine === item.lineNumber;
+
+        return (
+            <Paper
+                key={item.lineNumber}
+                variant="outlined"
+                sx={{
+                    borderRadius: 2,
+                    borderColor: 'divider',
+                }}
+            >
+                <Stack direction="row" spacing={0} alignItems="flex-start">
+                    <Box
+                        sx={{
+                            width: 60,
+                            alignSelf: 'stretch',
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                width: '100%',
+                                height: '100%',
+                                minHeight: 64,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'flex-start',
+                                borderRadius: 1.5,
+                                border: '1px solid',
+                                borderColor: isRowDropActive ? 'rgba(25,118,210,0.65)' : 'transparent',
+                                backgroundColor: isRowDropActive ? 'rgba(227,242,253,0.82)' : 'transparent',
+                                boxShadow: isRowDropActive ? 'inset 0 0 0 1px rgba(25,118,210,0.35)' : 'none',
+                                transition: 'border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease',
+                                cursor: 'copy',
+                                p: 2,
+                            }}
+                            onDragOver={(e) => {
+                                if (e.dataTransfer.types.includes('application/json')) {
+                                    e.preventDefault();
+                                    if (activeRowDropLine !== item.lineNumber) {
+                                        setActiveRowDropLine(item.lineNumber);
+                                    }
+                                }
+                            }}
+                            onDragLeave={(e) => {
+                                const next = e.relatedTarget as Node | null;
+                                if (next && (e.currentTarget as HTMLElement).contains(next)) {
+                                    return;
+                                }
+                                setActiveRowDropLine((prev) => (prev === item.lineNumber ? null : prev));
+                            }}
+                            onDrop={(e) => {
+                                setActiveRowDropLine(null);
+                                handleRowDrop(e, item.lineNumber);
+                            }}
+                            title="Drop multiple selected source fields here to map them into this row"
+                        >
+                            <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1, paddingTop: '4px' }}>
+                                {item.lineNumber}
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <Stack spacing={0} useFlexGap sx={{ flex: 1, minWidth: 0, position: 'relative', p:2 }}>
+                        <Stack direction="row" spacing={0} alignItems="flex-start" justifyContent="space-between">
+                            <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2, paddingTop: '4px' }}>
+                                ${ (item.quantity * item.unitPrice).toFixed(2) }
+                            </Typography>
+                            <Stack direction="row" spacing={1} alignItems="flex-start">
+                                <Tooltip title={`Insert line after ${item.lineNumber}`}>
+                                    <IconButton
+                                        size="small"
+                                        color="primary"
+                                        onClick={() => handleInsertLineBelow(item.lineNumber)}
+                                        sx={{ width: 32, height: 32 }}
+                                        aria-label={`Insert line after ${item.lineNumber}`}
+                                    >
+                                        <AddIcon fontSize="small" />
+                                    </IconButton>
+                                </Tooltip>
+                                <Tooltip title={`Remove line ${item.lineNumber}`}>
+                                    <IconButton
+                                        size="small"
+                                        color="error"
+                                        onClick={() => handleRemoveLineItem(item.lineNumber)}
+                                        sx={{ width: 32, height: 32 }}
+                                        aria-label={`Remove line ${item.lineNumber}`}
+                                    >
+                                        <DeleteOutlineIcon fontSize="small" />
+                                    </IconButton>
+                                </Tooltip>
+                            </Stack>
+                        </Stack>
+                        <Stack spacing={1.5}>
+                            {LINE_ITEM_COLUMNS.map((col) => (
+                                <Box key={`${item.lineNumber}-${col}`}>
+                                    <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                                        {humanizeColumnKey(col)}
+                                    </Typography>
+                                    {renderLineItemInput(item, col)}
+                                </Box>
+                            ))}
+                        </Stack>
+                        <Box
+                            sx={{
+                                position: 'absolute',
+                                top: 0,
+                                bottom: 0,
+                                left: 0,
+                                borderRight: '1px solid',
+                                borderColor: 'divider',
+                            }}
+                        />
+                    </Stack>
+                </Stack>
+            </Paper>
+        );
+    };
 
     return (
-        <div className="purchase-order-form" onClick={handleFormClick}>
-            <h2>Purchase Order Form</h2>
+        <Box
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                overflow: 'hidden',
+                borderRadius: 2,
+                backgroundColor: 'background.paper',
+            }}
+            onClick={handleFormClick}
+        >
+            <Box
+                sx={{
+                    flex: 1,
+                    minHeight: 0,
+                    overflow: 'auto',
+                    p: 3,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 3,
+                }}
+            >
+                <Typography variant="h5" fontWeight={600} color="text.primary">
+                    Purchase Order Form
+                </Typography>
 
-            <div className="form-section">
-                <h3>Basic Information</h3>
-                <div className="form-group">
-                <label htmlFor="documentNumber">Document Number:</label>
-                <div 
-                    style={getDropZoneStyle(false)}
-                    onDrop={(e) => handleBasicDrop(e, 'documentNumber')}
-                    onDragOver={handleDragOver}
-                    className="input-wrapper"
-                >
-                    <input
-                        type="text"
-                        id="documentNumber"
-                        value={purchaseOrder.documentNumber}
-                        data-field-kind="text"
-                        onChange={(e) => {
-                            const val = e.target.value;
-                            handleBasicInfoChange('documentNumber', val, 'text');
-                        }}
-                        onFocus={() => { setFocusedFieldIdLocal('documentNumber'); onFieldFocus && onFieldFocus('documentNumber'); }}
-                        onBlur={() => { setFocusedFieldIdLocal(null); onFieldFocus && onFieldFocus(null); }}
-                        className={getInputClass('po-input has-clear', 'documentNumber')}
-                        placeholder="Enter document number or drag from document"
-                    />
-                    {purchaseOrder.documentNumber && (
-                        <button type="button" className="clear-btn" aria-label="Clear" onClick={() => clearBasicField('documentNumber', 'text')}><CloseIcon size={10} /></button>
-                    )}
-                </div>
-            </div>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <Box>
+                        <Typography variant="subtitle1" fontWeight={600} color="text.secondary" gutterBottom>
+                            General
+                        </Typography>
+                        <Stack spacing={2}>
+                            {BASIC_FIELD_CONFIGS.map((config) => {
+                                const value = purchaseOrder[config.id] as string;
+                                const showClear = value.trim() !== '';
+                                const handleClear = () => clearBasicField(config.id, config.kind);
+                                const baseSx = getTextFieldSx(config.id);
+                                const isBasicDropActive = activeBasicDrop === config.id;
+                                return (
+                                    <Box key={config.id}>
+                                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                                            {config.label}
+                                        </Typography>
+                                        <TextField
+                                            fullWidth
+                                            size="small"
+                                            placeholder={config.placeholder}
+                                            variant="outlined"
+                                            value={value}
+                                            multiline={config.multiline}
+                                            minRows={config.rows}
+                                            sx={isBasicDropActive ? applyDropHighlightSx(baseSx) : baseSx}
+                                            aria-label={config.label}
+                                            onChange={(e) => handleBasicInfoChange(config.id, e.target.value, config.kind)}
+                                            onFocus={() => { setFocusedFieldIdLocal(config.id); onFieldFocus?.(config.id); }}
+                                            onBlur={() => { setFocusedFieldIdLocal(null); onFieldFocus?.(null); }}
+                                            onDragOver={(e) => {
+                                                if (e.dataTransfer.types.includes('application/json')) {
+                                                    e.preventDefault();
+                                                    if (!isBasicDropActive) setActiveBasicDrop(config.id);
+                                                }
+                                            }}
+                                            onDragLeave={(e) => {
+                                                const next = e.relatedTarget as Node | null;
+                                                if (next && (e.currentTarget as HTMLElement).contains(next)) {
+                                                    return;
+                                                }
+                                                setActiveBasicDrop((prev) => (prev === config.id ? null : prev));
+                                            }}
+                                            onDrop={(e) => {
+                                                setActiveBasicDrop(null);
+                                                handleBasicDrop(e, config.id, config.kind);
+                                            }}
+                                            InputProps={{
+                                                endAdornment: renderClearAdornment(showClear, handleClear),
+                                                inputProps: { 'data-field-kind': config.kind, title: config.label },
+                                            }}
+                                        />
+                                    </Box>
+                                );
+                            })}
+                        </Stack>
+                    </Box>
 
-            <div className="form-group">
-                <label htmlFor="customerNumber">Customer Number:</label>
-                <div 
-                    style={getDropZoneStyle(false)}
-                    onDrop={(e) => handleBasicDrop(e, 'customerNumber')}
-                    onDragOver={handleDragOver}
-                    className="input-wrapper"
-                >
-                    <input
-                        type="text"
-                        id="customerNumber"
-                        value={purchaseOrder.customerNumber}
-                        data-field-kind="text"
-                        onChange={(e) => {
-                            const val = e.target.value;
-                            handleBasicInfoChange('customerNumber', val, 'text');
-                        }}
-                        onFocus={() => { setFocusedFieldIdLocal('customerNumber'); onFieldFocus && onFieldFocus('customerNumber'); }}
-                        onBlur={() => { setFocusedFieldIdLocal(null); onFieldFocus && onFieldFocus(null); }}
-                        className={getInputClass('po-input has-clear', 'customerNumber')}
-                        placeholder="Enter customer number or drag from document"
-                    />
-                    {purchaseOrder.customerNumber && (
-                        <button type="button" className="clear-btn" aria-label="Clear" onClick={() => clearBasicField('customerNumber', 'text')}><CloseIcon size={10} /></button>
-                    )}
-                </div>
-            </div>
+                    <Box
+                        sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+                    >
+                        <Typography variant="subtitle1" fontWeight={600} color="text.secondary">
+                            Line Items
+                        </Typography>
 
-            <div className="form-group">
-                <label htmlFor="shipToAddress">Ship To Address:</label>
-                <div 
-                    style={getDropZoneStyle(false)}
-                    onDrop={(e) => handleBasicDrop(e, 'shipToAddress')}
-                    onDragOver={handleDragOver}
-                    className="input-wrapper"
-                >
-                    <textarea
-                        id="shipToAddress"
-                        value={purchaseOrder.shipToAddress}
-                        data-field-kind="textarea"
-                        onChange={(e) => {
-                            const val = e.target.value;
-                            handleBasicInfoChange('shipToAddress', val, 'textarea');
-                        }}
-                        onFocus={() => { setFocusedFieldIdLocal('shipToAddress'); onFieldFocus && onFieldFocus('shipToAddress'); }}
-                        onBlur={() => { setFocusedFieldIdLocal(null); onFieldFocus && onFieldFocus(null); }}
-                        className={getInputClass('po-input has-clear', 'shipToAddress')}
-                        placeholder="Enter ship to address or drag from document"
-                        rows={3}
-                        style={{ paddingRight: '32px' }}
-                    />
-                    {purchaseOrder.shipToAddress && (
-                        <button type="button" className="clear-btn" aria-label="Clear" onClick={() => clearBasicField('shipToAddress', 'textarea')}><CloseIcon size={10} /></button>
-                    )}
-                    </div>
-                </div>
-            </div>
-
-            <div className="form-section">
-                <h3>Line Items</h3>
-                {purchaseOrder.lineItems.length > 0 && (
-                    <table className="line-items-table">
-                        <thead>
-                            <tr>
-                                <th className="line-number-col">Line #</th>
-                                {LINE_ITEM_COLUMNS.map(col => (
-                                    <DropZone
-                                        key={col}
-                                        as="th"
-                                        onDrop={(e) => handleColumnDrop(e, col)}
-                                        baseStyle={{
-                                            position: 'relative',
-                                            borderBottom: '2px solid #ccc',
-                                            transition: 'background 0.15s ease, border-color 0.15s ease',
-                                            textAlign: col === 'quantity' || col === 'unitPrice' ? 'right' : 'left'
-                                        }}
-                                        activeStyle={{
-                                            borderBottom: '2px dashed #007bff',
-                                            background: 'rgba(0,123,255,0.08)'
-                                        }}
-                                        title="Drop multiple selected fields here to auto-map and predict row"
-                                    >
-                                        {humanizeColumnKey(col)}
-                                    </DropZone>
-                                ))}
-                                <th className="total-col">Total</th>
-                                <th className="actions-col">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                                            {purchaseOrder.lineItems.map((item) => (
-                                                <tr key={item.lineNumber}>
-                                    <td className="line-number-col">
+                        {purchaseOrder.lineItems.length > 0 ? (
+                            <>
+                                <Box
+                                    sx={{
+                                        position: 'sticky',
+                                        top: 0,
+                                        zIndex: 5,
+                                        display: 'grid',
+                                        gridTemplateColumns: {
+                                            xs: '1fr',
+                                            sm: 'repeat(2, minmax(0, 1fr))',
+                                            md: 'repeat(4, minmax(0, 1fr))',
+                                        },
+                                        gap: 1,
+                                        backgroundImage: (theme: Theme) => `linear-gradient(${theme.palette.background.paper} 0%, ${theme.palette.background.paper} 60%, rgba(255,255,255,0) 100%)`,
+                                        pb: 1,
+                                    }}
+                                >
+                                    {LINE_ITEM_COLUMNS.map((col) => (
                                         <DropZone
-                                            onDrop={(e) => handleRowDrop(e, item.lineNumber)}
-                                            baseStyle={{
-                                                padding: '4px 6px',
-                                                border: '2px dashed transparent',
-                                                borderRadius: '4px',
-                                                background: 'transparent',
-                                                transition: 'border-color 0.15s ease, background 0.15s ease',
-                                                fontWeight: 600,
-                                                fontSize: '12px',
-                                                textAlign: 'center',
-                                                cursor: 'copy'
-                                            }}
-                                            activeStyle={{
-                                                border: '2px dashed #007bff',
-                                                background: 'rgba(0,123,255,0.08)'
-                                            }}
-                                            title="Drop multiple selected source fields here to map them into this row"
+                                            key={`compact-col-${col}`}
+                                            onDrop={(e) => handleColumnDrop(e, col)}
+                                            baseStyle={COLUMN_DROP_ZONE_BASE}
+                                            activeStyle={COLUMN_DROP_ZONE_ACTIVE}
+                                            title="Drop multiple selected fields here to auto-map and predict row"
                                         >
-                                            {item.lineNumber}
+                                            <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ textAlign: 'center', width: '100%' }}>
+                                                {humanizeColumnKey(col)}
+                                            </Typography>
                                         </DropZone>
-                                    </td>
-                                    <td>
-                                        <div className="input-wrapper">
-                                            <input
-                                                type="text"
-                                                id={makeLineItemField(item.lineNumber,'sku')}
-                                                value={item.sku}
-                                                data-field-kind="text"
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    handleLineItemChange(item.lineNumber, 'sku', val, 'text');
-                                                }}
-                                                className={getInputClass('po-input has-clear', makeLineItemField(item.lineNumber,'sku'))}
-                                                onFocus={() => { const fid = makeLineItemField(item.lineNumber,'sku'); setFocusedFieldIdLocal(fid); onFieldFocus && onFieldFocus(fid); }}
-                                                onBlur={() => { setFocusedFieldIdLocal(null); onFieldFocus && onFieldFocus(null); }}
-                                                onDragOver={(e) => e.preventDefault()}
-                                                onDrop={(e) => handleLineItemDrop(e, item.lineNumber, 'sku')}
-                                            />
-                                            {item.sku && (
-                                                <button type="button" className="clear-btn" aria-label="Clear" onClick={() => clearLineItemField(item.lineNumber, 'sku', 'text')}><CloseIcon size={10} /></button>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="input-wrapper">
-                                            <textarea
-                                                id={makeLineItemField(item.lineNumber,'description')}
-                                                value={item.description}
-                                                rows={2}
-                                                data-field-kind="textarea"
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    handleLineItemChange(item.lineNumber, 'description', val, 'textarea');
-                                                }}
-                                                className={getInputClass('po-input has-clear', makeLineItemField(item.lineNumber,'description'))}
-                                                onFocus={() => { const fid = makeLineItemField(item.lineNumber,'description'); setFocusedFieldIdLocal(fid); onFieldFocus && onFieldFocus(fid); }}
-                                                onBlur={() => { setFocusedFieldIdLocal(null); onFieldFocus && onFieldFocus(null); }}
-                                                onDragOver={(e) => e.preventDefault()}
-                                                onDrop={(e) => handleLineItemDrop(e, item.lineNumber, 'description')}
-                                                style={{ resize: 'vertical', paddingRight: '32px' }}
-                                                placeholder="Enter or drop description"
-                                            />
-                                            {item.description && (
-                                                <button type="button" className="clear-btn" aria-label="Clear" onClick={() => clearLineItemField(item.lineNumber, 'description', 'textarea')}><CloseIcon size={10} /></button>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="right-col">
-                                        <div className="input-wrapper">
-                                            <input
-                                                type="number"
-                                                id={makeLineItemField(item.lineNumber,'quantity')}
-                                                value={item.quantity}
-                                                data-field-kind="integer"
-                                                onChange={(e) => {
-                                                    const raw = e.target.value;
-                                                    if (raw === '') {
-                                                        handleLineItemChange(item.lineNumber,'quantity',0,'integer',{ explicitClear: true });
-                                                    } else {
-                                                        handleLineItemChange(item.lineNumber,'quantity', parseInt(raw) || 0,'integer');
-                                                    }
-                                                }}
-                                                className={getInputClass('po-input has-clear', makeLineItemField(item.lineNumber,'quantity'))}
-                                                min="0"
-                                                onFocus={() => { const fid = makeLineItemField(item.lineNumber,'quantity'); setFocusedFieldIdLocal(fid); onFieldFocus && onFieldFocus(fid); }}
-                                                onBlur={() => { setFocusedFieldIdLocal(null); onFieldFocus && onFieldFocus(null); }}
-                                                onDragOver={(e) => e.preventDefault()}
-                                                onDrop={(e) => handleLineItemDrop(e, item.lineNumber, 'quantity')}
-                                            />
-                                            {item.quantity !== 0 && (
-                                                <button type="button" className="clear-btn" aria-label="Clear" onClick={() => clearLineItemField(item.lineNumber, 'quantity', 'integer')}><CloseIcon size={10} /></button>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="right-col">
-                                        <div className="input-wrapper">
-                                            <input
-                                                type="number"
-                                                id={makeLineItemField(item.lineNumber,'unitPrice')}
-                                                value={item.unitPrice}
-                                                data-field-kind="decimal"
-                                                onChange={(e) => {
-                                                    const raw = e.target.value;
-                                                    if (raw === '') {
-                                                        handleLineItemChange(item.lineNumber,'unitPrice',0,'decimal',{ explicitClear: true });
-                                                    } else {
-                                                        handleLineItemChange(item.lineNumber,'unitPrice', parseFloat(raw) || 0,'decimal');
-                                                    }
-                                                }}
-                                                className={getInputClass('po-input has-clear', makeLineItemField(item.lineNumber,'unitPrice'))}
-                                                min="0"
-                                                step="0.01"
-                                                onFocus={() => { const fid = makeLineItemField(item.lineNumber,'unitPrice'); setFocusedFieldIdLocal(fid); onFieldFocus && onFieldFocus(fid); }}
-                                                onBlur={() => { setFocusedFieldIdLocal(null); onFieldFocus && onFieldFocus(null); }}
-                                                onDragOver={(e) => e.preventDefault()}
-                                                onDrop={(e) => handleLineItemDrop(e, item.lineNumber, 'unitPrice')}
-                                            />
-                                            {item.unitPrice !== 0 && (
-                                                <button type="button" className="clear-btn" aria-label="Clear" onClick={() => clearLineItemField(item.lineNumber, 'unitPrice', 'decimal')}><CloseIcon size={10} /></button>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="total-col">${(item.quantity * item.unitPrice).toFixed(2)}</td>
-                                    <td>
-                                        <div style={{ display:'flex', gap:'6px', justifyContent:'center' }}>
-                                            <button
-                                                onClick={() => handleInsertLineBelow(item.lineNumber)}
-                                                className="insert-btn"
-                                                aria-label={`Insert line after ${item.lineNumber}`}
-                                                title={`Insert line after ${item.lineNumber}`}
-                                            >
-                                                +
-                                            </button>
-                                            <button
-                                                onClick={() => handleRemoveLineItem(item.lineNumber)}
-                                                className="remove-btn"
-                                                aria-label={`Remove line ${item.lineNumber}`}
-                                                title={`Remove line ${item.lineNumber}`}
-                                            >
-                                                <span style={{ display:'flex' }}><TrashIcon size={16} /></span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                )}
+                                    ))}
+                                </Box>
+                                <Stack spacing={2} sx={{ pr: 0.5 }}>
+                                    {purchaseOrder.lineItems.map((item) => renderLineItemCard(item))}
+                                </Stack>
+                            </>
+                        ) : (
+                            <Typography variant="body2" color="text.secondary">
+                                No line items yet. Add one below or drop structured data to populate the table.
+                            </Typography>
+                        )}
+                    </Box>
 
-                <div style={{ marginTop: '12px' }}>
-                    <button
-                        type="button"
-                        className={`add-button${addButtonDragActive ? ' drop-active' : ''}`}
-                        title="Click to add a blank row or drop selected fields here to create & auto-map"
+                    <Button
+                        variant="contained"
+                        color="primary"
                         onClick={addBlankLineItem}
                         onDragOver={(e) => {
                             if (e.dataTransfer.types.includes('application/json')) {
@@ -734,7 +938,6 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                             }
                         }}
                         onDragLeave={(e) => {
-                            // Only reset if leaving the button (relatedTarget might be a child)
                             if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
                                 setAddButtonDragActive(false);
                             }
@@ -743,33 +946,47 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                             setAddButtonDragActive(false);
                             handleAddLineItemDrop(e);
                         }}
+                        sx={{
+                            alignSelf: 'flex-start',
+                            borderRadius: 999,
+                            px: 2.5,
+                            py: 1,
+                            fontWeight: 600,
+                            ...(addButtonDragActive
+                                ? {
+                                    border: '2px dashed rgba(44,123,229,0.75)',
+                                    backgroundColor: 'rgba(44,123,229,0.12)',
+                                    color: 'primary.main',
+                                }
+                                : {}),
+                        }}
                     >
                         Add Line Item
-                    </button>
-                </div>
-            </div>
-        
-                                    {columnMappingDialog && (
-                            <ColumnMappingDialog
-                                            lineNumber={columnMappingDialog.lineNumber}
-                                            pairs={columnMappingDialog.drag.pairs}
-                                            proposed={columnMappingDialog.proposed}
-                                            onChange={(updates) => setColumnMappingDialog(prev => prev ? { ...prev, proposed: updates } : prev)}
-                onApply={applyMultiFieldMapping}
-                onCancel={cancelMultiFieldMapping}
-              />
+                    </Button>
+                </Box>
+            </Box>
+
+            {columnMappingDialog && (
+                <ColumnMappingDialog
+                    lineNumber={columnMappingDialog.lineNumber}
+                    pairs={columnMappingDialog.drag.pairs}
+                    proposed={columnMappingDialog.proposed}
+                    onChange={(updates) => setColumnMappingDialog((prev) => (prev ? { ...prev, proposed: updates } : prev))}
+                    onApply={applyMultiFieldMapping}
+                    onCancel={cancelMultiFieldMapping}
+                />
             )}
             {rowMappingDialog && (
-              <RowMappingDialog
-                column={rowMappingDialog.column}
-                pairs={rowMappingDialog.drag.pairs}
-                proposedRows={rowMappingDialog.proposedRows}
-                onChange={(updates) => setRowMappingDialog(prev => prev ? { ...prev, proposedRows: updates } : prev)}
-                onApply={applyRowMapping}
-                onCancel={cancelRowMapping}
-              />
+                <RowMappingDialog
+                    column={rowMappingDialog.column}
+                    pairs={rowMappingDialog.drag.pairs}
+                    proposedRows={rowMappingDialog.proposedRows}
+                    onChange={(updates) => setRowMappingDialog((prev) => (prev ? { ...prev, proposedRows: updates } : prev))}
+                    onApply={applyRowMapping}
+                    onCancel={cancelRowMapping}
+                />
             )}
-        </div>
+        </Box>
     );
 };
 

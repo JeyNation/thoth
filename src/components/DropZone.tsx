@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 
 type HTMLElementTag = 'div' | 'span' | 'th' | 'td' | 'li' | 'ul' | 'section' | 'header' | 'footer' | 'main' | 'aside' | 'nav';
 
@@ -30,21 +30,53 @@ const DropZone: React.FC<DropZoneProps> = ({
   onDragOverExtra
 }) => {
   const [active, setActive] = useState(false);
+  const hoverDepthRef = useRef(0);
+
+  const clearActiveState = useCallback(() => {
+    hoverDepthRef.current = 0;
+    setActive(false);
+  }, []);
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    hoverDepthRef.current += 1;
+    if (!active) setActive(true);
+  }, [active]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault(); // Allow drop
-    if (!active) setActive(true);
     if (onDragOverExtra) onDragOverExtra(e);
-  }, [active, onDragOverExtra]);
+  }, [onDragOverExtra]);
 
   const handleDragLeave = useCallback(() => {
-    if (active) setActive(false);
-  }, [active]);
+    if (hoverDepthRef.current > 0) {
+      hoverDepthRef.current -= 1;
+    }
+    if (hoverDepthRef.current === 0) {
+      setActive(false);
+    }
+  }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
-    setActive(false);
+    clearActiveState();
     onDrop(e);
-  }, [onDrop]);
+  }, [clearActiveState, onDrop]);
+
+  const handleDropCapture = useCallback(() => {
+    if (active) clearActiveState();
+  }, [active, clearActiveState]);
+
+  useEffect(() => {
+    const handleGlobalDrop = () => clearActiveState();
+
+    window.addEventListener('dragend', handleGlobalDrop);
+    window.addEventListener('drop', handleGlobalDrop, true);
+
+    return () => {
+      window.removeEventListener('dragend', handleGlobalDrop);
+      window.removeEventListener('drop', handleGlobalDrop, true);
+    };
+  }, [clearActiveState]);
 
   const mergedStyle: React.CSSProperties = active
     ? { ...(baseStyle || {}), ...(activeStyle || {}) }
@@ -55,8 +87,10 @@ const DropZone: React.FC<DropZoneProps> = ({
     {
       className,
       style: mergedStyle,
+  onDragEnter: handleDragEnter,
       onDragOver: handleDragOver,
       onDragLeave: handleDragLeave,
+      onDropCapture: handleDropCapture,
       onDrop: handleDrop,
       title,
       role,

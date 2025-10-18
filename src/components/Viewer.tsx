@@ -1,16 +1,20 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import type { CSSProperties } from 'react';
+import { Box, Chip, IconButton, Stack, Tooltip, Typography } from '@mui/material';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ZoomOutIcon from '@mui/icons-material/ZoomOut';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { useZoom } from '../hooks/useZoom';
 import { usePan } from '../hooks/usePan';
 import { useAreaSelection } from '../hooks/useAreaSelection';
-import { ZoomInIcon, ZoomOutIcon, ResetIcon, HideFieldsIcon } from '../ui';
 import { normalizeBoundingBoxes } from '../types/mapping';
 import { useMapping } from '../context/MappingContext';
 
 import type { BoundingBox } from '../types/mapping';
-
-import './Viewer.css';
 
 interface ViewerProps {
   documentData: any;
@@ -24,7 +28,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
   // refs
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<HTMLDivElement>(null);
-  const boxStyleCacheRef = useRef<Map<string, { key: string; style: React.CSSProperties }>>(new Map());
+  const boxStyleCacheRef = useRef<Map<string, { key: string; style: CSSProperties }>>(new Map());
   
   // states
   const [baseSvgDims, setBaseSvgDims] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
@@ -94,7 +98,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     else if (isFocusedLinked) boxShadow = '0 0 8px rgba(46,125,50,0.45)';
     else if (isLinked) boxShadow = '0 0 5px rgba(76, 175, 80, 0.3)';
 
-    const style: React.CSSProperties = {
+  const style: CSSProperties = {
       position: 'absolute',
       left: boundingBox.minX,
       top: boundingBox.minY,
@@ -382,93 +386,108 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     }
   };
 
+  const selectionRectBaseStyle = getSelectionRectStyle();
+  const selectionRectStyle: CSSProperties = selectionRectBaseStyle.display === 'none'
+    ? selectionRectBaseStyle
+    : {
+        ...selectionRectBaseStyle,
+        position: 'absolute',
+        border: '2px dashed #2196f3',
+        backgroundColor: 'rgba(33,150,243,0.1)',
+        pointerEvents: 'none',
+        zIndex: 25,
+      };
+
+  const scaledWidth = baseSvgDims.width ? baseSvgDims.width * scale : undefined;
+  const scaledHeight = baseSvgDims.height ? baseSvgDims.height * scale : undefined;
+
   if (loading) {
     return (
-      <div className="viewer-loading-wrapper">
-        <div className="viewer-loading-inner">Loading document...</div>
-      </div>
+      <Box sx={{ p: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+        <Typography variant="body1" color="text.secondary" fontStyle="italic">
+          Loading document...
+        </Typography>
+      </Box>
     );
   }
 
   return (
-    <div className="viewer-container">
-      <div className="viewer-toolbar">
-        <div className="viewer-toolbar-layout">
-          <div className="viewer-toolbar-info">
-            <span className="viewer-badge">{Math.round(scale * 100)}%</span>
-            <span className="viewer-badge viewer-badge-alt">
-              {boundingBoxes.length} fields detected
-            </span>
-          </div>
-          <div className="viewer-toolbar-buttons">
-            <button 
-              onClick={() => setScale(s => Math.min(5, s * 1.2))} 
-              className="viewer-btn viewer-btn-primary" 
-              aria-label="Zoom In" 
-              title="Zoom In (Alt + Wheel)"
-            >
-              <ZoomInIcon size={18} />
-            </button>
-            <button 
-              onClick={() => setScale(s => Math.max(0.1, s / 1.2))} 
-              className="viewer-btn viewer-btn-primary" 
-              aria-label="Zoom Out" 
-              title="Zoom Out (Alt + Wheel)"
-            >
-              <ZoomOutIcon size={18} />
-            </button>
-            <button 
-              onClick={() => { resetView(); resetPan(); }} 
-              className="viewer-btn viewer-btn-secondary" 
-              aria-label="Reset View" 
-              title="Reset View"
-            >
-              <ResetIcon size={18} />
-            </button>
-            <button 
+    <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%', gap: 2, p: 2 }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between">
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Chip size="small" color="primary" variant="outlined" label={`${Math.round(scale * 100)}%`} />
+          <Chip size="small" variant="outlined" label={`${boundingBoxes.length} fields detected`} />
+        </Stack>
+        <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
+          <Tooltip title="Zoom In (Alt + Wheel)">
+            <IconButton color="primary" size="small" onClick={() => setScale(s => Math.min(5, s * 1.2))} aria-label="Zoom In">
+              <ZoomInIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Zoom Out (Alt + Wheel)">
+            <IconButton color="primary" size="small" onClick={() => setScale(s => Math.max(0.1, s / 1.2))} aria-label="Zoom Out">
+              <ZoomOutIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Reset View">
+            <IconButton color="primary" size="small" onClick={() => { resetView(); resetPan(); }} aria-label="Reset View">
+              <RestartAltIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={showOverlays ? 'Hide Field Overlays' : 'Show Field Overlays'}>
+            <IconButton
+              size="small"
               onClick={() => setShowOverlays(!showOverlays)}
-              className={`viewer-btn ${showOverlays
-                  ? 'viewer-btn-toggle-active'
-                  : 'viewer-btn-toggle-inactive'}`}
               aria-label={showOverlays ? 'Hide Field Overlays' : 'Show Field Overlays'}
-              title={showOverlays ? 'Hide Field Overlays' : 'Show Field Overlays'}
+              color={showOverlays ? 'primary' : 'default'}
             >
-              <HideFieldsIcon size={18} />
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <div
+              {showOverlays ? (
+                <VisibilityOffIcon fontSize="small" />
+              ) : (
+                <VisibilityIcon fontSize="small" />
+              )}
+            </IconButton>
+          </Tooltip>
+        </Stack>
+      </Stack>
+
+      <Box
         ref={containerRef}
-        className="viewer-panel"
-        style={{ cursor: isKeyActive
-          ? isDragging ? 'grabbing' : 'grab'
-          : 'crosshair'
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflow: 'auto',
+          position: 'relative',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          backgroundColor: 'background.paper',
+          cursor: isKeyActive ? (isDragging ? 'grabbing' : 'grab') : 'crosshair',
         }}
         onMouseDown={handlePanelMouseDown}
         onMouseMove={handlePanelMouseMove}
         onMouseUp={handlePanelMouseUp}
         onMouseLeave={handlePanelMouseLeave}
       >
-        <div
+        {/** keep scaled size placeholder to prevent border clipping */}
+        <Box
           ref={svgRef}
-          className="viewer-svg-wrapper"
-          style={{
-            width: baseSvgDims.width ? baseSvgDims.width * scale : undefined,
-            height: baseSvgDims.height ? baseSvgDims.height * scale : undefined,
-            position: 'relative'
+          sx={{
+            position: 'relative',
+            width: scaledWidth || 'auto',
+            height: scaledHeight || 'auto',
+            minWidth: scaledWidth || 'auto',
+            minHeight: scaledHeight || 'auto',
           }}
         >
-          <div
-            className="viewer-svg-scale-inner"
-            style={{
+          <Box
+            sx={{
+              position: 'relative',
               width: baseSvgDims.width || 'auto',
               height: baseSvgDims.height || 'auto',
               transform: `scale(${scale})`,
               transformOrigin: '0 0',
               transition: isDragging ? 'none' : 'transform 0s linear',
-              position: 'relative'
             }}
           >
             <div dangerouslySetInnerHTML={{ __html: svgContent }} />
@@ -476,25 +495,24 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
               const style = getBoundingBoxStyle(boundingBox);
               const isFocusedLinked = !!(boundingBox.generatedId && focusedInputLinkedBoxIds.has(boundingBox.generatedId));
               return (
-                <div
+                <Box
                   key={boundingBox.FieldId}
                   data-field-id={boundingBox.FieldId}
                   data-focused-linked={isFocusedLinked ? 'true' : undefined}
                   draggable
                   onDragStart={(e) => handleFieldDragStart(e, boundingBox)}
-                  className="viewer-bounding-box"
-                  style={style}
                   title={boundingBox.FieldText}
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => handleFieldSelection(boundingBox.FieldId, e)}
+                  style={style}
                 />
               );
             })}
-            <div className="viewer-selection-rect" style={getSelectionRectStyle()} />
-          </div>
-        </div>
-      </div>
-    </div>
+            <Box style={selectionRectStyle} />
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

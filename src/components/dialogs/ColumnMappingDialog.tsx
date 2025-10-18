@@ -1,5 +1,24 @@
 import React from 'react';
-import '../Form.css';
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+} from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material/Select';
 import { LINE_ITEM_COLUMNS, humanizeColumnKey, type LineItemColumnKey } from '../../types/lineItemColumns';
 import type { MultiFieldPair } from '../../types/mapping';
 
@@ -13,49 +32,79 @@ export interface ColumnMappingDialogProps {
 }
 
 const ColumnMappingDialog: React.FC<ColumnMappingDialogProps> = ({ lineNumber, pairs, proposed, onChange, onApply, onCancel }) => {
+  const handleSelectChange = (fieldId: string) => (event: SelectChangeEvent) => {
+    const value = event.target.value as '' | LineItemColumnKey;
+    onChange({ ...proposed, [fieldId]: value });
+  };
+
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onCancel} role="dialog" aria-modal="true" aria-labelledby={`column-mapping-title-${lineNumber}`}>
-      <div style={{ background: '#fff', padding: '18px 22px', borderRadius: '8px', width: '520px', maxHeight: '70vh', overflowY: 'auto', boxShadow: '0 6px 20px rgba(0,0,0,0.25)' }} onClick={e => e.stopPropagation()}>
-        <h4 id={`column-mapping-title-${lineNumber}`} style={{ margin: '0 0 6px 0' }}>Map Fields To Columns (Row {lineNumber})</h4>
-        <p style={{ fontSize: '12px', margin: '0 0 12px 0', color: '#555' }}>Review predicted column assignments. Adjust before applying.</p>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-          <thead>
-            <tr style={{ textAlign: 'left' }}>
-              <th style={{ borderBottom: '1px solid #ccc', padding: '4px' }}>Source Text</th>
-              <th style={{ borderBottom: '1px solid #ccc', padding: '4px' }}>Source ID</th>
-              <th style={{ borderBottom: '1px solid #ccc', padding: '4px' }}>Column</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pairs.map(pair => (
-              <tr key={pair.boxId}>
-                <td style={{ borderBottom: '1px solid #eee', padding: '4px', width: '20%', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={pair.text}>{pair.text}</td>
-                <td style={{ borderBottom: '1px solid #eee', padding: '4px', width: '50%', fontFamily: 'monospace', fontSize: '11px' }}>{pair.fieldId}</td>
-                <td style={{ borderBottom: '1px solid #eee', padding: '4px', width: '30%' }}>
-                  <select
-                    className="po-input"
-                    value={proposed[pair.fieldId]}
-                    onChange={e => {
-                      const value = e.target.value as '' | LineItemColumnKey;
-                      onChange({ ...proposed, [pair.fieldId]: value });
-                    }}
-                  >
-                    <option value="">None</option>
-                    {LINE_ITEM_COLUMNS.map(col => (
-                      <option key={col} value={col}>{humanizeColumnKey(col)}</option>
-                    ))}
-                  </select>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '14px' }}>
-          <button type="button" onClick={onCancel} className="btn btn-secondary">Cancel</button>
-          <button type="button" onClick={onApply} className="btn btn-primary">Apply</button>
-        </div>
-      </div>
-    </div>
+    <Dialog
+      open
+      onClose={onCancel}
+      fullWidth
+      maxWidth="md"
+      aria-labelledby={`column-mapping-title-${lineNumber}`}
+    >
+      <DialogTitle id={`column-mapping-title-${lineNumber}`} sx={{ pb: 1 }}>
+        Map Fields To Columns (Row {lineNumber})
+      </DialogTitle>
+      <DialogContent dividers sx={{ py: 2 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Review predicted column assignments. Adjust before applying.
+        </Typography>
+        <TableContainer component={Paper} variant="outlined">
+          <Table size="small" aria-label="Column mapping table">
+            <TableHead>
+              <TableRow>
+                <TableCell width="35%">Source Text</TableCell>
+                <TableCell width="35%">Source ID</TableCell>
+                <TableCell width="30%">Column</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {pairs.map((pair) => (
+                <TableRow key={pair.boxId} hover>
+                  <TableCell title={pair.text} sx={{ maxWidth: 220 }}>
+                    <Typography variant="body2" noWrap>{pair.text}</Typography>
+                  </TableCell>
+                  <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.8rem', maxWidth: 260 }}>
+                    <Typography variant="body2" color="text.secondary" noWrap>
+                      {pair.fieldId}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <FormControl fullWidth size="small">
+                      <InputLabel id={`column-select-${pair.fieldId}`}>Column</InputLabel>
+                      <Select
+                        labelId={`column-select-${pair.fieldId}`}
+                        value={proposed[pair.fieldId] ?? ''}
+                        label="Column"
+                        onChange={handleSelectChange(pair.fieldId)}
+                      >
+                        <MenuItem value="">None</MenuItem>
+                        {LINE_ITEM_COLUMNS.map((col) => (
+                          <MenuItem key={col} value={col}>
+                            {humanizeColumnKey(col)}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={onCancel} color="inherit" variant="outlined">
+          Cancel
+        </Button>
+        <Button onClick={onApply} variant="contained">
+          Apply
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 
