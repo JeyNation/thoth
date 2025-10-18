@@ -415,7 +415,6 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%', gap: 2, p: 2 }}>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between">
         <Stack direction="row" spacing={1} alignItems="center">
-          <Chip size="small" color="primary" variant="outlined" label={`${Math.round(scale * 100)}%`} />
           <Chip size="small" variant="outlined" label={`${boundingBoxes.length} fields detected`} />
         </Stack>
         <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">

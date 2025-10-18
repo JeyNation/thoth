@@ -27,13 +27,14 @@ const Debugger: React.FC<DebuggerProps> = ({ boundingBoxes, focusedInputField, f
     }, [boundingBoxes, fieldSources, focusedBoundingBoxId]);
 
     const geometryDetails = focusedInputField ? fieldSources[focusedInputField] : undefined;
+    const fieldSourcesJson = useMemo(() => JSON.stringify(fieldSources, null, 2), [fieldSources]);
 
     return (
         <Box
             sx={{
                 flex: 1,
                 minHeight: 0,
-                overflow: 'auto',
+                overflow: 'hidden',
                 p: 2,
                 display: 'flex',
                 flexDirection: 'column',
@@ -46,17 +47,6 @@ const Debugger: React.FC<DebuggerProps> = ({ boundingBoxes, focusedInputField, f
                 <Typography variant="subtitle2" sx={{ color: 'common.white', fontWeight: 600, letterSpacing: 0.6 }}>
                     Connections Debug
                 </Typography>
-                <Chip
-                    size="small"
-                    color="default"
-                    label={`${boundingBoxes.length} boxes`}
-                    sx={{
-                        bgcolor: 'rgba(255,255,255,0.08)',
-                        color: 'rgba(255,255,255,0.85)',
-                        fontWeight: 500,
-                        height: 22,
-                    }}
-                />
                 <Box sx={{ flex: 1 }} />
                 <IconButton
                     size="small"
@@ -83,18 +73,92 @@ const Debugger: React.FC<DebuggerProps> = ({ boundingBoxes, focusedInputField, f
             <Box
                 sx={{
                     display: 'grid',
-                    gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
-                    gap: 1.5,
-                    color: 'rgba(255,255,255,0.85)',
-                    fontSize: '0.8rem',
+                    gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                    gap: 2,
+                    minHeight: 0,
+                    flex: 1,
                 }}
             >
-                <DebuggerInfo label="Focused Input" value={focusedInputField || 'none'} />
-                <DebuggerInfo label="Focused Box" value={focusedBoundingBoxId || 'none'} />
-                <Box>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-                        Sources
-                    </Typography>
+                <Stack spacing={1.5} sx={{ minWidth: 0, minHeight: 0, overflow: 'auto', pr: 1 }}>
+                    {focusedBoundingBoxId && focusedBox ? (
+                        <>
+                            {/* Focused Box */}
+                            <Box>
+                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                                    Focused Box
+                                </Typography>
+                                <Typography variant="body2" sx={{ mt: 0.5, fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)' }}>
+                                    {focusedBoundingBoxId}
+                                </Typography>
+                                <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                                    {`[L${focusedBox.minX} T${focusedBox.minY} R${focusedBox.maxX} B${focusedBox.maxY}]`}
+                                </Typography>
+                            </Box>
+
+                            {linkedFormFieldsForFocusedBox.length > 0 && (
+                                <Box>
+                                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', letterSpacing: 0.5 }}>
+                                        Linked Inputs
+                                    </Typography>
+                                    <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+                                        {linkedFormFieldsForFocusedBox.map((fid) => (
+                                            <Typography
+                                                key={fid}
+                                                variant="body2"
+                                                title={fid}
+                                                sx={{
+                                                    fontFamily: 'monospace',
+                                                    fontSize: '0.75rem',
+                                                    color: 'rgba(255,255,255,0.85)',
+                                                    wordBreak: 'break-all',
+                                                }}
+                                            >
+                                                {fid}
+                                            </Typography>
+                                        ))}
+                                    </Stack>
+                                </Box>
+                            )}
+                        </>
+                    ) : null}
+
+                    {focusedInputField ? (
+                        <>
+                            {/* Focused Input */}
+                            <Box>
+                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                                    Focused Input
+                                </Typography>
+                                <Typography variant="body2" sx={{ mt: 0.5, fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)' }}>
+                                    {focusedInputField}
+                                </Typography>
+                            </Box>
+
+                            {/* Geometry (for Focused Input) */}
+                            {geometryDetails && geometryDetails.ids.length > 0 ? (
+                                <Box>
+                                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', letterSpacing: 0.5 }}>
+                                        Linked Boxes
+                                    </Typography>
+                                    <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+                                        {geometryDetails.boxes.map((b) => (
+                                            <Box key={b.id}>
+                                                <Typography variant="body2" sx={{ mt: 0.5, fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)' }}>
+                                                    {b.id}
+                                                </Typography>
+                                                <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                                                    {`[L${b.left} T${b.top} R${b.right} B${b.bottom}]`}
+                                                </Typography>
+                                            </Box>
+                                        ))}
+                                    </Stack>
+                                </Box>
+                            ) : null}
+                        </>
+                    ) : null}
+                </Stack>
+
+                <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
                     <Box
                         component="pre"
                         sx={{
@@ -106,86 +170,15 @@ const Debugger: React.FC<DebuggerProps> = ({ boundingBoxes, focusedInputField, f
                             lineHeight: 1.4,
                             whiteSpace: 'pre-wrap',
                             wordBreak: 'break-word',
-                            maxHeight: 160,
                             overflow: 'auto',
+                            flex: 1,
+                            minHeight: 0,
                         }}
                     >
-                        {JSON.stringify(fieldSources, null, 2)}
+                        {fieldSourcesJson}
                     </Box>
                 </Box>
-                {focusedBox ? (
-                    <Box>
-                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-                            Box Geometry
-                        </Typography>
-                        <Typography variant="body2" sx={{ display: 'block', mt: 0.5, fontSize: '0.75rem' }}>
-                            {`ID: ${focusedBox.generatedId}`}
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
-                            {`[L${focusedBox.minX} T${focusedBox.minY} R${focusedBox.maxX} B${focusedBox.maxY}]`}
-                        </Typography>
-                    </Box>
-                ) : (
-                    <Box>
-                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-                            Box Geometry
-                        </Typography>
-                        <Typography variant="body2" sx={{ mt: 0.5, fontSize: '0.75rem' }}>
-                            none
-                        </Typography>
-                    </Box>
-                )}
             </Box>
-
-            {linkedFormFieldsForFocusedBox.length > 0 && (
-                <Box>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', letterSpacing: 0.5 }}>
-                        Linked Form Inputs
-                    </Typography>
-                    <Stack spacing={0.5} sx={{ mt: 0.5 }}>
-                        {linkedFormFieldsForFocusedBox.map((fid) => (
-                            <Typography
-                                key={fid}
-                                variant="body2"
-                                title={fid}
-                                sx={{
-                                    fontFamily: 'monospace',
-                                    fontSize: '0.75rem',
-                                    color: 'rgba(255,255,255,0.85)',
-                                    wordBreak: 'break-all',
-                                }}
-                            >
-                                {fid}
-                            </Typography>
-                        ))}
-                    </Stack>
-                </Box>
-            )}
-
-            {geometryDetails && geometryDetails.ids.length > 0 && (
-                <Box>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', letterSpacing: 0.5 }}>
-                        Geometry
-                    </Typography>
-                    <Stack spacing={0.5} sx={{ mt: 0.5 }}>
-                        {geometryDetails.boxes.map((b) => (
-                            <Typography
-                                key={b.id}
-                                variant="body2"
-                                title={b.id}
-                                sx={{
-                                    fontFamily: 'monospace',
-                                    fontSize: '0.75rem',
-                                    color: 'rgba(255,255,255,0.85)',
-                                    wordBreak: 'break-all',
-                                }}
-                            >
-                                {`${b.id} [L${b.left} T${b.top} R${b.right} B${b.bottom}]`}
-                            </Typography>
-                        ))}
-                    </Stack>
-                </Box>
-            )}
         </Box>
     );
 };

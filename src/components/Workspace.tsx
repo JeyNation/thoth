@@ -31,7 +31,7 @@ const Workspace: React.FC = () => {
     const handleMouseMove = useCallback((e: MouseEvent) => {
         if (isResizingRef.current) {
             const dy = startYRef.current - e.clientY;
-            let newHeight = Math.min(400, Math.max(60, startHeightRef.current + dy));
+            const newHeight = Math.max(60, startHeightRef.current + dy); // no upper cap
             setDebuggerHeight(newHeight);
         }
     }, []);
