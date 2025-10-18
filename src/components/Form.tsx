@@ -269,8 +269,9 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         applyTransaction({ mappingUpdates, purchaseOrder: next });
     };
 
-    const handleInsertLineBelow = (lineNumber: number) => {
-        const { purchaseOrder: nextPO, remappedFieldIds, newLineNumber } = insertBlankLineItem(purchaseOrder, lineNumber);
+    const handleInsertLineRelative = (lineNumber: number, options?: { before?: boolean }) => {
+        const anchor = options?.before ? Math.max(lineNumber - 1, 0) : lineNumber;
+        const { purchaseOrder: nextPO, remappedFieldIds, newLineNumber } = insertBlankLineItem(purchaseOrder, anchor);
         if (nextPO === purchaseOrder) return;
         const { updates } = remapFieldSourcesForInsertion(fieldSources, remappedFieldIds);
         applyTransaction({ mappingUpdates: updates, purchaseOrder: nextPO });
@@ -742,11 +743,11 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                                 ${ (item.quantity * item.unitPrice).toFixed(2) }
                             </Typography>
                             <Stack direction="row" spacing={1} alignItems="flex-start">
-                                <Tooltip title={`Insert line after ${item.lineNumber}`}>
+                                <Tooltip title={`Add line (hold Ctrl to insert above)`}>
                                     <IconButton
                                         size="small"
                                         color="primary"
-                                        onClick={() => handleInsertLineBelow(item.lineNumber)}
+                                        onClick={(event) => handleInsertLineRelative(item.lineNumber, { before: event.ctrlKey })}
                                         sx={{ width: 32, height: 32 }}
                                         aria-label={`Insert line after ${item.lineNumber}`}
                                     >
