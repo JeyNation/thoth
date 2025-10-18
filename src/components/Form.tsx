@@ -294,9 +294,17 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         const data = e.dataTransfer.getData('application/json');
         if (!data) { console.warn('No drag data found'); return; }
         let dragData: any; try { dragData = JSON.parse(data); } catch { return; }
-        const mappingUpdates = dragData.boundingBoxIds ? [{ fieldId: targetField, sourceIds: dragData.boundingBoxIds as string[] }] : [];
+        const additive = e.ctrlKey || e.shiftKey;
+        const droppedIds: string[] = Array.isArray(dragData.boundingBoxIds) ? dragData.boundingBoxIds : [];
+        const currentIds: string[] = fieldSources?.[targetField]?.ids || [];
+        const nextIds = additive ? Array.from(new Set([...(currentIds || []), ...droppedIds])) : droppedIds;
+        const mappingUpdates = droppedIds.length ? [{ fieldId: targetField, sourceIds: nextIds }] : [];
         const processedText = sanitizeText(dragData.text, fieldKind);
-        const updated = { ...purchaseOrder, [targetField]: processedText };
+        const currentValue: string = (purchaseOrder[targetField as keyof PurchaseOrder] as any as string) || '';
+        const nextValue = additive
+            ? (currentValue ? (fieldKind === 'textarea' ? `${currentValue}\n${processedText}` : `${currentValue} ${processedText}`) : processedText)
+            : processedText;
+        const updated = { ...purchaseOrder, [targetField]: nextValue };
         applyTransaction({ mappingUpdates, purchaseOrder: updated }); // no onUpdate duplication
     };
 
@@ -310,9 +318,25 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         const data = e.dataTransfer.getData('application/json');
         if (!data) { console.warn('No drag data found'); return; }
         let dragData: any; try { dragData = JSON.parse(data); } catch { return; }
-        const mappingUpdates = dragData.boundingBoxIds ? [{ fieldId: makeLineItemField(lineNumber, targetField as any), sourceIds: dragData.boundingBoxIds as string[] }] : [];
+        const additive = e.ctrlKey || e.shiftKey;
+        const fid = makeLineItemField(lineNumber, targetField as any);
+        const droppedIds: string[] = Array.isArray(dragData.boundingBoxIds) ? dragData.boundingBoxIds : [];
+        const currentIds: string[] = fieldSources?.[fid]?.ids || [];
+        const nextIds = additive ? Array.from(new Set([...(currentIds || []), ...droppedIds])) : droppedIds;
+        const mappingUpdates = droppedIds.length ? [{ fieldId: fid, sourceIds: nextIds }] : [];
         const processedText = sanitizeText(dragData.text, fieldKind);
-        const updatedItems = purchaseOrder.lineItems.map(item => item.lineNumber === lineNumber ? { ...item, [targetField]: processedText } : item);
+        const updatedItems = purchaseOrder.lineItems.map(item => {
+            if (item.lineNumber !== lineNumber) return item;
+            // For text/textarea, append in additive mode; for numeric, always replace value
+            if (fieldKind === 'text' || fieldKind === 'textarea') {
+                const currentVal = (item as any)[targetField] as string;
+                const nextVal = additive
+                    ? (currentVal ? (fieldKind === 'textarea' ? `${currentVal}\n${processedText}` : `${currentVal} ${processedText}`) : processedText)
+                    : processedText;
+                return { ...item, [targetField]: nextVal } as any;
+            }
+            return { ...item, [targetField]: processedText } as any;
+        });
         const updated = { ...purchaseOrder, lineItems: updatedItems };
         applyTransaction({ mappingUpdates, purchaseOrder: updated }); // single history entry
     };
@@ -660,6 +684,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                     endAdornment: renderClearAdornment(showClear, handleClear),
                     inputProps: {
                         'data-field-kind': kind,
+                        'data-field-id': fieldId,
                         ...(kind === 'integer' || kind === 'decimal'
                             ? { min: 0, step: kind === 'decimal' ? 0.01 : 1, style: { textAlign: 'right' } }
                             : {}),
@@ -810,6 +835,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                     flexDirection: 'column',
                     gap: 3,
                 }}
+                data-scroll-listener
             >
                 <Typography variant="h5" fontWeight={600} color="text.primary">
                     Purchase Order Form
@@ -863,7 +889,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                                             }}
                                             InputProps={{
                                                 endAdornment: renderClearAdornment(showClear, handleClear),
-                                                inputProps: { 'data-field-kind': config.kind, title: config.label },
+                                                inputProps: { 'data-field-kind': config.kind, title: config.label, 'data-field-id': config.id },
                                             }}
                                         />
                                     </Box>

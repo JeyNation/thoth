@@ -122,7 +122,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
 
     boxStyleCacheRef.current.set(boundingBox.FieldId, { key, style });
     return style;
-  }, [selectedFields, allLinkedBoxIds, focusedInputLinkedBoxIds, draggedField, svgContent, boundingBoxes.length]);
+  }, [selectedFields, allLinkedBoxIds, focusedInputLinkedBoxIds, draggedField]);
 
   // state change: initial document load
   useEffect(() => {
@@ -426,24 +426,43 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
         </Stack>
         <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
           <Tooltip title="Zoom In (Alt + Wheel)">
-            <IconButton color="primary" size="small" onClick={() => setScale(s => Math.min(5, s * 1.2))} aria-label="Zoom In">
+            <IconButton
+              color="primary"
+              size="small"
+              onMouseDown={(e) => { e.preventDefault(); }}
+              onClick={(e) => { e.preventDefault(); setScale(s => Math.min(5, s * 1.2)); }}
+              aria-label="Zoom In"
+            >
               <ZoomInIcon fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Zoom Out (Alt + Wheel)">
-            <IconButton color="primary" size="small" onClick={() => setScale(s => Math.max(0.1, s / 1.2))} aria-label="Zoom Out">
+            <IconButton
+              color="primary"
+              size="small"
+              onMouseDown={(e) => { e.preventDefault(); }}
+              onClick={(e) => { e.preventDefault(); setScale(s => Math.max(0.1, s / 1.2)); }}
+              aria-label="Zoom Out"
+            >
               <ZoomOutIcon fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Reset View">
-            <IconButton color="primary" size="small" onClick={() => { resetView(); resetPan(); }} aria-label="Reset View">
+            <IconButton
+              color="primary"
+              size="small"
+              onMouseDown={(e) => { e.preventDefault(); }}
+              onClick={(e) => { e.preventDefault(); resetView(); resetPan(); }}
+              aria-label="Reset View"
+            >
               <RestartAltIcon fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title={showOverlays ? 'Hide Field Overlays' : 'Show Field Overlays'}>
             <IconButton
               size="small"
-              onClick={() => setShowOverlays(!showOverlays)}
+              onMouseDown={(e) => { e.preventDefault(); }}
+              onClick={(e) => { e.preventDefault(); setShowOverlays(!showOverlays); }}
               aria-label={showOverlays ? 'Hide Field Overlays' : 'Show Field Overlays'}
               color={showOverlays ? 'primary' : 'default'}
             >
@@ -470,6 +489,8 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
           backgroundColor: 'background.paper',
           cursor: isKeyActive ? (isDragging ? 'grabbing' : 'grab') : 'crosshair',
         }}
+        data-scroll-listener
+        data-svg-container
         onMouseDown={handlePanelMouseDown}
         onMouseMove={handlePanelMouseMove}
         onMouseUp={handlePanelMouseUp}
@@ -504,6 +525,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
                 <Box
                   key={boundingBox.FieldId}
                   data-field-id={boundingBox.FieldId}
+                  data-box-id={boundingBox.generatedId}
                   data-focused-linked={isFocusedLinked ? 'true' : undefined}
                   draggable
                   onDragStart={(e) => handleFieldDragStart(e, boundingBox)}
