@@ -28,7 +28,6 @@ interface BasicFieldConfig {
     kind: 'text' | 'textarea';
     multiline?: boolean;
     rows?: number;
-    placeholder: string;
 }
 
 const BASIC_FIELD_CONFIGS: BasicFieldConfig[] = [
@@ -36,13 +35,11 @@ const BASIC_FIELD_CONFIGS: BasicFieldConfig[] = [
         id: 'documentNumber',
         label: 'Document Number',
         kind: 'text',
-        placeholder: 'Document Number',
     },
     {
         id: 'customerNumber',
         label: 'Customer Number',
         kind: 'text',
-        placeholder: 'Customer Number',
     },
     {
         id: 'shipToAddress',
@@ -50,7 +47,6 @@ const BASIC_FIELD_CONFIGS: BasicFieldConfig[] = [
         kind: 'textarea',
         multiline: true,
         rows: 3,
-        placeholder: 'Ship To Address',
     },
 ];
 
@@ -632,7 +628,6 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                 variant="outlined"
                 value={value as string | number}
                 type={kind === 'integer' || kind === 'decimal' ? 'number' : 'text'}
-                placeholder={LINE_ITEM_FIELD_LABEL[field]}
                 aria-label={`${LINE_ITEM_FIELD_LABEL[field]} for line ${item.lineNumber}`}
                 multiline={kind === 'textarea'}
                 minRows={kind === 'textarea' ? 2 : undefined}
@@ -840,7 +835,6 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                                         <TextField
                                             fullWidth
                                             size="small"
-                                            placeholder={config.placeholder}
                                             variant="outlined"
                                             value={value}
                                             multiline={config.multiline}
