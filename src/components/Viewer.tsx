@@ -230,6 +230,10 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
         newSelection.add(fieldId);
       }
       setSelectedFields(newSelection);
+      // Do not set a focused bounding box when toggling selection with Ctrl/Meta.
+      // Also clear any existing focused box so it isn't treated as focused.
+      onBoundingBoxFocus?.(null);
+      return;
     } else {
       if (selectedFields.has(fieldId) && selectedFields.size === 1) {
         setSelectedFields(new Set());
@@ -366,7 +370,10 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
         const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
         if (!(maxX < selectionRect.left || minX > selectionRect.right || maxY < selectionRect.top || minY > selectionRect.bottom)) ids.add(b.FieldId);
       });
-      setSelectedFields(ids); cancelSelection();
+      setSelectedFields(ids);
+      // Area selection results in multi-select; clear any focused bounding box.
+      onBoundingBoxFocus?.(null);
+      cancelSelection();
     } else if (isClick && !isDragging && !isKeyActive) {
       const target = e.target as HTMLElement;
       if (!target.draggable && !target.closest('[data-field-id]') && !e.ctrlKey && !e.metaKey) {
