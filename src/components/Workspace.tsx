@@ -25,6 +25,7 @@ const Workspace: React.FC = () => {
     const [showConnectionsDebug, setShowConnectionsDebug] = useState(true);
     const [debuggerHeight, setDebuggerHeight] = useState<number>(140);
     const [connections, setConnections] = useState<OverlayConnection[]>([]);
+        const [overlaysVisible, setOverlaysVisible] = useState<boolean>(true);
     // custom hooks
     const { updatePurchaseOrder, recomputeGeometry, undo, redo, canUndo, canRedo, fieldSources, reverseIndex, updateFieldSources } = useMapping();
     // Refs for latest mapping data to avoid effect churn
@@ -349,7 +350,9 @@ const Workspace: React.FC = () => {
                         alignItems: 'stretch',
                     }}
                 >
-                    <ConnectionOverlay connections={connections} onCenterIconClick={handleCenterIconClick} />
+                    {overlaysVisible && (
+                        <ConnectionOverlay connections={connections} onCenterIconClick={handleCenterIconClick} />
+                    )}
                     <Paper
                         elevation={1}
                         sx={{
@@ -369,6 +372,7 @@ const Workspace: React.FC = () => {
                                 onBoundingBoxesUpdate={handleBoundingBoxesUpdate}
                                 onViewerTransformChange={handleViewerTransformChange}
                                 onBoundingBoxFocus={setFocusedBoundingBoxId}
+                                onOverlaysVisibilityChange={setOverlaysVisible}
                             />
                         </Box>
                     </Paper>

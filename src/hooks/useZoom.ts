@@ -126,6 +126,8 @@ export const useZoom = (opts: UseZoomOptions): UseZoomResult => {
     loop();
     return () => { if (rafId) cancelAnimationFrame(rafId); };
   }, [
+    autoFit,
+    containerRef,
     autoFit?.svgContent, 
     autoFit?.mode, 
     autoFit?.retries, 

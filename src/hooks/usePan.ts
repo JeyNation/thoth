@@ -65,7 +65,7 @@ export const usePan = (opts: UsePanOptions): UsePanResult => {
     };
     window.addEventListener('mousemove', move);
     return () => window.removeEventListener('mousemove', move);
-  }, [isDragging, isKeyActive, disabled, onPan]);
+  }, [isDragging, isKeyActive, disabled, onPan, containerRef]);
 
   const beginPanAt = (clientX: number, clientY: number) => {
     if (!containerRef.current || disabled) return;

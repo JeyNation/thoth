@@ -22,9 +22,10 @@ interface ViewerProps {
   onBoundingBoxesUpdate?: (boxes: BoundingBox[]) => void;
   onViewerTransformChange?: (scale: number, position: { x: number; y: number }) => void;
   onBoundingBoxFocus?: (boxGeneratedId: string | null) => void;
+  onOverlaysVisibilityChange?: (visible: boolean) => void;
 }
 
-const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onViewerTransformChange, onBoundingBoxFocus }: ViewerProps) => {
+const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onViewerTransformChange, onBoundingBoxFocus, onOverlaysVisibilityChange }: ViewerProps) => {
   // refs
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<HTMLDivElement>(null);
@@ -190,6 +191,11 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     onViewerTransformChange?.(scale, position); 
   }, [scale, position, onViewerTransformChange]);
 
+  // state change: notify overlay visibility (so Workspace can hide/show lines too)
+  useEffect(() => {
+    onOverlaysVisibilityChange?.(showOverlays);
+  }, [showOverlays, onOverlaysVisibilityChange]);
+
   // state change: clear selection when clicking anywhere outside the viewer panel
   useEffect(() => {
     const handleGlobalMouseDown = (e: MouseEvent) => {
@@ -214,8 +220,11 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
   }, [selectedFields, onBoundingBoxFocus]);
 
   // state change: clear cache when the source document changes (svgContent) or bounding boxes list length changes.
-  useEffect(() => { 
-    boxStyleCacheRef.current.clear(); 
+  useEffect(() => {
+    // Intentionally run when svgContent or the number of boxes changes.
+    if (svgContent !== undefined || boundingBoxes.length >= 0) {
+      boxStyleCacheRef.current.clear();
+    }
   }, [svgContent, boundingBoxes.length]);
 
   // event handler: field clicked
@@ -462,7 +471,14 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
             <IconButton
               size="small"
               onMouseDown={(e) => { e.preventDefault(); }}
-              onClick={(e) => { e.preventDefault(); setShowOverlays(!showOverlays); }}
+              onClick={(e) => {
+                e.preventDefault();
+                setShowOverlays(prev => {
+                  const next = !prev;
+                  onOverlaysVisibilityChange?.(next);
+                  return next;
+                });
+              }}
               aria-label={showOverlays ? 'Hide Field Overlays' : 'Show Field Overlays'}
               color={showOverlays ? 'primary' : 'default'}
             >
