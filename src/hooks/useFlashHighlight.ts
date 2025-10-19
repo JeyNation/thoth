@@ -49,9 +49,11 @@ export default function useFlashHighlight(options?: Options) {
   const getStage = (fieldId: string): FlashStage | undefined => stages.get(fieldId);
 
   useEffect(() => {
+    // Capture the current map reference for cleanup to avoid lint warning
+    const map = timeoutsRef.current;
     return () => {
-      timeoutsRef.current.forEach((arr) => arr.forEach((id) => clearTimeout(id)));
-      timeoutsRef.current.clear();
+      map.forEach((arr) => arr.forEach((id) => clearTimeout(id)));
+      map.clear();
     };
   }, []);
 

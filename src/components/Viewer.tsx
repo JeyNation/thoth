@@ -139,7 +139,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       setBoundingBoxes(normalized);
       onBoundingBoxesUpdate?.(normalized);
     }
-  }, [documentData]);
+  }, [documentData, onBoundingBoxesUpdate]);
 
   // measure base SVG dimensions (once per svgContent change)
   useEffect(() => {
