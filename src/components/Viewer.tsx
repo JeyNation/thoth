@@ -473,11 +473,8 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
               onMouseDown={(e) => { e.preventDefault(); }}
               onClick={(e) => {
                 e.preventDefault();
-                setShowOverlays(prev => {
-                  const next = !prev;
-                  onOverlaysVisibilityChange?.(next);
-                  return next;
-                });
+                // Toggle locally; Workspace will be notified by the effect after render
+                setShowOverlays(prev => !prev);
               }}
               aria-label={showOverlays ? 'Hide Field Overlays' : 'Show Field Overlays'}
               color={showOverlays ? 'primary' : 'default'}

@@ -67,7 +67,6 @@ const RowMappingDialog: React.FC<RowMappingDialogProps> = ({ column, pairs, prop
             <TableHead>
               <TableRow>
                 <TableCell width="40%">Source Text</TableCell>
-                <TableCell width="40%">Source ID</TableCell>
                 <TableCell width="20%">Row</TableCell>
               </TableRow>
             </TableHead>
@@ -76,11 +75,6 @@ const RowMappingDialog: React.FC<RowMappingDialogProps> = ({ column, pairs, prop
                 <TableRow key={pair.boxId} hover>
                   <TableCell title={pair.text} sx={{ maxWidth: 240 }}>
                     <Typography variant="body2" noWrap>{pair.text}</Typography>
-                  </TableCell>
-                  <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.8rem', maxWidth: 240 }}>
-                    <Typography variant="body2" color="text.secondary" noWrap>
-                      {pair.fieldId}
-                    </Typography>
                   </TableCell>
                   <TableCell>
                     <FormControl fullWidth size="small">

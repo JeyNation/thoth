@@ -57,7 +57,6 @@ const ColumnMappingDialog: React.FC<ColumnMappingDialogProps> = ({ lineNumber, p
             <TableHead>
               <TableRow>
                 <TableCell width="35%">Source Text</TableCell>
-                <TableCell width="35%">Source ID</TableCell>
                 <TableCell width="30%">Column</TableCell>
               </TableRow>
             </TableHead>
@@ -66,11 +65,6 @@ const ColumnMappingDialog: React.FC<ColumnMappingDialogProps> = ({ lineNumber, p
                 <TableRow key={pair.boxId} hover>
                   <TableCell title={pair.text} sx={{ maxWidth: 220 }}>
                     <Typography variant="body2" noWrap>{pair.text}</Typography>
-                  </TableCell>
-                  <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.8rem', maxWidth: 260 }}>
-                    <Typography variant="body2" color="text.secondary" noWrap>
-                      {pair.fieldId}
-                    </Typography>
                   </TableCell>
                   <TableCell>
                     <FormControl fullWidth size="small">
