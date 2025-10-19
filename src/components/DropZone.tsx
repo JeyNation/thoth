@@ -6,27 +6,25 @@ type HTMLElementTag = 'div' | 'span' | 'th' | 'td' | 'li' | 'ul' | 'section' | '
 
 export interface DropZoneProps {
   as?: HTMLElementTag;
-  onDrop: (e: React.DragEvent) => void;
   children: React.ReactNode;
   baseStyle?: React.CSSProperties;
   activeStyle?: React.CSSProperties;
   className?: string;
   title?: string;
   role?: string;
-  // Optional: allow passing through custom dragOver handler in addition to internal highlight logic
+  onDrop: (e: React.DragEvent) => void;
   onDragOverExtra?: (e: React.DragEvent) => void;
 }
 
-/** Generic drop target with internal hover highlight state */
 const DropZone: React.FC<DropZoneProps> = ({
   as = 'div',
-  onDrop,
   children,
   baseStyle,
   activeStyle,
   className,
   title,
   role,
+  onDrop,
   onDragOverExtra
 }) => {
   const [active, setActive] = useState(false);
@@ -44,7 +42,7 @@ const DropZone: React.FC<DropZoneProps> = ({
   }, [active]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault(); // Allow drop
+    e.preventDefault();
     if (onDragOverExtra) onDragOverExtra(e);
   }, [onDragOverExtra]);
 
@@ -86,14 +84,14 @@ const DropZone: React.FC<DropZoneProps> = ({
     as,
     {
       className,
+      role,
       style: mergedStyle,
-  onDragEnter: handleDragEnter,
+      title,
+      onDragEnter: handleDragEnter,
       onDragOver: handleDragOver,
       onDragLeave: handleDragLeave,
       onDropCapture: handleDropCapture,
       onDrop: handleDrop,
-      title,
-      role,
     },
     children
   );

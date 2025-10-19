@@ -2,12 +2,8 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import type { CSSProperties } from 'react';
-import { Box, Button, IconButton, Paper, Stack, TextField, Tooltip, Typography } from '@mui/material';
-import type { Theme } from '@mui/material/styles';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { Box, Button, Stack, Typography } from '@mui/material';
 import type { PurchaseOrder, LineItem } from '../types/PurchaseOrder';
-import DropZone from './DropZone';
 import { makeLineItemField } from '../types/fieldIds';
 import { addBlankLineItem as poAddBlankLineItem, removeLineItem, computeNextLineNumber, ensureLineNumberExists, insertBlankLineItem } from '../utils/purchaseOrderMutations';
 import { remapFieldSourcesForInsertion } from '../utils/mappingRemap';
@@ -17,9 +13,8 @@ import ColumnMappingDialog from './dialogs/ColumnMappingDialog';
 import RowMappingDialog from './dialogs/RowMappingDialog';
 import { LINE_ITEM_COLUMNS, humanizeColumnKey, type LineItemColumnKey } from '../types/lineItemColumns';
 import { predictRow, sanitizeText, commitMapping, predictColumn, commitColumnAssignments } from '../utils/formUtils';
-import { applyDropHighlightSx, DROP_ACTIVE_BG, DROP_ACTIVE_BORDER, DROP_ACTIVE_INSET, DROP_BORDER_RADIUS_PX } from '../styles/dropHighlight';
+import { DROP_ACTIVE_BG, DROP_ACTIVE_BORDER, DROP_ACTIVE_INSET, DROP_BORDER_RADIUS_PX } from '../styles/dropHighlight';
 import ClearAdornment from './form/ClearAdornment';
-import RowDropZone from './form/RowDropZone';
 import ColumnDropHeader from './form/ColumnDropHeader';
 import BasicFieldInput from './form/BasicFieldInput';
 import LineItemField from './form/LineItemField';
@@ -27,14 +22,6 @@ import LineItemCard from './form/LineItemCard';
 import useFlashHighlight from '../hooks/useFlashHighlight';
 
 type BasicFieldKey = Exclude<keyof PurchaseOrder, 'lineItems'>;
-
-interface BasicFieldConfig {
-    id: BasicFieldKey;
-    label: string;
-    kind: 'text' | 'textarea';
-    multiline?: boolean;
-    rows?: number;
-}
 
 const BASIC_FIELD_CONFIGS: BasicFieldConfig[] = [
     {
@@ -56,46 +43,6 @@ const BASIC_FIELD_CONFIGS: BasicFieldConfig[] = [
     },
 ];
 
-// Drop highlight styling tokens imported from styles/dropHighlight
-
-const COLUMN_DROP_ZONE_BASE: CSSProperties = {
-    width: '100%',
-    borderWidth: '1px',
-    borderStyle: 'solid',
-    borderColor: 'rgba(120, 144, 156, 0.45)',
-    borderRadius: DROP_BORDER_RADIUS_PX,
-    background: 'rgba(248, 250, 252, 0.85)',
-    padding: '6px 8px',
-    fontWeight: 600,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    textAlign: 'center',
-    minHeight: 40,
-    transition: 'border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease',
-    boxShadow: 'inset 0 0 0 0 rgba(25,118,210,0.08)',
-};
-
-const COLUMN_DROP_ZONE_ACTIVE: CSSProperties = {
-    borderColor: DROP_ACTIVE_BORDER,
-    background: DROP_ACTIVE_BG,
-    boxShadow: DROP_ACTIVE_INSET,
-};
-
-interface FormProps {
-    onUpdate: (purchaseOrder: PurchaseOrder) => void; // optional external side-effects
-    onFieldFocus?: (fieldId: string | null) => void;
-    clearPersistentFocus?: () => void;
-    focusedBoundingBoxId?: string | null;
-}
-
-interface MultiFieldDragData { pairs: MultiFieldPair[]; boundingBoxIds: string[]; }
-interface MultiFieldDragPayload {
-    isMultiField?: boolean;
-    pairs?: MultiFieldPair[];
-    boundingBoxIds?: string[];
-}
-
 const LINE_ITEM_FIELD_LABEL: Record<'sku' | 'description' | 'quantity' | 'unitPrice', string> = {
     sku: 'SKU',
     description: 'Description',
@@ -103,38 +50,63 @@ const LINE_ITEM_FIELD_LABEL: Record<'sku' | 'description' | 'quantity' | 'unitPr
     unitPrice: 'Unit Price',
 };
 
+interface BasicFieldConfig {
+    id: BasicFieldKey;
+    label: string;
+    kind: 'text' | 'textarea';
+    multiline?: boolean;
+    rows?: number;
+}
+
+interface FormProps {
+    onUpdate: (purchaseOrder: PurchaseOrder) => void;
+    onFieldFocus?: (fieldId: string | null) => void;
+    clearPersistentFocus?: () => void;
+    focusedBoundingBoxId?: string | null;
+}
+
+interface MultiFieldDragData { 
+    pairs: MultiFieldPair[]; 
+    boundingBoxIds: string[]; 
+}
+
+interface MultiFieldDragPayload {
+    isMultiField?: boolean;
+    pairs?: MultiFieldPair[];
+    boundingBoxIds?: string[];
+}
+
 const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocus, focusedBoundingBoxId }) => {
-    const { fieldSources, reverseIndex, purchaseOrder, applyTransaction } = useMapping();
-    //const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set());
     const [columnMappingDialog, setColumnMappingDialog] = useState<null | { lineNumber: number; drag: MultiFieldDragData; proposed: Record<string, LineItemColumnKey | ''> }>(null);
     const [rowMappingDialog, setRowMappingDialog] = useState<null | { column: LineItemColumnKey; drag: MultiFieldDragData; proposedRows: Record<string, number | null> }>(null);
     const [addButtonDragActive, setAddButtonDragActive] = useState(false);
     const [activeRowDropLine, setActiveRowDropLine] = useState<number | null>(null);
     const [activeColumnDrop, setActiveColumnDrop] = useState<{ lineNumber: number; field: LineItemColumnKey } | null>(null);
     const [activeBasicDrop, setActiveBasicDrop] = useState<BasicFieldKey | null>(null);
-    // Flash highlight using reusable hook
-    const { flashField, getStage } = useFlashHighlight({ strongMs: 300, fadeMs: 1000 });
-    // Track which input is currently focused within this form (selection)
     const [focusedFieldIdLocal, setFocusedFieldIdLocal] = useState<string | null>(null);
 
     const initializedRef = useRef(false);
 
-    // Memo: set of fieldIds that have at least one source mapping (used for quick highlight check)
+    const { fieldSources, reverseIndex, purchaseOrder, applyTransaction } = useMapping();
+    const { flashField, getStage } = useFlashHighlight({ strongMs: 300, fadeMs: 1000 });
+
     const linkedFieldIdSet = useMemo(() => {
         const s = new Set<string>();
-        Object.entries(fieldSources).forEach(([fid, entry]) => { if (entry.ids && entry.ids.length) s.add(fid); });
+        Object.entries(fieldSources).forEach(([fid, entry]) => { 
+            if (entry.ids && entry.ids.length) s.add(fid);
+        });
         return s;
     }, [fieldSources]);
 
-    // Memo: fields linked to currently focused bounding box id
     const focusedLinkedFieldIds = useMemo(() => {
         if (!focusedBoundingBoxId) return new Set<string>();
         if (reverseIndex && reverseIndex[focusedBoundingBoxId]) {
             return new Set(reverseIndex[focusedBoundingBoxId]);
         }
-        // fallback scan (should be rare if reverseIndex provided)
         const s = new Set<string>();
-        Object.entries(fieldSources).forEach(([fid, entry]) => { if (entry.ids.includes(focusedBoundingBoxId)) s.add(fid); });
+        Object.entries(fieldSources).forEach(([fid, entry]) => { 
+            if (entry.ids.includes(focusedBoundingBoxId)) s.add(fid); 
+        });
         return s;
     }, [focusedBoundingBoxId, fieldSources, reverseIndex]);
 
@@ -147,8 +119,8 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
 
     const getTextFieldSx = (fieldId: string) => {
         const highlight = isFieldHighlighted(fieldId);
-    const stage = getStage(fieldId);
-        // Base styles
+        const stage = getStage(fieldId);
+        
         const root: Record<string, any> = {
             borderRadius: 1.5,
             backgroundColor: highlight ? 'rgba(76,175,80,0.15)' : 'background.paper',
@@ -165,7 +137,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                 boxShadow: highlight ? '0 0 0 2px rgba(46,125,50,0.25)' : '0 0 0 2px rgba(25,118,210,0.18)',
             },
         };
-        // Merge flash stage tweaks directly into base blocks to avoid duplicate selectors
+        
         if (stage === 'strong') {
             root.transition = 'background-color 1s ease, box-shadow 1s ease, border-color 1s ease';
             root.backgroundColor = 'rgba(255,235,59,0.55)';
@@ -175,13 +147,15 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                 borderColor: 'rgba(255,193,7,0.85)',
                 borderWidth: 1,
             };
-        } else if (stage === 'fade') {
+        } 
+        else if (stage === 'fade') {
             root.transition = 'background-color 1s ease, box-shadow 1s ease, border-color 1s ease';
             root['& fieldset'] = {
                 ...(root['& fieldset'] || {}),
                 transition: 'border-color 1s ease',
             };
         }
+        
         return {
             '& .MuiOutlinedInput-root': root,
             '& input[type="number"]': {
@@ -206,14 +180,9 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         }
     }, [purchaseOrder, onUpdate]);
 
-    /**
-     * Atomic update of a top-level (basic) field. If the resulting value is an empty string after trim (for text/textarea)
-     * or a numeric reset (0 for integer/decimal via explicit clear), we also clear any linked field sources in the same transaction.
-     */
     const handleBasicInfoChange = (field: string, value: string | number, kind: string = 'text', opts?: { explicitClear?: boolean }) => {
         let nextVal: any = value;
         if (opts?.explicitClear) {
-            // For explicit clear button, normalize numeric kinds to 0, others to ''
             nextVal = (kind === 'integer' || kind === 'decimal') ? 0 : '';
         }
         const updated = { ...purchaseOrder, [field]: nextVal } as PurchaseOrder;
@@ -226,9 +195,6 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         applyTransaction({ mappingUpdates, purchaseOrder: updated });
     };
 
-    /**
-     * Atomic update of a line item field; clears mapping sources for that field id in the same transaction when emptied/reset.
-     */
     const handleLineItemChange = (lineNumber: number, field: string, value: string | number, kind: string = 'text', opts?: { explicitClear?: boolean }) => {
         let nextVal: any = value;
         if (opts?.explicitClear) {
@@ -261,16 +227,13 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         }
     };
 
-    // Compute next available line number (fills gaps, else append)
     const getNextLineNumber = () => computeNextLineNumber(purchaseOrder);
 
-    // Ensure a specific line number exists (used before mapping on Add Line Item drop)
     const ensureSpecificLineExists = (lineNumber: number) => {
         const updated = ensureLineNumberExists(purchaseOrder, lineNumber);
         if (updated !== purchaseOrder) applyTransaction({ mappingUpdates: [], purchaseOrder: updated });
     };
 
-    // Handle dropping multi-field selection onto the Add Line Item control
     const handleAddLineItemDrop = (e: React.DragEvent) => {
         e.preventDefault();
         const data = e.dataTransfer.getData('application/json');
@@ -280,9 +243,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         if (!dragData || !Array.isArray(dragData.pairs) || dragData.pairs.length === 0) return;
 
         const newLineNumber = getNextLineNumber();
-        // Create the row immediately so user sees it even if ambiguous dialog appears
         ensureSpecificLineExists(newLineNumber);
-        // Reuse row drop logic
         openRowDropDialog(newLineNumber, dragData);
     };
 
@@ -308,7 +269,6 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         });
     };
 
-
     const clearBasicField = (field: string, kind: string) => {
         handleBasicInfoChange(field, '', kind, { explicitClear: true });
         onFieldFocus && onFieldFocus(null);
@@ -322,8 +282,17 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
     const handleBasicDrop = (e: React.DragEvent, targetField: string, fieldKind: 'text' | 'textarea') => {
         e.preventDefault();
         const data = e.dataTransfer.getData('application/json');
-        if (!data) { console.warn('No drag data found'); return; }
-        let dragData: any; try { dragData = JSON.parse(data); } catch { return; }
+        if (!data) { 
+            console.warn('No drag data found'); return; 
+        }
+        let dragData: any;
+        try { 
+            dragData = JSON.parse(data); 
+        } 
+        catch {
+            return;
+        }
+
         const additive = e.ctrlKey || e.shiftKey;
         const droppedIds: string[] = Array.isArray(dragData.boundingBoxIds) ? dragData.boundingBoxIds : [];
         const currentIds: string[] = fieldSources?.[targetField]?.ids || [];
@@ -358,7 +327,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         const processedText = sanitizeText(dragData.text, fieldKind);
         const updatedItems = purchaseOrder.lineItems.map(item => {
             if (item.lineNumber !== lineNumber) return item;
-            // For text/textarea, append in additive mode; for numeric, always replace value
+            
             if (fieldKind === 'text' || fieldKind === 'textarea') {
                 const currentVal = (item as any)[targetField] as string;
                 const nextVal = additive
@@ -439,7 +408,6 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         });
 
         if (!ambiguous) {
-            // transactional capture – rely solely on applyTransaction to record history
             let poAfter = purchaseOrder;
             const tempUpdates: { fieldId: string; sourceIds: string[] }[] = [];
             commitMapping({
@@ -452,15 +420,17 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
             });
             if (poAfter !== purchaseOrder || tempUpdates.length) {
                 applyTransaction({ mappingUpdates: tempUpdates, purchaseOrder: poAfter });
-                // flash all affected fields
                 tempUpdates.forEach(u => flashField(u.fieldId));
             }
             return;
         }
 
-    setColumnMappingDialog({
+        setColumnMappingDialog({
             lineNumber,
-            drag: { pairs, boundingBoxIds: dragData.boundingBoxIds || [] },
+            drag: { 
+                pairs, 
+                boundingBoxIds: dragData.boundingBoxIds || [] 
+            },
             proposed
         });
     };
@@ -471,7 +441,6 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         const sourcesWithGeometry = fieldSources ? Object.entries(fieldSources).map(([fieldId, entry]) => ({ fieldId, ids: entry.ids, boxes: entry.boxes })) : [];
         const result = predictColumn(0, pairs, sourcesWithGeometry);
 
-        // Build proposed row assignments per pair
         const proposedRows: Record<string, number | null> = {};
         let ambiguous = false;
 
@@ -484,8 +453,10 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                 return;
             }
             if (insideRows.length > 1) {
-                const counts = insideRows.map(rn => ({ rn, count: result.midpointHits[rn] || 0 }))
+                const counts = insideRows
+                    .map(rn => ({ rn, count: result.midpointHits[rn] || 0 }))
                     .sort((a,b)=> b.count - a.count);
+
                 if (counts.length && (counts.length === 1 || counts[1].count === 0 || counts[0].count >= counts[1].count * 9)) {
                     proposedRows[rpo.pair.fieldId] = counts[0].rn;
                     return;
@@ -501,7 +472,12 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
 
         if (!ambiguous) {
             const groups: Record<number, MultiFieldPair[]> = {};
-            pairs.forEach(p => { const rn = proposedRows[p.fieldId]; if (rn == null) return; (groups[rn] ||= []).push(p); });
+            pairs.forEach(p => { 
+                const rn = proposedRows[p.fieldId]; 
+                if (rn == null) return; 
+                (groups[rn] ||= []).push(p); 
+            });
+
             const assignments = Object.entries(groups).flatMap(([rowStr, ps]) => ps.map(p => ({ pair: p, rowNumber: parseInt(rowStr,10) })));
             let poAfter = purchaseOrder;
             const tempUpdates: { fieldId: string; sourceIds: string[] }[] = [];
@@ -513,7 +489,6 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
             return;
         }
 
-        // Ambiguous path: propose rows heuristically using emptiness fill fallback
         const columnIsEmpty = (li: LineItem): boolean => {
             const colVal: any = (li as any)[column];
             if (column === 'quantity' || column === 'unitPrice') return colVal === 0;
@@ -585,64 +560,6 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
     };
 
     const cancelMultiFieldMapping = () => setColumnMappingDialog(null);
-
-    const renderClearAdornment = (show: boolean, onClear: () => void): React.ReactNode => {
-        if (!show) return undefined;
-        return <ClearAdornment onClear={onClear} title="Clear field" />;
-    };
-
-    const renderLineItemInput = (item: LineItem, field: 'sku' | 'description' | 'quantity' | 'unitPrice') => {
-        const fieldId = makeLineItemField(item.lineNumber, field);
-        const kind: 'text' | 'textarea' | 'integer' | 'decimal' =
-            field === 'description'
-                ? 'textarea'
-                : field === 'quantity'
-                    ? 'integer'
-                    : field === 'unitPrice'
-                        ? 'decimal'
-                        : 'text';
-        const value = item[field];
-        const isColumnDropActive =
-            activeColumnDrop?.lineNumber === item.lineNumber && activeColumnDrop.field === field;
-        const baseSx = getTextFieldSx(fieldId);
-        return (
-            <LineItemField
-                fieldId={fieldId}
-                lineNumber={item.lineNumber}
-                field={field}
-                kind={kind}
-                value={value}
-                baseSx={baseSx}
-                isDropActive={!!isColumnDropActive}
-                ariaLabel={`${LINE_ITEM_FIELD_LABEL[field]} for line ${item.lineNumber}`}
-                onChange={(val, opts) => handleLineItemChange(item.lineNumber, field, val, kind, opts)}
-                onClear={() => clearLineItemField(item.lineNumber, field, kind)}
-                onFocus={() => { setFocusedFieldIdLocal(fieldId); onFieldFocus?.(fieldId); }}
-                onBlur={() => { setFocusedFieldIdLocal(null); onFieldFocus?.(null); }}
-                onDragOver={(e) => {
-                    if (e.dataTransfer.types.includes('application/json')) {
-                        e.preventDefault();
-                        if (!isColumnDropActive) {
-                            setActiveColumnDrop({ lineNumber: item.lineNumber, field });
-                        }
-                    }
-                }}
-                onDragLeave={(e) => {
-                    const next = e.relatedTarget as Node | null;
-                    if (next && (e.currentTarget as HTMLElement).contains(next)) {
-                        return;
-                    }
-                    setActiveColumnDrop((prev) =>
-                        prev && prev.lineNumber === item.lineNumber && prev.field === field ? null : prev
-                    );
-                }}
-                onDrop={(e) => {
-                    setActiveColumnDrop(null);
-                    handleLineItemDrop(e, item.lineNumber, field, kind);
-                }}
-            />
-        );
-    };
 
     const renderLineItemCard = (item: LineItem) => {
         const isRowDropActive = activeRowDropLine === item.lineNumber;
@@ -847,5 +764,4 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
     );
 };
 
-// Inline helper component: create a new row number
 export default Form;

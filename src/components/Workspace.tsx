@@ -236,11 +236,11 @@ const Workspace: React.FC = () => {
         }
     };
 
-    // event handler: bounding boxes update from viewer
-    const handleBoundingBoxesUpdate = (boxes: BoundingBox[]) => {
-        setBoundingBoxes(boxes); 
+    // event handler: bounding boxes update from viewer (memoized for stable identity)
+    const handleBoundingBoxesUpdate = useCallback((boxes: BoundingBox[]) => {
+        setBoundingBoxes(boxes);
         recomputeGeometry(boxes);
-    };
+    }, [recomputeGeometry]);
 
     // event handler: start resizing debugger panel
     const handleDebuggerResizerMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {

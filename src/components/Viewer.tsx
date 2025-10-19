@@ -30,6 +30,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<HTMLDivElement>(null);
   const boxStyleCacheRef = useRef<Map<string, { key: string; style: CSSProperties }>>(new Map());
+  const lastBoxesRef = useRef<BoundingBox[] | null>(null);
   
   // states
   const [baseSvgDims, setBaseSvgDims] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
@@ -125,19 +126,37 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     return style;
   }, [selectedFields, allLinkedBoxIds, focusedInputLinkedBoxIds, draggedField]);
 
-  // state change: initial document load
+  // state change: initial document load (guarded to avoid redundant updates)
   useEffect(() => {
     // load SVG document
     if (documentData?.SvgInfo?.SvgImages?.[0]) {
-      setSvgContent(documentData.SvgInfo.SvgImages[0]);
-      setLoading(false);
+      const nextSvg = documentData.SvgInfo.SvgImages[0] as string;
+      setSvgContent((prev) => (prev === nextSvg ? prev : nextSvg));
+      setLoading((prev) => (prev ? false : prev));
     }
-    
-    // load interactive bounding boxes
+
+    // load interactive bounding boxes, but only notify parent if changed
     if (documentData?.SvgInfo?.BoundingBoxes) {
       const normalized = normalizeBoundingBoxes(documentData.SvgInfo.BoundingBoxes);
-      setBoundingBoxes(normalized);
-      onBoundingBoxesUpdate?.(normalized);
+      // Shallow structural equality check against last notified value
+      const prev = lastBoxesRef.current;
+      const sameLength = prev ? prev.length === normalized.length : false;
+      let same = !!prev && sameLength;
+      if (same) {
+        for (let i = 0; i < prev!.length; i++) {
+          const a = prev![i]; const b = normalized[i];
+          if (
+            a.FieldId !== b.FieldId ||
+            a.generatedId !== b.generatedId ||
+            a.minX !== b.minX || a.minY !== b.minY || a.width !== b.width || a.height !== b.height
+          ) { same = false; break; }
+        }
+      }
+      if (!same) {
+        setBoundingBoxes(normalized);
+        onBoundingBoxesUpdate?.(normalized);
+        lastBoxesRef.current = normalized;
+      }
     }
   }, [documentData, onBoundingBoxesUpdate]);
 
