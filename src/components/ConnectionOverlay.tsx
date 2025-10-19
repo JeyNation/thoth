@@ -42,6 +42,8 @@ const ConnectionOverlay: React.FC<Props> = ({ connections, onCenterIconClick }) 
   const MARKER_RADIUS = 6;
   const ARROW_SIZE = 14; // length from base to tip
   const ARROW_HALF = 6;  // half height of base
+  const GAP = 8; // gap between box edge and path endpoints
+  const KAPPA = 0.5522847498; // circle approximation constant
 
   return (
     <svg width="100%" height="100%" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 99999 }}>
@@ -114,19 +116,16 @@ const ConnectionOverlay: React.FC<Props> = ({ connections, onCenterIconClick }) 
         const tStart = start.clamped ? (forcedStartTangent(startOut as any, start.clampSides) || { x: na.nx, y: na.ny }) : { x: na.nx, y: na.ny };
         const tEnd = end.clamped ? (forcedEndTangent(endOut as any, end.clampSides) || { x: -nb.nx, y: -nb.ny }) : { x: -nb.nx, y: -nb.ny };
 
-        const startIsHorizontal = Math.abs(na.nx) > 0;
-        const endIsHorizontal = Math.abs(nb.nx) > 0;
-        const mixedOrientation = startIsHorizontal !== endIsHorizontal;
+        const mixedOrientation = (Math.abs(na.nx) > 0) !== (Math.abs(nb.nx) > 0);
 
         // Add a small gap so the line/marker doesn't touch the box edge
-        const gap = 8;
-        const pStart = { x: pa.x + tStart.x * gap, y: pa.y + tStart.y * gap };
-        const pEnd = { x: pb.x - tEnd.x * gap, y: pb.y - tEnd.y * gap };
+        const pStart = { x: pa.x + tStart.x * GAP, y: pa.y + tStart.y * GAP };
+        const pEnd = { x: pb.x - tEnd.x * GAP, y: pb.y - tEnd.y * GAP };
 
         if (mixedOrientation) {
           const ddx = pEnd.x - pStart.x; const ddy = pEnd.y - pStart.y;
           const R = Math.min(Math.abs(ddx), Math.abs(ddy));
-          const C = 0.5522847498 * R; la = C; lb = C;
+          const C = KAPPA * R; la = C; lb = C;
         }
 
         // If the segment is very short, use a simple, gentle curve
@@ -155,34 +154,29 @@ const ConnectionOverlay: React.FC<Props> = ({ connections, onCenterIconClick }) 
 
         // Clear icon component and placement
         const ICON_R = 5; const ICON_STROKE = 1.5;
+        const stopAll = (e: any) => {
+          if (e && typeof e.preventDefault === 'function') e.preventDefault();
+          if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+          const ne = e?.nativeEvent as any;
+          if (ne && typeof ne.stopImmediatePropagation === 'function') ne.stopImmediatePropagation();
+        };
         const ClearIcon = ({ x, y }: { x: number; y: number }) => (
           <g
             transform={`translate(${x},${y})`}
             style={{ pointerEvents: 'auto', cursor: 'pointer' }}
-            onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); const ne: any = e.nativeEvent as any; if (ne && typeof ne.stopImmediatePropagation === 'function') ne.stopImmediatePropagation(); }}
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); const ne: any = e.nativeEvent as any; if (ne && typeof ne.stopImmediatePropagation === 'function') ne.stopImmediatePropagation(); onCenterIconClick && onCenterIconClick(conn, i); }}
+            onMouseDown={(e) => { stopAll(e); }}
+            onClick={(e) => { stopAll(e); onCenterIconClick && onCenterIconClick(conn, i); }}
           >
             <circle r={ICON_R} fill="#fff" stroke="#2e7d32" strokeWidth={ICON_STROKE} />
             <line x1={-3} y1={-3} x2={3} y2={3} stroke="#2e7d32" strokeWidth={ICON_STROKE} strokeLinecap="round" />
             <line x1={-3} y1={3} x2={3} y2={-3} stroke="#2e7d32" strokeWidth={ICON_STROKE} strokeLinecap="round" />
           </g>
         );
-  const startArrowDir = { x: -tStart.x, y: -tStart.y };
-  // Place the clear icon ON the line, slightly inside from the start endpoint along the curve tangent
-  const iconOffsetInside = ICON_R + 8;
-  const clearAtArrow = { x: pStart.x + tStart.x * iconOffsetInside, y: pStart.y + tStart.y * iconOffsetInside };
 
         return (
           <g key={i}>
             <path d={d} stroke="#2e7d32" strokeWidth={2} fill="none" strokeLinecap="round" strokeDasharray="6 4" />
-            {start.clamped ? (
-              <>
-                <Arrow x={pStart.x} y={pStart.y} dir={startArrowDir} />
-                <ClearIcon x={clearAtArrow.x} y={clearAtArrow.y} />
-              </>
-            ) : (
-              <ClearIcon x={pStart.x} y={pStart.y} />
-            )}
+            <ClearIcon x={pStart.x} y={pStart.y} />
             {end.clamped ? (
               <Arrow x={pEnd.x} y={pEnd.y} dir={tEnd} />
             ) : (

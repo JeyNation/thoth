@@ -243,10 +243,69 @@ const Workspace: React.FC = () => {
 
     // event handler: start resizing debugger panel
     const handleDebuggerResizerMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
         isResizingRef.current = true;
         startYRef.current = e.clientY;
         startHeightRef.current = debuggerHeight;
+        // indicate resize globally
+        document.body.style.cursor = 'row-resize';
+        (document.body.style as any).userSelect = 'none';
+        (document.body.style as any).webkitUserSelect = 'none';
     };
+
+    // global mouse handlers to perform resizing while dragging
+    useEffect(() => {
+        const onMouseMove = (e: MouseEvent) => {
+            if (!isResizingRef.current) return;
+            const deltaY = e.clientY - startYRef.current;
+            const minH = 80; // minimum debugger height
+            const maxH = Math.max(minH, Math.floor(window.innerHeight * 0.9));
+            // invert delta so dragging up increases height
+            const next = Math.min(maxH, Math.max(minH, startHeightRef.current - deltaY));
+            setDebuggerHeight(next);
+            e.preventDefault();
+        };
+        const onMouseUp = (e: MouseEvent) => {
+            if (!isResizingRef.current) return;
+            isResizingRef.current = false;
+            e.preventDefault();
+            // restore cursor/select
+            document.body.style.cursor = '';
+            (document.body.style as any).userSelect = '';
+            (document.body.style as any).webkitUserSelect = '';
+        };
+        // Basic touch support
+        const onTouchMove = (e: TouchEvent) => {
+            if (!isResizingRef.current) return;
+            const t = e.touches[0];
+            if (!t) return;
+            const deltaY = t.clientY - startYRef.current;
+            const minH = 80;
+            const maxH = Math.max(minH, Math.floor(window.innerHeight * 0.9));
+            // invert delta so dragging up increases height
+            const next = Math.min(maxH, Math.max(minH, startHeightRef.current - deltaY));
+            setDebuggerHeight(next);
+            e.preventDefault();
+        };
+        const onTouchEnd = () => {
+            if (!isResizingRef.current) return;
+            isResizingRef.current = false;
+            document.body.style.cursor = '';
+            (document.body.style as any).userSelect = '';
+            (document.body.style as any).webkitUserSelect = '';
+        };
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+        window.addEventListener('touchmove', onTouchMove, { passive: false } as any);
+        window.addEventListener('touchend', onTouchEnd);
+        return () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+            window.removeEventListener('touchmove', onTouchMove as any, true as any);
+            window.removeEventListener('touchend', onTouchEnd);
+        };
+    }, []);
 
     // overlay: click on center icon to clear a specific link (fieldId <-> boxId)
     const handleCenterIconClick = useCallback((conn: OverlayConnection, index: number) => {
