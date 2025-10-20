@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { TextField } from '@mui/material';
 import ClearAdornment from './ClearAdornment';
 import { applyDropHighlightSx } from '../../styles/dropHighlight';
@@ -40,22 +40,44 @@ const LineItemField: React.FC<LineItemFieldProps> = ({
 }) => {
   const showClear = (kind === 'integer' || kind === 'decimal') ? value !== 0 : typeof value === 'string' && value.trim() !== '';
   const sx = isDropActive ? applyDropHighlightSx(baseSx) : baseSx;
-  const type = (kind === 'integer' || kind === 'decimal') ? 'number' : 'text';
+  // Use type="number" for integer, and type="text" for decimal to preserve trailing zeros visually
+  const type = kind === 'integer' ? 'number' : (kind === 'decimal' ? 'text' : 'text');
+
+  // Local display state for numeric inputs to preserve trailing zeros while typing
+  const isNumeric = kind === 'integer' || kind === 'decimal';
+  const [display, setDisplay] = useState<string>(() => (isNumeric ? String(value ?? 0) : ''));
+  const [isFocused, setIsFocused] = useState(false);
+
+  // Sync display from external value when not focused (e.g., programmatic updates)
+  useEffect(() => {
+    if (!isNumeric) return;
+    if (!isFocused) {
+      const parentNum = typeof value === 'number' ? value : (kind === 'integer' ? parseInt(String(value || '0'), 10) || 0 : parseFloat(String(value || '0')) || 0);
+      const displayNum = (kind === 'integer') ? (parseInt(display || '0', 10) || 0) : (parseFloat(display || '0') || 0);
+      if (displayNum !== parentNum) {
+        setDisplay(String(value ?? 0));
+      }
+    }
+  }, [value, isFocused, isNumeric, kind, display]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const raw = event.target.value;
     if (kind === 'integer') {
       if (raw === '') {
+        setDisplay(raw);
         onChange(0, { explicitClear: true });
       } else {
+        setDisplay(raw);
         onChange(parseInt(raw, 10) || 0);
       }
       return;
     }
     if (kind === 'decimal') {
       if (raw === '') {
+        setDisplay(raw);
         onChange(0, { explicitClear: true });
       } else {
+        setDisplay(raw);
         onChange(parseFloat(raw) || 0);
       }
       return;
@@ -63,32 +85,74 @@ const LineItemField: React.FC<LineItemFieldProps> = ({
     onChange(raw);
   };
 
+  const handleBlur = (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (kind === 'integer' || kind === 'decimal') {
+      const raw = event.target.value;
+      if (raw !== '') {
+        let normalizedStr: string;
+        if (kind === 'integer') {
+          // strip leading zeros, keep at least '0'
+          normalizedStr = raw.replace(/^0+(?=\d)/, '').trim();
+          if (normalizedStr === '') normalizedStr = '0';
+          setDisplay(normalizedStr);
+          const normalizedNum = parseInt(normalizedStr, 10) || 0;
+          if (normalizedNum !== value) onChange(normalizedNum);
+        } else {
+          // decimal: strip leading zeros on the integer part, preserve fractional part exactly
+          const dot = raw.indexOf('.');
+          if (dot >= 0) {
+            let intPart = raw.slice(0, dot);
+            const fracPart = raw.slice(dot + 1); // keep as-is, including trailing zeros
+            intPart = intPart.replace(/^0+(?=\d)/, '');
+            if (intPart === '') intPart = '0';
+            normalizedStr = `${intPart}.${fracPart}`;
+          } else {
+            // no decimal point, just strip leading zeros
+            normalizedStr = raw.replace(/^0+(?=\d)/, '');
+            if (normalizedStr === '') normalizedStr = '0';
+          }
+          setDisplay(normalizedStr);
+          const normalizedNum = parseFloat(normalizedStr) || 0;
+          if (normalizedNum !== value) onChange(normalizedNum);
+        }
+      }
+    }
+    setIsFocused(false);
+    onBlur();
+  };
+
+  const handleFocus = () => { setIsFocused(true); onFocus(); };
+
   return (
     <TextField
       key={fieldId}
       fullWidth
       size="small"
       variant="outlined"
-      value={value as string | number}
+      value={isNumeric ? display : (value as string)}
       type={type}
       aria-label={ariaLabel}
       multiline={kind === 'textarea'}
       minRows={kind === 'textarea' ? 2 : undefined}
       sx={sx}
       onChange={handleChange}
-      onFocus={onFocus}
-      onBlur={onBlur}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
-      InputProps={{
-        endAdornment: showClear ? <ClearAdornment onClear={onClear} /> : undefined,
-        inputProps: {
-          'data-field-kind': kind,
-          'data-field-id': fieldId,
-          ...(kind === 'integer' || kind === 'decimal'
-            ? { min: 0, step: kind === 'decimal' ? 0.01 : 1, style: { textAlign: 'right' } }
-            : {}),
+      slotProps={{
+        input: {
+          endAdornment: showClear ? <ClearAdornment onClear={onClear} /> : undefined,
+          inputProps: {
+            'data-field-kind': kind,
+            'data-field-id': fieldId,
+            ...(kind === 'integer'
+              ? { min: 0, step: 1, style: { textAlign: 'right' } }
+              : kind === 'decimal'
+                ? { inputMode: 'decimal', pattern: '[0-9]*[.]?[0-9]*', style: { textAlign: 'right' } }
+                : {}),
+          },
         },
       }}
     />

@@ -57,9 +57,11 @@ const BasicFieldInput: React.FC<BasicFieldInputProps> = ({
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
-      InputProps={{
-        endAdornment: showClear ? <ClearAdornment onClear={onClear} /> : undefined,
-        inputProps: { 'data-field-kind': kind, title: ariaLabel, 'data-field-id': id },
+      slotProps={{
+        input: {
+          endAdornment: showClear ? <ClearAdornment onClear={onClear} /> : undefined,
+          inputProps: { 'data-field-kind': kind, title: ariaLabel, 'data-field-id': id },
+        },
       }}
     />
   );

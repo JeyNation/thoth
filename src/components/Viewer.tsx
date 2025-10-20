@@ -457,7 +457,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
           <Chip size="small" variant="outlined" label={`${boundingBoxes.length} fields detected`} />
         </Stack>
         <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
-          <Tooltip title="Zoom In (Alt + Wheel)">
+          <Tooltip title="Zoom In">
             <IconButton
               color="primary"
               size="small"
@@ -468,7 +468,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
               <ZoomInIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Zoom Out (Alt + Wheel)">
+          <Tooltip title="Zoom Out">
             <IconButton
               color="primary"
               size="small"
