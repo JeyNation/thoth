@@ -73,11 +73,16 @@ const LineItemField: React.FC<LineItemFieldProps> = ({
       return;
     }
     if (kind === 'decimal') {
-      if (raw === '') {
-        setDisplay(raw);
+      // Allow only digits and a single '.'; empty string is allowed while typing
+      const valid = raw === '' || /^\d*(\.\d*)?$/.test(raw);
+      if (!valid) {
+        // reject invalid change (ignore)
+        return;
+      }
+      setDisplay(raw);
+      if (raw === '' || raw === '.') {
         onChange(0, { explicitClear: true });
       } else {
-        setDisplay(raw);
         onChange(parseFloat(raw) || 0);
       }
       return;
@@ -123,6 +128,45 @@ const LineItemField: React.FC<LineItemFieldProps> = ({
 
   const handleFocus = () => { setIsFocused(true); onFocus(); };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (kind !== 'decimal') return;
+    const key = e.key;
+    // Allow control/meta combos (copy/paste/select all/undo/redo)
+    if (e.ctrlKey || e.metaKey) return;
+    // Allow navigation/editing keys
+    const nav = ['Backspace','Delete','ArrowLeft','ArrowRight','Home','End','Tab','Enter','Escape'];
+    if (nav.includes(key)) return;
+    // Allow digits
+    if (key >= '0' && key <= '9') return;
+    // Allow a single '.'
+    if (key === '.') {
+      if (display.includes('.')) e.preventDefault();
+      return;
+    }
+    // Block everything else (e.g., space, letters, minus, comma)
+    e.preventDefault();
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    if (kind !== 'decimal') return;
+    const text = e.clipboardData.getData('text');
+    // Sanitize pasted content to digits and a single '.'
+    let cleaned = text.replace(/[^0-9.]/g, '');
+    if (display.includes('.')) {
+      // If we already have a dot, drop any dots from paste
+      cleaned = cleaned.replace(/\./g, '');
+    } else {
+      // Keep only first dot in the pasted string
+      const firstDot = cleaned.indexOf('.');
+      if (firstDot !== -1) cleaned = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, '');
+    }
+    // If resulting cleaned string would be empty and original had invalid chars only, prevent paste
+    if (cleaned.length === 0) {
+      e.preventDefault();
+    }
+    // Otherwise let the default paste happen; handleChange will re-validate via regex
+  };
+
   return (
     <TextField
       key={fieldId}
@@ -150,7 +194,7 @@ const LineItemField: React.FC<LineItemFieldProps> = ({
             ...(kind === 'integer'
               ? { min: 0, step: 1, style: { textAlign: 'right' } }
               : kind === 'decimal'
-                ? { inputMode: 'decimal', pattern: '[0-9]*[.]?[0-9]*', style: { textAlign: 'right' } }
+                ? { inputMode: 'decimal', pattern: '[0-9]*[.]?[0-9]*', style: { textAlign: 'right' }, onKeyDown: handleKeyDown, onPaste: handlePaste }
                 : {}),
           },
         },
