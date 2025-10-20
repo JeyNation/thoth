@@ -349,6 +349,10 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
   const handlePanelMouseDown = (e: React.MouseEvent) => {
     setMouseDownPos({ x: e.clientX, y: e.clientY });
     const target = e.target as HTMLElement;
+    // If focused element is editable, don't hijack interactions (e.g., Space for pan)
+    const active = document.activeElement as HTMLElement | null;
+    const isEditable = !!(active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable));
+    if (isEditable) return;
     if (isKeyActive) {
       beginPanAt(e.clientX, e.clientY);
       cancelSelection();

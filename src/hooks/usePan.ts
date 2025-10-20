@@ -29,8 +29,17 @@ export const usePan = (opts: UsePanOptions): UsePanResult => {
   
   useEffect(() => {
     if (disabled) return;
+    const isEditableActive = () => {
+      const el = (typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null);
+      if (!el) return false;
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable) return true;
+      // In case the active element is a wrapper, detect nearest contenteditable
+      return !!el.closest('[contenteditable="true"]');
+    };
     const down = (e: KeyboardEvent) => {
       if (e.code === activationKey && !isKeyActive) {
+        // Do not hijack Space while typing in an editable field
+        if (isEditableActive()) return;
         e.preventDefault();
         setIsKeyActive(true);
       }
