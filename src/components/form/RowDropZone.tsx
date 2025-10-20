@@ -28,7 +28,6 @@ const RowDropZone: React.FC<RowDropZoneProps> = ({ lineNumber, isActive, onDragO
           backgroundColor: isActive ? DROP_ACTIVE_BG : 'transparent',
           boxShadow: isActive ? DROP_ACTIVE_INSET : 'none',
           transition: 'border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease',
-          cursor: 'copy',
           p: 2,
         }}
         onDragOver={onDragOver}
