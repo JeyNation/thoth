@@ -33,7 +33,6 @@ const RowDropZone: React.FC<RowDropZoneProps> = ({ lineNumber, isActive, onDragO
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
-        title="Drop multiple selected source fields here to map them into this row"
       >
         <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1, paddingTop: '4px' }}>
           {lineNumber}

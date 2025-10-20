@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import type { CSSProperties } from 'react';
 import { Box, Button, Stack, Typography } from '@mui/material';
 import type { PurchaseOrder, LineItem } from '../types/PurchaseOrder';
 import { makeLineItemField } from '../types/fieldIds';
@@ -13,11 +12,8 @@ import ColumnMappingDialog from './dialogs/ColumnMappingDialog';
 import RowMappingDialog from './dialogs/RowMappingDialog';
 import { LINE_ITEM_COLUMNS, humanizeColumnKey, type LineItemColumnKey } from '../types/lineItemColumns';
 import { predictRow, sanitizeText, commitMapping, predictColumn, commitColumnAssignments } from '../utils/formUtils';
-import { DROP_ACTIVE_BG, DROP_ACTIVE_BORDER, DROP_ACTIVE_INSET, DROP_BORDER_RADIUS_PX } from '../styles/dropHighlight';
-import ClearAdornment from './form/ClearAdornment';
 import ColumnDropHeader from './form/ColumnDropHeader';
 import BasicFieldInput from './form/BasicFieldInput';
-import LineItemField from './form/LineItemField';
 import LineItemCard from './form/LineItemCard';
 import useFlashHighlight from '../hooks/useFlashHighlight';
 
@@ -42,13 +38,6 @@ const BASIC_FIELD_CONFIGS: BasicFieldConfig[] = [
         rows: 3,
     },
 ];
-
-const LINE_ITEM_FIELD_LABEL: Record<'sku' | 'description' | 'quantity' | 'unitPrice', string> = {
-    sku: 'SKU',
-    description: 'Description',
-    quantity: 'Quantity',
-    unitPrice: 'Unit Price',
-};
 
 interface BasicFieldConfig {
     id: BasicFieldKey;
@@ -720,7 +709,6 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                                             rows={config.rows}
                                             baseSx={baseSx}
                                             isDropActive={!!isBasicDropActive}
-                                            ariaLabel={config.label}
                                             onChange={(val) => handleBasicInfoChange(config.id, val, config.kind)}
                                             onClear={() => clearBasicField(config.id, config.kind)}
                                             onFocus={() => { setFocusedFieldIdLocal(config.id); onFieldFocus?.(config.id); }}

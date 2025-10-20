@@ -58,7 +58,6 @@ function ColumnDropHeader<T extends string>({ columns, titleFor, onDrop }: Colum
           onDrop={(e) => onDrop(col, e)}
           baseStyle={baseStyle}
           activeStyle={activeStyle}
-          title="Drop multiple selected fields here to auto-map and predict row"
         >
           <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ textAlign: 'center', width: '100%' }}>
             {titleFor(col)}

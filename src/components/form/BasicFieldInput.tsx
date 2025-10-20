@@ -11,7 +11,7 @@ export interface BasicFieldInputProps {
   rows?: number;
   baseSx: Record<string, any>;
   isDropActive: boolean;
-  ariaLabel: string;
+  ariaLabel?: string;
   onChange: (value: string) => void;
   onClear: () => void;
   onFocus: () => void;
