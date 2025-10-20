@@ -489,30 +489,77 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
             return;
         }
 
-        const columnIsEmpty = (li: LineItem): boolean => {
+        // Positional suggestion fill:
+        // - If a pair sits BETWEEN two already-mapped rows (by geometry order), suggest the PRECEDING row (e.g., 1, 2, 2(new), 2(new), 3 ...)
+        // - If a pair is BELOW all mapped rows, suggest new increasing rows beyond current max (e.g., 10, 11, 12 ...)
+        // - If a pair is ABOVE all mapped rows, default to the next assigned row (keeps ordering intuitive)
+        // Build quick lookup for pair midpoint Y from prediction result
+        const yByFieldId: Record<string, number | null> = {};
+        result.rowPairOverlaps.forEach(rpo => { yByFieldId[rpo.pair.fieldId] = (rpo as any).midpointY ?? null; });
+        // Stable order by geometry (fallback to original order if Y is missing)
+        const ordered = [...pairs].sort((a, b) => {
+            const ya = yByFieldId[a.fieldId] ?? Infinity;
+            const yb = yByFieldId[b.fieldId] ?? Infinity;
+            if (ya === yb) return 0;
+            return ya < yb ? -1 : 1;
+        });
+        // Seed used rows with rows that already have NON-empty values in the target column,
+        // plus any rows already proposed in this dialog. This ensures we start at 1 when the
+        // column is empty, and continue from max used when the column already has data.
+        const colIsEmpty = (li: LineItem): boolean => {
             const colVal: any = (li as any)[column];
             if (column === 'quantity' || column === 'unitPrice') return colVal === 0;
             return typeof colVal === 'string' ? colVal.trim() === '' : false;
         };
-        const existingLineNumbersSorted = [...purchaseOrder.lineItems].sort((a,b)=>a.lineNumber - b.lineNumber);
-        const emptyExistingRows: number[] = existingLineNumbersSorted
-            .filter(li => columnIsEmpty(li))
-            .map(li => li.lineNumber);
-        const used = new Set<number>(purchaseOrder.lineItems.map(li => li.lineNumber));
+        const used = new Set<number>();
+        purchaseOrder.lineItems.forEach(li => { if (!colIsEmpty(li)) used.add(li.lineNumber); });
         Object.values(proposedRows).forEach(r => { if (r != null) used.add(r); });
-        let emptyIdx = 0;
-        const nextNewRowNumber = () => { let candidate = 1; while (used.has(candidate)) candidate++; return candidate; };
-        pairs.forEach(p => {
-            if (proposedRows[p.fieldId] == null) {
-                if (emptyIdx < emptyExistingRows.length) {
-                    const rowNum = emptyExistingRows[emptyIdx++];
-                    proposedRows[p.fieldId] = rowNum; used.add(rowNum);
-                } else {
-                    const newRow = nextNewRowNumber();
-                    proposedRows[p.fieldId] = newRow; used.add(newRow);
-                }
+        const maxUsed = used.size ? Math.max(0, ...Array.from(used)) : 0;
+        let nextRowCounter = maxUsed + 1;
+        const getNextNewRow = () => { while (used.has(nextRowCounter)) nextRowCounter++; used.add(nextRowCounter); return nextRowCounter++; };
+
+        // Precompute assigned flags in ordered sequence
+        const assignedInOrder: Array<number | null> = ordered.map(p => proposedRows[p.fieldId] ?? null);
+        const nextAssignedToRight: Array<number | null> = new Array(ordered.length).fill(null);
+        let lastSeen: number | null = null;
+        // Walk from right to left to capture the next assigned row on the right
+        for (let i = ordered.length - 1; i >= 0; i--) {
+            const rn = assignedInOrder[i];
+            if (rn != null) lastSeen = rn;
+            nextAssignedToRight[i] = lastSeen;
+        }
+
+        let prevAssigned: number | null = null;
+        for (let i = 0; i < ordered.length; i++) {
+            const p = ordered[i];
+            const current = proposedRows[p.fieldId];
+            if (current != null) { prevAssigned = current; continue; }
+
+            const nextAssigned = nextAssignedToRight[i];
+            if (prevAssigned != null && nextAssigned != null) {
+                // Between two assigned rows: assign to the preceding row as per UX requirement
+                proposedRows[p.fieldId] = prevAssigned;
+                // do not update prevAssigned to keep grouping for multiple betweens
+                continue;
             }
-        });
+            if (prevAssigned != null && nextAssigned == null) {
+                // Below all assigned: allocate new increasing rows
+                const newRow = getNextNewRow();
+                proposedRows[p.fieldId] = newRow;
+                prevAssigned = newRow; // extend the baseline downward
+                continue;
+            }
+            if (prevAssigned == null && nextAssigned != null) {
+                // Above all assigned: snap to the next assigned row
+                proposedRows[p.fieldId] = nextAssigned;
+                // Do not set prevAssigned yet; keep as null to allow additional aboves to snap to first known row
+                continue;
+            }
+            // No anchors at all: start fresh from next increasing row
+            const newRow = getNextNewRow();
+            proposedRows[p.fieldId] = newRow;
+            prevAssigned = newRow;
+        }
         setRowMappingDialog({ column, drag: { pairs, boundingBoxIds: dragData.boundingBoxIds || [] }, proposedRows });
     };
 
