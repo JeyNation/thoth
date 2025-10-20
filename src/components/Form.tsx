@@ -526,7 +526,33 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
             if (!groups[rn]) groups[rn] = [];
             groups[rn].push(p);
         });
-        const assignments = Object.entries(groups).flatMap(([rowStr, ps]) => ps.map(p => ({ pair: p, rowNumber: parseInt(rowStr,10) })));
+            let assignments = Object.entries(groups).flatMap(([rowStr, ps]) => ps.map(p => ({ pair: p, rowNumber: parseInt(rowStr,10) })));
+
+            // Optional compression: if rows like 1,3,5 are selected and there is no conflict with existing
+            // non-empty rows in the target column, compress to 1,2,3 while preserving relative order.
+            if (assignments.length) {
+                // Build dense mapping
+                const uniqueRows = Array.from(new Set(assignments.map(a => a.rowNumber))).sort((a,b)=>a-b);
+                const denseMap = new Map<number, number>();
+                uniqueRows.forEach((r, idx) => denseMap.set(r, idx + 1));
+
+                // Determine conflicts: if any compressed target row already exists and has a non-empty value for the column
+                const columnIsEmpty = (li: LineItem): boolean => {
+                    const colVal: any = (li as any)[column];
+                    if (column === 'quantity' || column === 'unitPrice') return colVal === 0;
+                    return typeof colVal === 'string' ? colVal.trim() === '' : false;
+                };
+                let hasConflict = false;
+                for (const a of assignments) {
+                    const newRow = denseMap.get(a.rowNumber)!;
+                    const existing = purchaseOrder.lineItems.find(li => li.lineNumber === newRow);
+                    if (existing && !columnIsEmpty(existing)) { hasConflict = true; break; }
+                }
+
+                if (!hasConflict) {
+                    assignments = assignments.map(a => ({ pair: a.pair, rowNumber: denseMap.get(a.rowNumber)! }));
+                }
+            }
         let poAfter = purchaseOrder;
         const tempUpdates: { fieldId: string; sourceIds: string[] }[] = [];
         commitColumnAssignments({ column, assignments, purchaseOrder, onUpdate: (po) => { poAfter = po; }, onFieldSourceUpdate: (fid, ids) => tempUpdates.push({ fieldId: fid, sourceIds: ids }) });

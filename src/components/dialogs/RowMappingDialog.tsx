@@ -36,10 +36,15 @@ export interface RowMappingDialogProps {
 
 const RowMappingDialog: React.FC<RowMappingDialogProps> = ({ column, pairs, proposedRows, onChange, onApply, onCancel }) => {
   const rowOptions = useMemo(() => {
-    const existing = Array.from(new Set(Object.values(proposedRows).filter((v): v is number => typeof v === 'number'))).sort((a, b) => a - b);
-    if (existing.length) return existing;
-    const length = Math.max(5, pairs.length || 1);
-    return Array.from({ length }, (_, idx) => idx + 1);
+    // Build a continuous range starting from 1 up to the largest of:
+    // - the highest proposed row
+    // - the number of pairs
+    // - a reasonable minimum (5)
+    const assigned = Object.values(proposedRows).filter((v): v is number => typeof v === 'number');
+    const maxAssigned = assigned.length ? Math.max(...assigned) : 0;
+    const maxFromPairs = pairs.length || 0;
+    const maxRow = Math.max(5, maxAssigned, maxFromPairs);
+    return Array.from({ length: maxRow }, (_, idx) => idx + 1);
   }, [pairs.length, proposedRows]);
 
   const handleRowChange = (fieldId: string) => (event: SelectChangeEvent) => {
