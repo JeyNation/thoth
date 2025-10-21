@@ -2,9 +2,9 @@ import React from 'react';
 import { Box, Typography } from '@mui/material';
 import type { Theme } from '@mui/material/styles';
 import DropZone from '../DropZone';
-import { applyDropHighlightSx, DROP_ACTIVE_BORDER, DROP_BORDER_RADIUS_PX, DROP_ZONE_ACTIVE_STYLE } from '../../styles/dropHighlight';
+import { DROP_BORDER_RADIUS_PX, DROP_ZONE_ACTIVE_STYLE } from '../../styles/dropHighlight';
 
-interface ColumnDropHeaderProps<T extends string> {
+interface ColumnDropZoneProps<T extends string> {
   columns: readonly T[];
   titleFor: (col: T) => string;
   onDrop: (col: T, e: React.DragEvent) => void;
@@ -31,10 +31,9 @@ const baseStyle: React.CSSProperties = {
 
 const activeStyle: React.CSSProperties = {
   ...DROP_ZONE_ACTIVE_STYLE,
-  // Intentionally do not change background; show only dashed border on active.
 };
 
-function ColumnDropHeader<T extends string>({ columns, titleFor, onDrop, externallyActive = false }: ColumnDropHeaderProps<T>) {
+function ColumnDropZone<T extends string>({ columns, titleFor, onDrop, externallyActive = false }: ColumnDropZoneProps<T>) {
   return (
     <Box
       sx={{
@@ -69,4 +68,4 @@ function ColumnDropHeader<T extends string>({ columns, titleFor, onDrop, externa
   );
 }
 
-export default ColumnDropHeader;
+export default ColumnDropZone;

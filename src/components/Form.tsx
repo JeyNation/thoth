@@ -12,8 +12,8 @@ import ColumnMappingDialog from './dialogs/ColumnMappingDialog';
 import RowMappingDialog from './dialogs/RowMappingDialog';
 import { LINE_ITEM_COLUMNS, humanizeColumnKey, type LineItemColumnKey } from '../types/lineItemColumns';
 import { predictRow, sanitizeText, commitMapping, predictColumn, commitColumnAssignments } from '../utils/formUtils';
-import ColumnDropHeader from './form/ColumnDropHeader';
-import BasicFieldInput from './form/BasicFieldInput';
+import ColumnDropZone from './form/ColumnDropZone';
+import FieldInput from './form/FieldInput';
 import LineItemCard from './form/LineItemCard';
 import useFlashHighlight from '../hooks/useFlashHighlight';
 
@@ -726,16 +726,16 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                                         <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.4 }}>
                                             {config.label}
                                         </Typography>
-                                        <BasicFieldInput
+                                        <FieldInput
                                             id={config.id}
-                                            value={value}
                                             kind={config.kind}
+                                            value={value}
                                             multiline={config.multiline}
                                             rows={config.rows}
                                             baseSx={baseSx}
                                             isDropActive={!!isBasicDropActive}
                                             isGlobalDragActive={globalDragActive}
-                                            onChange={(val) => handleBasicInfoChange(config.id, val, config.kind)}
+                                            onChange={(val) => handleBasicInfoChange(config.id, val as string, config.kind)}
                                             onClear={() => clearBasicField(config.id, config.kind)}
                                             onFocus={() => { setFocusedFieldIdLocal(config.id); onFieldFocus?.(config.id); }}
                                             onBlur={() => { setFocusedFieldIdLocal(null); onFieldFocus?.(null); }}
@@ -772,7 +772,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
 
                         {purchaseOrder.lineItems.length > 0 ? (
                             <>
-                                <ColumnDropHeader
+                                <ColumnDropZone
                                     columns={LINE_ITEM_COLUMNS}
                                     titleFor={(c) => humanizeColumnKey(c)}
                                     onDrop={(col, e) => handleColumnDrop(e, col)}

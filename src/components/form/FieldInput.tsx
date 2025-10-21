@@ -3,16 +3,25 @@ import { TextField } from '@mui/material';
 import ClearAdornment from './ClearAdornment';
 import { applyDropHighlightSx } from '../../styles/dropHighlight';
 
-export interface LineItemFieldProps {
-  fieldId: string;
-  lineNumber: number;
-  field: 'sku' | 'description' | 'quantity' | 'unitPrice';
-  kind: 'text' | 'textarea' | 'integer' | 'decimal';
+export type FieldKind = 'text' | 'textarea' | 'integer' | 'decimal';
+
+export interface FieldInputProps {
+  id?: string;
+
+  lineNumber?: number;
+  field?: string;
+
+  kind: FieldKind;
   value: string | number;
+  multiline?: boolean;
+  rows?: number;
+
   baseSx: Record<string, any>;
   isDropActive: boolean;
   isGlobalDragActive?: boolean;
-  ariaLabel: string;
+  ariaLabel?: string;
+
+  // unified onChange always provides (value, opts?) to support numeric explicitClear
   onChange: (value: string | number, opts?: { explicitClear?: boolean }) => void;
   onClear: () => void;
   onFocus: () => void;
@@ -22,12 +31,12 @@ export interface LineItemFieldProps {
   onDrop: (e: React.DragEvent) => void;
 }
 
-const LineItemField: React.FC<LineItemFieldProps> = ({
-  fieldId,
-  lineNumber,
-  field,
+const FieldInput: React.FC<FieldInputProps> = ({
+  id,
   kind,
   value,
+  multiline,
+  rows,
   baseSx,
   isDropActive,
   isGlobalDragActive = false,
@@ -42,15 +51,11 @@ const LineItemField: React.FC<LineItemFieldProps> = ({
 }) => {
   const showClear = (kind === 'integer' || kind === 'decimal') ? value !== 0 : typeof value === 'string' && value.trim() !== '';
   const sx = (isDropActive || isGlobalDragActive) ? applyDropHighlightSx(baseSx) : baseSx;
-  // Use type="number" for integer, and type="text" for decimal to preserve trailing zeros visually
-  const type = kind === 'integer' ? 'number' : (kind === 'decimal' ? 'text' : 'text');
 
-  // Local display state for numeric inputs to preserve trailing zeros while typing
   const isNumeric = kind === 'integer' || kind === 'decimal';
-  const [display, setDisplay] = useState<string>(() => (isNumeric ? String(value ?? 0) : ''));
+  const [display, setDisplay] = useState<string>(() => (isNumeric ? String(value ?? 0) : (typeof value === 'string' ? value : '')));
   const [isFocused, setIsFocused] = useState(false);
 
-  // Sync display from external value when not focused (e.g., programmatic updates)
   useEffect(() => {
     if (!isNumeric) return;
     if (!isFocused) {
@@ -75,12 +80,8 @@ const LineItemField: React.FC<LineItemFieldProps> = ({
       return;
     }
     if (kind === 'decimal') {
-      // Allow only digits and a single '.'; empty string is allowed while typing
       const valid = raw === '' || /^\d*(\.\d*)?$/.test(raw);
-      if (!valid) {
-        // reject invalid change (ignore)
-        return;
-      }
+      if (!valid) return;
       setDisplay(raw);
       if (raw === '' || raw === '.') {
         onChange(0, { explicitClear: true });
@@ -93,28 +94,25 @@ const LineItemField: React.FC<LineItemFieldProps> = ({
   };
 
   const handleBlur = (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (kind === 'integer' || kind === 'decimal') {
+    if (isNumeric) {
       const raw = event.target.value;
       if (raw !== '') {
         let normalizedStr: string;
         if (kind === 'integer') {
-          // strip leading zeros, keep at least '0'
           normalizedStr = raw.replace(/^0+(?=\d)/, '').trim();
           if (normalizedStr === '') normalizedStr = '0';
           setDisplay(normalizedStr);
           const normalizedNum = parseInt(normalizedStr, 10) || 0;
           if (normalizedNum !== value) onChange(normalizedNum);
         } else {
-          // decimal: strip leading zeros on the integer part, preserve fractional part exactly
           const dot = raw.indexOf('.');
           if (dot >= 0) {
             let intPart = raw.slice(0, dot);
-            const fracPart = raw.slice(dot + 1); // keep as-is, including trailing zeros
+            const fracPart = raw.slice(dot + 1);
             intPart = intPart.replace(/^0+(?=\d)/, '');
             if (intPart === '') intPart = '0';
             normalizedStr = `${intPart}.${fracPart}`;
           } else {
-            // no decimal point, just strip leading zeros
             normalizedStr = raw.replace(/^0+(?=\d)/, '');
             if (normalizedStr === '') normalizedStr = '0';
           }
@@ -132,54 +130,44 @@ const LineItemField: React.FC<LineItemFieldProps> = ({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (kind !== 'decimal') return;
-    const key = e.key;
-    // Allow control/meta combos (copy/paste/select all/undo/redo)
     if (e.ctrlKey || e.metaKey) return;
-    // Allow navigation/editing keys
+    const key = e.key;
     const nav = ['Backspace','Delete','ArrowLeft','ArrowRight','Home','End','Tab','Enter','Escape'];
     if (nav.includes(key)) return;
-    // Allow digits
     if (key >= '0' && key <= '9') return;
-    // Allow a single '.'
     if (key === '.') {
       if (display.includes('.')) e.preventDefault();
       return;
     }
-    // Block everything else (e.g., space, letters, minus, comma)
     e.preventDefault();
   };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     if (kind !== 'decimal') return;
     const text = e.clipboardData.getData('text');
-    // Sanitize pasted content to digits and a single '.'
     let cleaned = text.replace(/[^0-9.]/g, '');
     if (display.includes('.')) {
-      // If we already have a dot, drop any dots from paste
       cleaned = cleaned.replace(/\./g, '');
     } else {
-      // Keep only first dot in the pasted string
       const firstDot = cleaned.indexOf('.');
       if (firstDot !== -1) cleaned = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, '');
     }
-    // If resulting cleaned string would be empty and original had invalid chars only, prevent paste
-    if (cleaned.length === 0) {
-      e.preventDefault();
-    }
-    // Otherwise let the default paste happen; handleChange will re-validate via regex
+    if (cleaned.length === 0) e.preventDefault();
   };
+
+  const type = kind === 'integer' ? 'number' : (kind === 'decimal' ? 'text' : 'text');
 
   return (
     <TextField
-      key={fieldId}
+      key={id}
       fullWidth
       size="small"
       variant="outlined"
-      value={isNumeric ? display : (value as string)}
+      value={isNumeric ? display : (typeof value === 'string' ? value : String(value))}
       type={type}
       aria-label={ariaLabel}
-      multiline={kind === 'textarea'}
-      minRows={kind === 'textarea' ? 2 : undefined}
+      multiline={kind === 'textarea' || !!multiline}
+      minRows={kind === 'textarea' ? (rows ?? 2) : undefined}
       sx={sx}
       onChange={handleChange}
       onFocus={handleFocus}
@@ -192,7 +180,7 @@ const LineItemField: React.FC<LineItemFieldProps> = ({
           endAdornment: showClear ? <ClearAdornment onClear={onClear} /> : undefined,
           inputProps: {
             'data-field-kind': kind,
-            'data-field-id': fieldId,
+            'data-field-id': id,
             ...(kind === 'integer'
               ? { min: 0, step: 1, style: { textAlign: 'right' } }
               : kind === 'decimal'
@@ -205,4 +193,4 @@ const LineItemField: React.FC<LineItemFieldProps> = ({
   );
 };
 
-export default React.memo(LineItemField);
+export default React.memo(FieldInput);

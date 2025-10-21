@@ -6,7 +6,7 @@ import { makeLineItemField } from '../../types/fieldIds';
 import { LINE_ITEM_COLUMNS, humanizeColumnKey, type LineItemColumnKey } from '../../types/lineItemColumns';
 import type { LineItem } from '../../types/PurchaseOrder';
 import RowDropZone from './RowDropZone';
-import LineItemField from './LineItemField';
+import FieldInput from './FieldInput';
 
 export interface LineItemCardProps {
   item: LineItem;
@@ -55,16 +55,13 @@ const LineItemCard: React.FC<LineItemCardProps> = ({
     const aria = `${humanizeColumnKey(field)} for line ${item.lineNumber}`;
 
     return (
-      <LineItemField
-        key={fieldId}
-        fieldId={fieldId}
-        lineNumber={item.lineNumber}
-        field={field}
+      <FieldInput
+        id={fieldId}
         kind={kind}
         value={value}
         baseSx={baseSx}
-  isDropActive={isDropActive}
-  isGlobalDragActive={externallyActive}
+        isDropActive={isDropActive}
+        isGlobalDragActive={externallyActive}
         ariaLabel={aria}
         onChange={(val, opts) => handleLineItemChange(item.lineNumber, field, val, kind, opts)}
         onClear={() => clearLineItemField(item.lineNumber, field, kind)}
