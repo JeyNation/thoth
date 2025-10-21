@@ -25,7 +25,7 @@ const Workspace: React.FC = () => {
     const [showConnectionsDebug, setShowConnectionsDebug] = useState(true);
     const [debuggerHeight, setDebuggerHeight] = useState<number>(140);
     const [connections, setConnections] = useState<OverlayConnection[]>([]);
-        const [overlaysVisible, setOverlaysVisible] = useState<boolean>(true);
+    const [overlaysVisible, setOverlaysVisible] = useState<boolean>(true);
     // custom hooks
     const { updatePurchaseOrder, recomputeGeometry, undo, redo, canUndo, canRedo, fieldSources, reverseIndex, updateFieldSources } = useMapping();
     // Refs for latest mapping data to avoid effect churn
