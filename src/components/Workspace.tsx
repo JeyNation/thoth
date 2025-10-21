@@ -12,12 +12,6 @@ import ConnectionOverlay, { type OverlayConnection } from './ConnectionOverlay';
 
 /** Wrapper between document viewer and PO form */
 const Workspace: React.FC = () => {
-    // refs
-    const isResizingRef = useRef(false);
-    const startYRef = useRef(0);
-    const startHeightRef = useRef(140);
-
-    // states
     const [documentData, setDocumentData] = useState<any>(null);
     const [focusedInputField, setFocusedInputField] = useState<string | null>(null);
     const [focusedBoundingBoxId, setFocusedBoundingBoxId] = useState<string | null>(null);
@@ -26,22 +20,31 @@ const Workspace: React.FC = () => {
     const [debuggerHeight, setDebuggerHeight] = useState<number>(140);
     const [connections, setConnections] = useState<OverlayConnection[]>([]);
     const [overlaysVisible, setOverlaysVisible] = useState<boolean>(true);
-    // custom hooks
-    const { updatePurchaseOrder, recomputeGeometry, undo, redo, canUndo, canRedo, fieldSources, reverseIndex, updateFieldSources } = useMapping();
-    // Refs for latest mapping data to avoid effect churn
+    
+    const { 
+        updatePurchaseOrder, 
+        recomputeGeometry, 
+        undo, 
+        redo,
+        canUndo, 
+        canRedo, 
+        fieldSources, 
+        reverseIndex, 
+        updateFieldSources 
+    } = useMapping();
+    
+    const isResizingRef = useRef(false);
+    const startYRef = useRef(0);
+    const startHeightRef = useRef(140);
     const fieldSourcesRef = useRef(fieldSources);
     const reverseIndexRef = useRef(reverseIndex);
-    useEffect(() => { fieldSourcesRef.current = fieldSources; }, [fieldSources]);
-    useEffect(() => { reverseIndexRef.current = reverseIndex; }, [reverseIndex]);
-    // Element caches to avoid repeated querySelector calls
     const fieldElCacheRef = useRef<Map<string, HTMLElement>>(new Map());
     const boxElCacheRef = useRef<Map<string, HTMLElement>>(new Map());
-    // Track inner scrollers to attach listeners once
     const scrollersRef = useRef<HTMLElement[]>([]);
-    // Expose a recompute function for external triggers (e.g., zoom/pan changes)
     const recomputeRef = useRef<null | (() => void)>(null);
 
-    // Compute rectangle pairs for connections between focus and linked items (via refs/caches for performance).
+    useEffect(() => { fieldSourcesRef.current = fieldSources; }, [fieldSources]);
+    useEffect(() => { reverseIndexRef.current = reverseIndex; }, [reverseIndex]);
     useEffect(() => {
         const cssEscape = (value: string) => {
             if (typeof CSS !== 'undefined' && typeof (CSS as any).escape === 'function') return (CSS as any).escape(value);
@@ -75,7 +78,6 @@ const Workspace: React.FC = () => {
         let raf = 0; let pending = false;
         const recomputeNow = () => {
             const next: OverlayConnection[] = [];
-            // Determine containers for clamping
             const svgContainer = document.querySelector('[data-svg-container]') as HTMLElement | null;
             const viewPanel = document.querySelector('[data-view-panel]') as HTMLElement | null;
             const formPanel = document.querySelector('[data-form-panel]') as HTMLElement | null;
@@ -93,7 +95,6 @@ const Workspace: React.FC = () => {
                     top: rect.top < container.top,
                     bottom: rect.bottom > container.bottom,
                 };
-                // Determine if there is any overlap with container (treat as inside if any overlap)
                 const intersectLeft = Math.max(rect.left, container.left);
                 const intersectTop = Math.max(rect.top, container.top);
                 const intersectRight = Math.min(rect.right, container.right);
@@ -109,11 +110,9 @@ const Workspace: React.FC = () => {
                     top: top !== rect.top,
                     bottom: bottom !== rect.bottom,
                 };
-                // Only consider 'clamped/offscreen' when fully outside (no overlap)
                 const clamped = !hasOverlap;
                 return { rect: { left, top, right, bottom }, clamped, sides, out };
             };
-            // Focused input -> linked boxes
             if (focusedInputField) {
                 const aEl = getFieldEl(focusedInputField);
                 const aClamp = clampRectTo(rectOfEl(aEl), formContainer);
@@ -138,7 +137,6 @@ const Workspace: React.FC = () => {
                     }
                 }
             }
-            // Focused box -> linked inputs
             if (!focusedInputField && focusedBoundingBoxId) {
                 const aEl = getBoxEl(focusedBoundingBoxId);
                 const aClamp = clampRectTo(rectOfEl(aEl), viewContainer);
@@ -165,19 +163,18 @@ const Workspace: React.FC = () => {
             }
             setConnections(next);
         };
+
     const recompute = () => { if (pending) return; pending = true; raf = requestAnimationFrame(() => { pending = false; recomputeNow(); }); };
-    // expose recompute to outer scope
+    
     recomputeRef.current = recompute;
         recompute(); requestAnimationFrame(recompute);
         const onResize = () => recompute();
         const onScroll = () => recompute();
         window.addEventListener('resize', onResize);
-        // Capture scroll from any scrolling element (scroll doesn't bubble) at both document and window levels
         window.addEventListener('scroll', onScroll as any, { passive: true, capture: true } as any);
         document.addEventListener('scroll', onScroll as any, { passive: true, capture: true } as any);
         const ro = new ResizeObserver(() => recompute());
         document.querySelectorAll('[data-view-panel], [data-form-panel]').forEach((el) => ro.observe(el));
-        // Listen to scrolling in inner scrollable areas
         if (scrollersRef.current.length === 0) {
             scrollersRef.current = Array.from(document.querySelectorAll('[data-scroll-listener]')) as HTMLElement[];
             scrollersRef.current.forEach((el) => el.addEventListener('scroll', onScroll, { passive: true } as any));
@@ -193,7 +190,6 @@ const Workspace: React.FC = () => {
         };
     }, [focusedInputField, focusedBoundingBoxId]);
 
-    // state change: load sample document data on mount
     useEffect(() => {
         fetch('/data/sample_document_data.json')
             .then(r => { if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
@@ -201,7 +197,6 @@ const Workspace: React.FC = () => {
             .catch(err => console.error('Failed loading document data', err));
     }, []);
 
-    // Recompute overlay when mapping changes (e.g., after drag/drop links are added/removed)
     useEffect(() => {
         const fn = recomputeRef.current;
         if (fn) {
@@ -209,7 +204,6 @@ const Workspace: React.FC = () => {
         }
     }, [fieldSources, reverseIndex]);
 
-    // state change: global keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             const meta = e.metaKey || e.ctrlKey;
@@ -217,10 +211,9 @@ const Workspace: React.FC = () => {
             const isUndo = e.key.toLowerCase() === 'z' && !e.shiftKey;
             const isRedo = (e.key.toLowerCase() === 'y') || (e.key.toLowerCase() === 'z' && e.shiftKey);
             if (!isUndo && !isRedo) return;
-            // Skip if focused element is text-editable (allow native editing undo there)
             const active = document.activeElement as HTMLElement | null;
             if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
-                return; // allow native undo/redo in fields
+                return;
             }
             if (isUndo) {
                 if (canUndo) { e.preventDefault(); undo(); }
@@ -232,45 +225,37 @@ const Workspace: React.FC = () => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [undo, redo, canUndo, canRedo]);
 
-    // event handler: purchase order update from form
     const handlePurchaseOrderUpdate = (updated: PurchaseOrder) => updatePurchaseOrder(updated);
     
-    // event handler: form field focus
     const handleFieldFocus = (fieldId: string | null) => {
         setFocusedInputField(fieldId);
-        // When focusing a form input (or clearing), drop the focused bounding box
         if (fieldId) {
             setFocusedBoundingBoxId(null);
         }
     };
 
-    // event handler: bounding boxes update from viewer (memoized for stable identity)
     const handleBoundingBoxesUpdate = useCallback((boxes: BoundingBox[]) => {
         setBoundingBoxes(boxes);
         recomputeGeometry(boxes);
     }, [recomputeGeometry]);
 
-    // event handler: start resizing debugger panel
     const handleDebuggerResizerMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.stopPropagation();
         isResizingRef.current = true;
         startYRef.current = e.clientY;
         startHeightRef.current = debuggerHeight;
-        // indicate resize globally
         document.body.style.cursor = 'row-resize';
         (document.body.style as any).userSelect = 'none';
         (document.body.style as any).webkitUserSelect = 'none';
     };
 
-    // global mouse handlers to perform resizing while dragging
     useEffect(() => {
         const onMouseMove = (e: MouseEvent) => {
             if (!isResizingRef.current) return;
             const deltaY = e.clientY - startYRef.current;
-            const minH = 80; // minimum debugger height
+            const minH = 80;
             const maxH = Math.max(minH, Math.floor(window.innerHeight * 0.9));
-            // invert delta so dragging up increases height
             const next = Math.min(maxH, Math.max(minH, startHeightRef.current - deltaY));
             setDebuggerHeight(next);
             e.preventDefault();
@@ -279,12 +264,10 @@ const Workspace: React.FC = () => {
             if (!isResizingRef.current) return;
             isResizingRef.current = false;
             e.preventDefault();
-            // restore cursor/select
             document.body.style.cursor = '';
             (document.body.style as any).userSelect = '';
             (document.body.style as any).webkitUserSelect = '';
         };
-        // Basic touch support
         const onTouchMove = (e: TouchEvent) => {
             if (!isResizingRef.current) return;
             const t = e.touches[0];
@@ -316,7 +299,6 @@ const Workspace: React.FC = () => {
         };
     }, []);
 
-    // overlay: click on center icon to clear a specific link (fieldId <-> boxId)
     const handleCenterIconClick = useCallback((conn: OverlayConnection, index: number) => {
         const fieldId = conn.fieldId;
         const boxId = conn.boxId;
@@ -324,20 +306,15 @@ const Workspace: React.FC = () => {
         const current = fieldSourcesRef.current?.[fieldId]?.ids || [];
         const next = current.filter(id => id !== boxId);
         updateFieldSources(fieldId, next.length ? next : null, undefined);
-        // Optimistic UI: remove this connection immediately
         setConnections(prev => prev.filter((c, i) => i !== index && !(c.fieldId === fieldId && c.boxId === boxId)));
-        // Also drop focus if it no longer has links
         if (focusedInputField === fieldId && next.length === 0) {
             setFocusedInputField(null);
         }
-        // Do NOT defocus the viewer's focused box when clearing from the overlay
     }, [focusedInputField, focusedBoundingBoxId, updateFieldSources]);
 
-    // Trigger overlay recompute when viewer transform changes (zoom/pan), without relying on event propagation
     const handleViewerTransformChange = useCallback((_scale: number, _pos: { x: number; y: number }) => {
         const fn = recomputeRef.current;
         if (fn) {
-            // schedule on next frame to coalesce rapid updates
             requestAnimationFrame(() => fn());
         }
     }, []);

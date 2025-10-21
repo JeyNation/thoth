@@ -50,7 +50,7 @@ const ConnectionOverlay: React.FC<Props> = ({ connections, onCenterIconClick, fo
   const KAPPA = 0.5522847498; // circle approximation constant
 
   return (
-    <svg width="100%" height="100%" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 99999 }}>
+    <svg width="100%" height="100%" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 4 }}>
       {connections.map((conn, i) => {
         // Build endpoints then normalize so start = left, end = right
         const epA = { rect: conn.a, center: center(conn.a), clamped: !!conn.aClamped, clampSides: conn.aClampSides, side: conn.aSide };
