@@ -95,7 +95,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       else { backgroundColor = 'rgba(33,150,243,0.4)'; borderColor = '#1976d2'; }
     }
 
-    let boxShadow = 'none';
+  let boxShadow = 'none';
     if (isSelected) boxShadow = `0 0 10px ${borderColor}66`;
     else if (isFocusedLinked) boxShadow = '0 0 8px rgba(46,125,50,0.45)';
     else if (isLinked) boxShadow = '0 0 5px rgba(76, 175, 80, 0.3)';
@@ -117,7 +117,8 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       fontSize: 10,
       fontWeight: 'bold',
       color: borderColor,
-      opacity: isDragged ? 0.5 : 1,
+      // Keep full opacity during drag to avoid perceived dehighlight while initiating drag
+      opacity: 1,
       boxShadow,
       transition: 'all 0.2s ease'
     };
@@ -263,9 +264,9 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       onBoundingBoxFocus?.(null);
       return;
     } else {
-      if (selectedFields.has(fieldId) && selectedFields.size === 1) {
-        setSelectedFields(new Set());
-      } else {
+      // If already selected (single or part of multi), preserve selection.
+      // This prevents visual dehighlight when starting a drag from the item.
+      if (!selectedFields.has(fieldId)) {
         setSelectedFields(new Set([fieldId]));
       }
     }
@@ -566,7 +567,10 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
                   draggable
                   onDragStart={(e) => handleFieldDragStart(e, boundingBox)}
                   title={boundingBox.FieldText}
-                  onMouseDown={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => {
+                    // Prevent collapsing selection on mousedown if this field is in the current multi-select
+                    e.stopPropagation();
+                  }}
                   onClick={(e) => handleFieldSelection(boundingBox.FieldId, e)}
                   style={style}
                 />
