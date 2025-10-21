@@ -21,7 +21,7 @@ export const applyDropHighlightSx = (base: Record<string, any>): Record<string, 
       transition: 'border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease',
       '& fieldset': {
         ...fieldset,
-        borderWidth: 2,
+        borderWidth: 1,
         borderStyle: 'dashed',
         borderColor: DROP_ACTIVE_BORDER,
       },

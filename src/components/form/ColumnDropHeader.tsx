@@ -32,7 +32,7 @@ const baseStyle: React.CSSProperties = {
 const activeStyle: React.CSSProperties = {
   borderColor: DROP_ACTIVE_BORDER,
   borderStyle: 'dashed',
-  borderWidth: '2px',
+  borderWidth: '1px',
   background: DROP_ACTIVE_BG,
   boxShadow: DROP_ACTIVE_INSET,
 };

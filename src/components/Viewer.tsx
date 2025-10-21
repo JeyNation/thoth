@@ -432,7 +432,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     : {
         ...selectionRectBaseStyle,
         position: 'absolute',
-        border: '2px dashed #2196f3',
+  border: '1px dashed #2196f3',
         backgroundColor: 'rgba(33,150,243,0.1)',
         pointerEvents: 'none',
         zIndex: 25,

@@ -25,7 +25,7 @@ const RowDropZone: React.FC<RowDropZoneProps> = ({ lineNumber, isActive, externa
           alignItems: 'center',
           justifyContent: 'flex-start',
           borderRadius: 1.5,
-          border: active ? '2px dashed' : '1px solid',
+          border: active ? '1px dashed' : '1px solid',
           borderColor: active ? DROP_ACTIVE_BORDER : 'transparent',
           backgroundColor: active ? DROP_ACTIVE_BG : 'transparent',
           boxShadow: active ? DROP_ACTIVE_INSET : 'none',

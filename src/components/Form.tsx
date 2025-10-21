@@ -816,7 +816,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                             fontWeight: 600,
                             ...(addButtonDragActive
                                 ? {
-                                    border: '2px dashed rgba(44,123,229,0.75)',
+                                    border: '1px dashed rgba(44,123,229,0.75)',
                                     backgroundColor: 'rgba(44,123,229,0.12)',
                                     color: 'primary.main',
                                 }
