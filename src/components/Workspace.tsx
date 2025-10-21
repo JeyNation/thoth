@@ -201,6 +201,14 @@ const Workspace: React.FC = () => {
             .catch(err => console.error('Failed loading document data', err));
     }, []);
 
+    // Recompute overlay when mapping changes (e.g., after drag/drop links are added/removed)
+    useEffect(() => {
+        const fn = recomputeRef.current;
+        if (fn) {
+            requestAnimationFrame(() => fn());
+        }
+    }, [fieldSources, reverseIndex]);
+
     // state change: global keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -322,9 +330,7 @@ const Workspace: React.FC = () => {
         if (focusedInputField === fieldId && next.length === 0) {
             setFocusedInputField(null);
         }
-        if (focusedBoundingBoxId === boxId) {
-            setFocusedBoundingBoxId(null);
-        }
+        // Do NOT defocus the viewer's focused box when clearing from the overlay
     }, [focusedInputField, focusedBoundingBoxId, updateFieldSources]);
 
     // Trigger overlay recompute when viewer transform changes (zoom/pan), without relying on event propagation
@@ -351,7 +357,11 @@ const Workspace: React.FC = () => {
                     }}
                 >
                     {overlaysVisible && (
-                        <ConnectionOverlay connections={connections} onCenterIconClick={handleCenterIconClick} />
+                        <ConnectionOverlay
+                            connections={connections}
+                            onCenterIconClick={handleCenterIconClick}
+                            focusSource={focusedBoundingBoxId ? 'viewer' : (focusedInputField ? 'form' : undefined)}
+                        />
                     )}
                     <Paper
                         elevation={1}
