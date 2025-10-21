@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
-import { DROP_ACTIVE_BG, DROP_ACTIVE_BORDER, DROP_ACTIVE_INSET } from '../../styles/dropHighlight';
+import { DROP_ACTIVE_BORDER } from '../../styles/dropHighlight';
 
 interface RowDropZoneProps {
   lineNumber: number;
@@ -27,9 +27,8 @@ const RowDropZone: React.FC<RowDropZoneProps> = ({ lineNumber, isActive, externa
           borderRadius: 1.5,
           border: active ? '1px dashed' : '1px solid',
           borderColor: active ? DROP_ACTIVE_BORDER : 'transparent',
-          backgroundColor: active ? DROP_ACTIVE_BG : 'transparent',
-          boxShadow: active ? DROP_ACTIVE_INSET : 'none',
-          transition: 'border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease',
+          // Do not change background or box shadow on active; only show dashed border.
+          transition: 'border-color 0.2s ease',
           p: 2,
         }}
         onDragOver={onDragOver}

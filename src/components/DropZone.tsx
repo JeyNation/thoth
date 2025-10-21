@@ -79,7 +79,11 @@ const DropZone: React.FC<DropZoneProps> = ({
   }, [clearActiveState]);
 
   const mergedStyle: React.CSSProperties = (active || externallyActive)
-    ? { ...(baseStyle || {}), ...(activeStyle || {}) }
+    ? (() => {
+        // Prevent any activeStyle from changing background appearance.
+        const { background, backgroundColor, backgroundImage, ...restActive } = (activeStyle || {});
+        return { ...(baseStyle || {}), ...restActive };
+      })()
     : (baseStyle || {});
 
   return React.createElement(
