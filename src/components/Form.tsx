@@ -623,6 +623,30 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
 
     const cancelMultiFieldMapping = () => setColumnMappingDialog(null);
 
+    // Global drag state to highlight all drop zones while dragging from viewer
+    const [globalDragActive, setGlobalDragActive] = useState(false);
+    useEffect(() => {
+        const onDragOver = (e: DragEvent) => {
+            // If payload includes our app type, highlight drop zones
+            const types = e.dataTransfer?.types;
+            if (types && Array.from(types).includes('application/json')) {
+                setGlobalDragActive(true);
+            }
+        };
+        const onDragEnter = onDragOver;
+        const clear = () => setGlobalDragActive(false);
+        window.addEventListener('dragover', onDragOver);
+        window.addEventListener('dragenter', onDragEnter);
+        window.addEventListener('dragend', clear);
+        window.addEventListener('drop', clear, true);
+        return () => {
+            window.removeEventListener('dragover', onDragOver);
+            window.removeEventListener('dragenter', onDragEnter);
+            window.removeEventListener('dragend', clear);
+            window.removeEventListener('drop', clear, true);
+        };
+    }, []);
+
     const renderLineItemCard = (item: LineItem) => {
         const isRowDropActive = activeRowDropLine === item.lineNumber;
         return (
@@ -630,6 +654,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                 key={item.lineNumber}
                 item={item}
                 isRowDropActive={isRowDropActive}
+                externallyActive={globalDragActive}
                 onRowDragOver={(e) => {
                     if (e.dataTransfer.types.includes('application/json')) {
                         e.preventDefault();
@@ -709,6 +734,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                                             rows={config.rows}
                                             baseSx={baseSx}
                                             isDropActive={!!isBasicDropActive}
+                                            isGlobalDragActive={globalDragActive}
                                             onChange={(val) => handleBasicInfoChange(config.id, val, config.kind)}
                                             onClear={() => clearBasicField(config.id, config.kind)}
                                             onFocus={() => { setFocusedFieldIdLocal(config.id); onFieldFocus?.(config.id); }}
@@ -750,6 +776,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                                     columns={LINE_ITEM_COLUMNS}
                                     titleFor={(c) => humanizeColumnKey(c)}
                                     onDrop={(col, e) => handleColumnDrop(e, col)}
+                                    externallyActive={globalDragActive}
                                 />
                                 <Stack spacing={2} sx={{ pr: 0.5 }}>
                                     {purchaseOrder.lineItems.map((item) => renderLineItemCard(item))}

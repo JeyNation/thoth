@@ -11,6 +11,7 @@ export interface BasicFieldInputProps {
   rows?: number;
   baseSx: Record<string, any>;
   isDropActive: boolean;
+  isGlobalDragActive?: boolean;
   ariaLabel?: string;
   onChange: (value: string) => void;
   onClear: () => void;
@@ -29,6 +30,7 @@ const BasicFieldInput: React.FC<BasicFieldInputProps> = ({
   rows,
   baseSx,
   isDropActive,
+  isGlobalDragActive = false,
   ariaLabel,
   onChange,
   onClear,
@@ -39,7 +41,7 @@ const BasicFieldInput: React.FC<BasicFieldInputProps> = ({
   onDrop,
 }) => {
   const showClear = value.trim() !== '';
-  const sx = isDropActive ? applyDropHighlightSx(baseSx) : baseSx;
+  const sx = (isDropActive || isGlobalDragActive) ? applyDropHighlightSx(baseSx) : baseSx;
 
   return (
     <TextField

@@ -12,6 +12,7 @@ export interface DropZoneProps {
   className?: string;
   title?: string;
   role?: string;
+  externallyActive?: boolean;
   onDrop: (e: React.DragEvent) => void;
   onDragOverExtra?: (e: React.DragEvent) => void;
 }
@@ -24,6 +25,7 @@ const DropZone: React.FC<DropZoneProps> = ({
   className,
   title,
   role,
+  externallyActive = false,
   onDrop,
   onDragOverExtra
 }) => {
@@ -76,7 +78,7 @@ const DropZone: React.FC<DropZoneProps> = ({
     };
   }, [clearActiveState]);
 
-  const mergedStyle: React.CSSProperties = active
+  const mergedStyle: React.CSSProperties = (active || externallyActive)
     ? { ...(baseStyle || {}), ...(activeStyle || {}) }
     : (baseStyle || {});
 

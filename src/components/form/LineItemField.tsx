@@ -11,6 +11,7 @@ export interface LineItemFieldProps {
   value: string | number;
   baseSx: Record<string, any>;
   isDropActive: boolean;
+  isGlobalDragActive?: boolean;
   ariaLabel: string;
   onChange: (value: string | number, opts?: { explicitClear?: boolean }) => void;
   onClear: () => void;
@@ -29,6 +30,7 @@ const LineItemField: React.FC<LineItemFieldProps> = ({
   value,
   baseSx,
   isDropActive,
+  isGlobalDragActive = false,
   ariaLabel,
   onChange,
   onClear,
@@ -39,7 +41,7 @@ const LineItemField: React.FC<LineItemFieldProps> = ({
   onDrop,
 }) => {
   const showClear = (kind === 'integer' || kind === 'decimal') ? value !== 0 : typeof value === 'string' && value.trim() !== '';
-  const sx = isDropActive ? applyDropHighlightSx(baseSx) : baseSx;
+  const sx = (isDropActive || isGlobalDragActive) ? applyDropHighlightSx(baseSx) : baseSx;
   // Use type="number" for integer, and type="text" for decimal to preserve trailing zeros visually
   const type = kind === 'integer' ? 'number' : (kind === 'decimal' ? 'text' : 'text');
 

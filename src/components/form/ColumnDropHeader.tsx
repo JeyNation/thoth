@@ -8,6 +8,7 @@ interface ColumnDropHeaderProps<T extends string> {
   columns: readonly T[];
   titleFor: (col: T) => string;
   onDrop: (col: T, e: React.DragEvent) => void;
+  externallyActive?: boolean;
 }
 
 const baseStyle: React.CSSProperties = {
@@ -30,11 +31,13 @@ const baseStyle: React.CSSProperties = {
 
 const activeStyle: React.CSSProperties = {
   borderColor: DROP_ACTIVE_BORDER,
+  borderStyle: 'dashed',
+  borderWidth: '2px',
   background: DROP_ACTIVE_BG,
   boxShadow: DROP_ACTIVE_INSET,
 };
 
-function ColumnDropHeader<T extends string>({ columns, titleFor, onDrop }: ColumnDropHeaderProps<T>) {
+function ColumnDropHeader<T extends string>({ columns, titleFor, onDrop, externallyActive = false }: ColumnDropHeaderProps<T>) {
   return (
     <Box
       sx={{
@@ -58,6 +61,7 @@ function ColumnDropHeader<T extends string>({ columns, titleFor, onDrop }: Colum
           onDrop={(e) => onDrop(col, e)}
           baseStyle={baseStyle}
           activeStyle={activeStyle}
+          externallyActive={externallyActive}
         >
           <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ textAlign: 'center', width: '100%' }}>
             {titleFor(col)}

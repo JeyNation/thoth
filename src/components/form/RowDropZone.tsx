@@ -5,12 +5,14 @@ import { DROP_ACTIVE_BG, DROP_ACTIVE_BORDER, DROP_ACTIVE_INSET } from '../../sty
 interface RowDropZoneProps {
   lineNumber: number;
   isActive: boolean;
+  externallyActive?: boolean;
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
 }
 
-const RowDropZone: React.FC<RowDropZoneProps> = ({ lineNumber, isActive, onDragOver, onDragLeave, onDrop }) => {
+const RowDropZone: React.FC<RowDropZoneProps> = ({ lineNumber, isActive, externallyActive = false, onDragOver, onDragLeave, onDrop }) => {
+  const active = isActive || externallyActive;
   return (
     <Box sx={{ width: 60, alignSelf: 'stretch' }}>
       <Box
@@ -23,10 +25,10 @@ const RowDropZone: React.FC<RowDropZoneProps> = ({ lineNumber, isActive, onDragO
           alignItems: 'center',
           justifyContent: 'flex-start',
           borderRadius: 1.5,
-          border: '1px solid',
-          borderColor: isActive ? DROP_ACTIVE_BORDER : 'transparent',
-          backgroundColor: isActive ? DROP_ACTIVE_BG : 'transparent',
-          boxShadow: isActive ? DROP_ACTIVE_INSET : 'none',
+          border: active ? '2px dashed' : '1px solid',
+          borderColor: active ? DROP_ACTIVE_BORDER : 'transparent',
+          backgroundColor: active ? DROP_ACTIVE_BG : 'transparent',
+          boxShadow: active ? DROP_ACTIVE_INSET : 'none',
           transition: 'border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease',
           p: 2,
         }}
