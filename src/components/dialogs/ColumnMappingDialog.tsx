@@ -53,7 +53,7 @@ const ColumnMappingDialog: React.FC<ColumnMappingDialogProps> = ({ lineNumber, p
           Review predicted column assignments. Adjust before applying.
         </Typography>
         <TableContainer component={Paper} variant="outlined">
-          <Table size="small" aria-label="Column mapping table">
+          <Table size="small" aria-label="Column mapping table" sx={{ '& .MuiTableBody-root tr:last-of-type td': { borderBottom: 'none' } }}>
             <TableHead>
               <TableRow>
                 <TableCell width="35%">Source Text</TableCell>

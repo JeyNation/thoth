@@ -42,7 +42,8 @@ const RowMappingDialog: React.FC<RowMappingDialogProps> = ({ column, pairs, prop
     const maxAssigned = assignedNums.length ? Math.max(...assignedNums) : 0;
     const unassignedCount = pairs.reduce((acc, p) => acc + (typeof proposedRows[p.fieldId] === 'number' ? 0 : 1), 0);
     const maxRow = Math.max(5, maxAssigned + unassignedCount);
-    return Array.from({ length: maxRow }, (_, idx) => idx + 1);
+    const EXTRA = 10; // include 10 extra integers beyond computed max
+    return Array.from({ length: maxRow + EXTRA }, (_, idx) => idx + 1);
   }, [pairs, proposedRows]);
 
   const handleRowChange = (fieldId: string) => (event: SelectChangeEvent) => {
@@ -66,7 +67,7 @@ const RowMappingDialog: React.FC<RowMappingDialogProps> = ({ column, pairs, prop
           Review predicted row assignments. Adjust before applying.
         </Typography>
         <TableContainer component={Paper} variant="outlined">
-          <Table size="small" aria-label="Row mapping table">
+          <Table size="small" aria-label="Row mapping table" sx={{ '& .MuiTableBody-root tr:last-of-type td': { borderBottom: 'none' } }}>
             <TableHead>
               <TableRow>
                 <TableCell width="40%">Source Text</TableCell>
