@@ -1,8 +1,12 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
-import type { Theme } from '@mui/material/styles';
 import DropZone from '../DropZone';
-import { DROP_BORDER_RADIUS_PX, DROP_ZONE_ACTIVE_STYLE } from '../../styles/dropHighlight';
+import { 
+  COLUMN_DROP_BASE_STYLE,
+  COLUMN_DROP_ACTIVE_STYLE,
+  COLUMN_DROP_CONTAINER_SX, 
+  COLUMN_DROP_LABEL_SX 
+} from '../../styles/columnDropStyles';
 
 interface ColumnDropZoneProps<T extends string> {
   columns: readonly T[];
@@ -11,59 +15,22 @@ interface ColumnDropZoneProps<T extends string> {
   externallyActive?: boolean;
 }
 
-const baseStyle: React.CSSProperties = {
-  width: '100%',
-  borderWidth: '1px',
-  borderStyle: 'solid',
-  borderColor: 'rgba(120, 144, 156, 0.45)',
-  borderRadius: DROP_BORDER_RADIUS_PX,
-  background: 'rgba(248, 250, 252, 0.85)',
-  padding: '6px 8px',
-  fontWeight: 600,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  textAlign: 'center',
-  minHeight: 40,
-  transition: 'border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease',
-  boxShadow: 'inset 0 0 0 0 rgba(25,118,210,0.08)'
-};
-
-const activeStyle: React.CSSProperties = {
-  ...DROP_ZONE_ACTIVE_STYLE,
-};
-
 function ColumnDropZone<T extends string>({ columns, titleFor, onDrop, externallyActive = false }: ColumnDropZoneProps<T>) {
   return (
-    <Box
-      sx={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 5,
-        display: 'grid',
-        gridTemplateColumns: {
-          xs: '1fr',
-          sm: 'repeat(2, minmax(0, 1fr))',
-          md: 'repeat(4, minmax(0, 1fr))',
-        },
-        gap: 1,
-        backgroundImage: (theme: Theme) => `linear-gradient(${theme.palette.background.paper} 0%, ${theme.palette.background.paper} 60%, rgba(255,255,255,0) 100%)`,
-        pb: 1,
-      }}
-    >
-      {columns.map((col) => (
+    <Box sx={COLUMN_DROP_CONTAINER_SX}>
+    {columns.map((col) => (
         <DropZone
-          key={`compact-col-${col}`}
-          onDrop={(e) => onDrop(col, e)}
-          baseStyle={baseStyle}
-          activeStyle={activeStyle}
-          externallyActive={externallyActive}
+            key={`compact-col-${col}`}
+            onDrop={(e) => onDrop(col, e)}
+            baseStyle={COLUMN_DROP_BASE_STYLE}
+            activeStyle={COLUMN_DROP_ACTIVE_STYLE}
+            externallyActive={externallyActive}
         >
-          <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ textAlign: 'center', width: '100%' }}>
-            {titleFor(col)}
-          </Typography>
+            <Typography variant="body2" sx={COLUMN_DROP_LABEL_SX}>
+                {titleFor(col)}
+            </Typography>
         </DropZone>
-      ))}
+    ))}
     </Box>
   );
 }

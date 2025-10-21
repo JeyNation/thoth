@@ -1,5 +1,21 @@
 import React, { useMemo } from 'react';
-import { Box, IconButton, Stack, Typography, Divider, Chip } from '@mui/material';
+import { Box, IconButton, Stack, Typography, Divider } from '@mui/material';
+import {
+    DEBUGGER_CONTAINER_SX,
+    DEBUGGER_HEADER_TITLE_SX,
+    DEBUGGER_HIDE_BUTTON_SX,
+    DEBUGGER_DIVIDER_SX,
+    DEBUGGER_GRID_SX,
+    DEBUGGER_LEFT_STACK_SX,
+    DEBUGGER_CAPTION_SX,
+    DEBUGGER_BODY_SMALL_SX,
+    DEBUGGER_BODY_SMALL_PLAIN_SX,
+    DEBUGGER_LINKED_INPUTS_LETTER_SX,
+    DEBUGGER_LINKED_ID_SX,
+    DEBUGGER_PRE_SX,
+    DEBUGGER_INFO_LABEL_SX,
+    DEBUGGER_INFO_VALUE_SX,
+} from '../styles/debuggerStyles';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import type { BoundingBox } from '../types/mapping';
 import { useMapping } from '../context/MappingContext';
@@ -30,21 +46,12 @@ const Debugger: React.FC<DebuggerProps> = ({ boundingBoxes, focusedInputField, f
     const fieldSourcesJson = useMemo(() => JSON.stringify(fieldSources, null, 2), [fieldSources]);
 
     return (
-        <Box
-            sx={{
-                flex: 1,
-                minHeight: 0,
-                overflow: 'hidden',
-                p: 2,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
-            }}
+        <Box sx={DEBUGGER_CONTAINER_SX}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
         >
             <Stack direction="row" alignItems="center" spacing={1}>
-                <Typography variant="subtitle2" sx={{ color: 'common.white', fontWeight: 600, letterSpacing: 0.6 }}>
+                <Typography variant="subtitle2" sx={DEBUGGER_HEADER_TITLE_SX}>
                     Connections Debug
                 </Typography>
                 <Box sx={{ flex: 1 }} />
@@ -53,66 +60,39 @@ const Debugger: React.FC<DebuggerProps> = ({ boundingBoxes, focusedInputField, f
                     aria-label="Hide debug panel"
                     title="Hide debug panel"
                     onClick={onHide}
-                    sx={{
-                        color: 'common.white',
-                        border: '1px solid rgba(255,255,255,0.18)',
-                        backgroundColor: 'rgba(255,255,255,0.08)',
-                        borderRadius: 1,
-                        '&:hover': {
-                            backgroundColor: 'rgba(255,255,255,0.16)',
-                            borderColor: 'rgba(255,255,255,0.28)',
-                        },
-                    }}
+                    sx={DEBUGGER_HIDE_BUTTON_SX}
                 >
                     <VisibilityOffIcon fontSize="small" />
                 </IconButton>
             </Stack>
 
-            <Divider sx={{ borderColor: 'rgba(255,255,255,0.12)' }} />
+            <Divider sx={DEBUGGER_DIVIDER_SX} />
 
-            <Box
-                sx={{
-                    display: 'grid',
-                    gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-                    gap: 2,
-                    minHeight: 0,
-                    flex: 1,
-                }}
-            >
-                <Stack spacing={1.5} sx={{ minWidth: 0, minHeight: 0, overflow: 'auto', pr: 1 }}>
+            <Box sx={DEBUGGER_GRID_SX}>
+                <Stack spacing={1.5} sx={DEBUGGER_LEFT_STACK_SX}>
                     {focusedBoundingBoxId && focusedBox ? (
                         <>
                             {/* Focused Box */}
                             <Box>
-                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                                <Typography variant="caption" sx={DEBUGGER_CAPTION_SX}>
                                     Focused Box
                                 </Typography>
-                                <Typography variant="body2" sx={{ mt: 0.5, fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)' }}>
+                                <Typography variant="body2" sx={DEBUGGER_BODY_SMALL_SX}>
                                     {focusedBoundingBoxId}
                                 </Typography>
-                                <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                                <Typography variant="body2" sx={DEBUGGER_BODY_SMALL_PLAIN_SX}>
                                     {`[L${focusedBox.minX} T${focusedBox.minY} R${focusedBox.maxX} B${focusedBox.maxY}]`}
                                 </Typography>
                             </Box>
 
                             {linkedFormFieldsForFocusedBox.length > 0 && (
                                 <Box>
-                                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', letterSpacing: 0.5 }}>
+                                    <Typography variant="caption" sx={DEBUGGER_LINKED_INPUTS_LETTER_SX}>
                                         Linked Inputs
                                     </Typography>
                                     <Stack spacing={0.5} sx={{ mt: 0.5 }}>
                                         {linkedFormFieldsForFocusedBox.map((fid) => (
-                                            <Typography
-                                                key={fid}
-                                                variant="body2"
-                                                title={fid}
-                                                sx={{
-                                                    fontFamily: 'monospace',
-                                                    fontSize: '0.75rem',
-                                                    color: 'rgba(255,255,255,0.85)',
-                                                    wordBreak: 'break-all',
-                                                }}
-                                            >
+                                            <Typography key={fid} variant="body2" title={fid} sx={DEBUGGER_LINKED_ID_SX}>
                                                 {fid}
                                             </Typography>
                                         ))}
@@ -126,10 +106,10 @@ const Debugger: React.FC<DebuggerProps> = ({ boundingBoxes, focusedInputField, f
                         <>
                             {/* Focused Input */}
                             <Box>
-                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                                <Typography variant="caption" sx={DEBUGGER_CAPTION_SX}>
                                     Focused Input
                                 </Typography>
-                                <Typography variant="body2" sx={{ mt: 0.5, fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)' }}>
+                                <Typography variant="body2" sx={DEBUGGER_BODY_SMALL_SX}>
                                     {focusedInputField}
                                 </Typography>
                             </Box>
@@ -137,16 +117,16 @@ const Debugger: React.FC<DebuggerProps> = ({ boundingBoxes, focusedInputField, f
                             {/* Geometry (for Focused Input) */}
                             {geometryDetails && geometryDetails.ids.length > 0 ? (
                                 <Box>
-                                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', letterSpacing: 0.5 }}>
+                                    <Typography variant="caption" sx={DEBUGGER_LINKED_INPUTS_LETTER_SX}>
                                         Linked Boxes
                                     </Typography>
                                     <Stack spacing={0.5} sx={{ mt: 0.5 }}>
                                         {geometryDetails.boxes.map((b) => (
                                             <Box key={b.id}>
-                                                <Typography variant="body2" sx={{ mt: 0.5, fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)' }}>
+                                                <Typography variant="body2" sx={DEBUGGER_BODY_SMALL_SX}>
                                                     {b.id}
                                                 </Typography>
-                                                <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                                                <Typography variant="body2" sx={DEBUGGER_BODY_SMALL_PLAIN_SX}>
                                                     {`[L${b.left} T${b.top} R${b.right} B${b.bottom}]`}
                                                 </Typography>
                                             </Box>
@@ -159,22 +139,7 @@ const Debugger: React.FC<DebuggerProps> = ({ boundingBoxes, focusedInputField, f
                 </Stack>
 
                 <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-                    <Box
-                        component="pre"
-                        sx={{
-                            mt: 0.5,
-                            p: 1,
-                            borderRadius: 1,
-                            backgroundColor: 'rgba(0,0,0,0.35)',
-                            fontSize: '0.7rem',
-                            lineHeight: 1.4,
-                            whiteSpace: 'pre-wrap',
-                            wordBreak: 'break-word',
-                            overflow: 'auto',
-                            flex: 1,
-                            minHeight: 0,
-                        }}
-                    >
+                    <Box component="pre" sx={DEBUGGER_PRE_SX}>
                         {fieldSourcesJson}
                     </Box>
                 </Box>
@@ -192,10 +157,10 @@ interface DebuggerInfoProps {
 
 const DebuggerInfo: React.FC<DebuggerInfoProps> = ({ label, value }) => (
     <Box>
-        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+        <Typography variant="caption" sx={DEBUGGER_INFO_LABEL_SX}>
             {label}
         </Typography>
-        <Typography variant="body2" sx={{ mt: 0.5, fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)' }}>
+        <Typography variant="body2" sx={DEBUGGER_INFO_VALUE_SX}>
             {value}
         </Typography>
     </Box>

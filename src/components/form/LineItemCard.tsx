@@ -7,6 +7,19 @@ import { LINE_ITEM_COLUMNS, humanizeColumnKey, type LineItemColumnKey } from '..
 import type { LineItem } from '../../types/PurchaseOrder';
 import RowDropZone from './RowDropZone';
 import FieldInput from './FieldInput';
+import {
+  LINE_ITEM_PAPER_SX,
+  LINE_ITEM_STACK_SX,
+  LINE_ITEM_TOTAL_SX,
+  LINE_ITEM_ICON_BUTTON_SX,
+  LINE_ITEM_CAPTION_SX,
+  LINE_ITEM_DIVIDER_SX,
+  LINE_ITEM_OUTER_STACK_PROPS,
+  LINE_ITEM_INNER_STACK_PROPS,
+  LINE_ITEM_HEADER_STACK_PROPS,
+  LINE_ITEM_ACTIONS_STACK_PROPS,
+  LINE_ITEM_FIELDS_STACK_PROPS,
+} from '../../styles/lineItemCardStyles';
 
 export interface LineItemCardProps {
   item: LineItem;
@@ -87,8 +100,8 @@ const LineItemCard: React.FC<LineItemCardProps> = ({
   };
 
   return (
-    <Paper variant="outlined" sx={{ borderRadius: 2, borderColor: 'divider' }}>
-      <Stack direction="row" spacing={0} alignItems="flex-start">
+    <Paper variant="outlined" sx={LINE_ITEM_PAPER_SX}>
+      <Stack {...LINE_ITEM_OUTER_STACK_PROPS}>
         <RowDropZone
           lineNumber={item.lineNumber}
           isActive={isRowDropActive}
@@ -97,18 +110,18 @@ const LineItemCard: React.FC<LineItemCardProps> = ({
           onDragLeave={onRowDragLeave}
           onDrop={onRowDrop}
         />
-        <Stack spacing={0} useFlexGap sx={{ flex: 1, minWidth: 0, position: 'relative', p: 2 }}>
-          <Stack direction="row" spacing={0} alignItems="flex-start" justifyContent="space-between">
-            <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2, paddingTop: '4px' }}>
+        <Stack {...LINE_ITEM_INNER_STACK_PROPS}>
+          <Stack {...LINE_ITEM_HEADER_STACK_PROPS}>
+            <Typography variant="body2" sx={LINE_ITEM_TOTAL_SX}>
               ${ (item.quantity * item.unitPrice).toFixed(2) }
             </Typography>
-            <Stack direction="row" spacing={1} alignItems="flex-start">
+            <Stack {...LINE_ITEM_ACTIONS_STACK_PROPS}>
               <Tooltip title={`Add line (hold Ctrl to insert above)`}>
                 <IconButton
                   size="small"
                   color="primary"
                   onClick={(event) => onInsertRelative(!!event.ctrlKey)}
-                  sx={{ width: 32, height: 32 }}
+                  sx={LINE_ITEM_ICON_BUTTON_SX}
                   aria-label={`Insert line after ${item.lineNumber}`}
                 >
                   <AddIcon fontSize="small" />
@@ -119,7 +132,7 @@ const LineItemCard: React.FC<LineItemCardProps> = ({
                   size="small"
                   color="error"
                   onClick={onRemove}
-                  sx={{ width: 32, height: 32 }}
+                  sx={LINE_ITEM_ICON_BUTTON_SX}
                   aria-label={`Remove line ${item.lineNumber}`}
                 >
                   <DeleteOutlineIcon fontSize="small" />
@@ -127,17 +140,17 @@ const LineItemCard: React.FC<LineItemCardProps> = ({
               </Tooltip>
             </Stack>
           </Stack>
-          <Stack spacing={1.5}>
+          <Stack {...LINE_ITEM_FIELDS_STACK_PROPS}>
             {LINE_ITEM_COLUMNS.map((col) => (
               <Box key={`${item.lineNumber}-${col}`}>
-                <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                <Typography variant="caption" color="text.secondary" sx={LINE_ITEM_CAPTION_SX}>
                   {humanizeColumnKey(col)}
                 </Typography>
                 {renderField(col)}
               </Box>
             ))}
           </Stack>
-          <Box sx={{ position: 'absolute', top: 0, bottom: 0, left: 0, borderRight: '1px solid', borderColor: 'divider' }} />
+          <Box sx={LINE_ITEM_DIVIDER_SX} />
         </Stack>
       </Stack>
     </Paper>

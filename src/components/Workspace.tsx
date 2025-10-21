@@ -2,6 +2,16 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, Paper } from '@mui/material';
+import {
+    WORKSPACE_ROOT_SX,
+    WORKSPACE_INNER_SX,
+    WORKSPACE_GRID_SX,
+    WORKSPACE_PANEL_PAPER_SX,
+    WORKSPACE_PANEL_BOX_SX,
+    WORKSPACE_SHOW_DEBUG_BUTTON_SX,
+    WORKSPACE_DEBUG_RESIZER_SX,
+    WORKSPACE_DEBUG_CONTAINER_SX,
+} from '../styles/workspaceStyles';
 import type { PurchaseOrder } from '../types/PurchaseOrder';
 import type { BoundingBox } from '../types/mapping';
 import { useMapping, MappingProvider } from '../context/MappingContext';
@@ -10,7 +20,6 @@ import Viewer from './Viewer';
 import Debugger from './Debugger';
 import ConnectionOverlay, { type OverlayConnection } from './ConnectionOverlay';
 
-/** Wrapper between document viewer and PO form */
 const Workspace: React.FC = () => {
     const [documentData, setDocumentData] = useState<any>(null);
     const [focusedInputField, setFocusedInputField] = useState<string | null>(null);
@@ -275,7 +284,6 @@ const Workspace: React.FC = () => {
             const deltaY = t.clientY - startYRef.current;
             const minH = 80;
             const maxH = Math.max(minH, Math.floor(window.innerHeight * 0.9));
-            // invert delta so dragging up increases height
             const next = Math.min(maxH, Math.max(minH, startHeightRef.current - deltaY));
             setDebuggerHeight(next);
             e.preventDefault();
@@ -320,19 +328,9 @@ const Workspace: React.FC = () => {
     }, []);
 
     return (
-        <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, gap: 2 }}>
-            <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Box
-                    sx={{
-                        flex: 1,
-                        minHeight: 0,
-                        display: 'grid',
-                        gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
-                        gap: 2,
-                        position: 'relative',
-                        alignItems: 'stretch',
-                    }}
-                >
+        <Box sx={WORKSPACE_ROOT_SX}>
+            <Box sx={WORKSPACE_INNER_SX}>
+                <Box sx={WORKSPACE_GRID_SX}>
                     {overlaysVisible && (
                         <ConnectionOverlay
                             connections={connections}
@@ -340,19 +338,8 @@ const Workspace: React.FC = () => {
                             focusSource={focusedBoundingBoxId ? 'viewer' : (focusedInputField ? 'form' : undefined)}
                         />
                     )}
-                    <Paper
-                        elevation={1}
-                        sx={{
-                            minWidth: 0,
-                            minHeight: 0,
-                            height: '100%',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            overflow: 'hidden',
-                            borderRadius: 3,
-                        }}
-                    >
-                        <Box sx={{ flex: 1, minHeight: 0 }} data-view-panel>
+                    <Paper elevation={1} sx={WORKSPACE_PANEL_PAPER_SX}>
+                        <Box sx={WORKSPACE_PANEL_BOX_SX} data-view-panel>
                             <Viewer
                                 documentData={documentData}
                                 focusedInputField={focusedInputField}
@@ -363,19 +350,8 @@ const Workspace: React.FC = () => {
                             />
                         </Box>
                     </Paper>
-                    <Paper
-                        elevation={1}
-                        sx={{
-                            minWidth: 0,
-                            minHeight: 0,
-                            height: '100%',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            overflow: 'hidden',
-                            borderRadius: 3,
-                        }}
-                    >
-                        <Box sx={{ flex: 1, minHeight: 0 }} data-form-panel>
+                    <Paper elevation={1} sx={WORKSPACE_PANEL_PAPER_SX}>
+                        <Box sx={WORKSPACE_PANEL_BOX_SX} data-form-panel>
                             <Form
                                 onUpdate={handlePurchaseOrderUpdate}
                                 onFieldFocus={handleFieldFocus}
@@ -385,55 +361,15 @@ const Workspace: React.FC = () => {
                     </Paper>
                 </Box>
                 {!showConnectionsDebug && (
-                    <Box
-                        onClick={() => setShowConnectionsDebug(true)}
-                        title="Show debug panel"
-                        sx={{
-                            alignSelf: 'flex-start',
-                            px: 1.5,
-                            py: 0.5,
-                            borderRadius: '9999px',
-                            backgroundColor: 'rgba(0,0,0,0.72)',
-                            color: 'common.white',
-                            fontSize: '0.75rem',
-                            fontWeight: 500,
-                            cursor: 'pointer',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.4)',
-                            userSelect: 'none',
-                        }}
-                    >
+                    <Box onClick={() => setShowConnectionsDebug(true)} title="Show debug panel" sx={WORKSPACE_SHOW_DEBUG_BUTTON_SX}>
                         Show Debug
                     </Box>
                 )}
             </Box>
             {showConnectionsDebug && (
                 <>
-                    <Box
-                        onMouseDown={handleDebuggerResizerMouseDown}
-                        title="Drag to resize"
-                        sx={{
-                            height: 6,
-                            flexShrink: 0,
-                            background: 'linear-gradient(180deg,#d0d0d0,#b5b5b5)',
-                            boxShadow: 'inset 0 0 3px rgba(153,153,153,0.75)',
-                            cursor: 'row-resize',
-                            borderRadius: 99,
-                            userSelect: 'none',
-                        }}
-                    />
-                    <Box
-                        sx={{
-                            height: debuggerHeight,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            backgroundColor: 'rgba(17,24,39,0.92)',
-                            color: 'rgba(255,255,255,0.92)',
-                            fontSize: '0.75rem',
-                            borderRadius: 3,
-                            overflow: 'hidden',
-                            boxShadow: '0 -6px 16px rgba(15,23,42,0.55)',
-                        }}
-                    >
+                    <Box onMouseDown={handleDebuggerResizerMouseDown} title="Drag to resize" sx={WORKSPACE_DEBUG_RESIZER_SX} />
+                    <Box sx={WORKSPACE_DEBUG_CONTAINER_SX(debuggerHeight)}>
                         <Debugger
                             boundingBoxes={boundingBoxes}
                             focusedInputField={focusedInputField}

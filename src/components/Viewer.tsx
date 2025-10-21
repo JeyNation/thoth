@@ -15,6 +15,14 @@ import { normalizeBoundingBoxes } from '../types/mapping';
 import { useMapping } from '../context/MappingContext';
 
 import type { BoundingBox } from '../types/mapping';
+import {
+  VIEWER_LOADING_BOX_SX,
+  VIEWER_ROOT_SX,
+  VIEWER_CONTAINER_SX,
+  VIEWER_SVG_HOST_SX,
+  VIEWER_SVG_TRANSFORM_SX,
+  getSelectionRectStyle as getViewerSelectionRectStyle,
+} from '../styles/viewerStyles';
 
 interface ViewerProps {
   documentData: any;
@@ -26,13 +34,11 @@ interface ViewerProps {
 }
 
 const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onViewerTransformChange, onBoundingBoxFocus, onOverlaysVisibilityChange }: ViewerProps) => {
-  // refs
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<HTMLDivElement>(null);
   const boxStyleCacheRef = useRef<Map<string, { key: string; style: CSSProperties }>>(new Map());
   const lastBoxesRef = useRef<BoundingBox[] | null>(null);
   
-  // states
   const [baseSvgDims, setBaseSvgDims] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [svgContent, setSvgContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -42,7 +48,6 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set());
   const [mouseDownPos, setMouseDownPos] = useState({ x: 0, y: 0 });
 
-  // custom hooks
   const { fieldSources, reverseIndex } = useMapping();
   const { scale, setScale, resetView } = useZoom({ containerRef,
     autoFit: {
@@ -55,7 +60,6 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
   const { isDragging, isKeyActive, position, beginPanAt, resetPan, setIsDragging } = usePan({ containerRef });
   const { isAreaSelecting, selectionStart, selectionEnd, beginSelection, updateSelection, cancelSelection, getSelectionRectStyle } = useAreaSelection();
 
-  // derived: set of box ids linked to currently focused input field
   const focusedInputLinkedBoxIds = useMemo(() => {
     if (!focusedInputField) return new Set<string>();
     const entry = fieldSources[focusedInputField];
@@ -63,7 +67,6 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     return new Set(entry.ids);
   }, [focusedInputField, fieldSources]);
 
-  // derived: set of all box ids linked to any field
   const allLinkedBoxIds = useMemo(() => {
     if (reverseIndex) {
       return new Set<string>(Object.keys(reverseIndex));
@@ -73,19 +76,16 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     return s;
   }, [fieldSources, reverseIndex]);
 
-  // callback: get style for a bounding box, with caching
   const getBoundingBoxStyle = useCallback((boundingBox: BoundingBox) => {
     const isSelected = selectedFields.has(boundingBox.FieldId);
     const isLinked = allLinkedBoxIds.has(boundingBox.generatedId);
     const isFocusedLinked = focusedInputLinkedBoxIds.has(boundingBox.generatedId);
     const isDragged = draggedField === boundingBox.FieldId;
 
-    // Build a compact cache key (geometry + state bits)
     const key = `${boundingBox.minX}|${boundingBox.minY}|${boundingBox.width}|${boundingBox.height}|${isSelected?1:0}${isLinked?1:0}${isFocusedLinked?1:0}${isDragged?1:0}`;
     const cached = boxStyleCacheRef.current.get(boundingBox.FieldId);
     if (cached && cached.key === key) return cached.style;
 
-    // Derive colors (flatten original branching into a deterministic priority order)
     let backgroundColor = 'rgba(0, 123, 255, 0.1)';
     let borderColor = '#007bff';
     if (isLinked) { backgroundColor = 'rgba(76, 175, 80, 0.2)'; borderColor = '#4caf50'; }
@@ -117,7 +117,6 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       fontSize: 10,
       fontWeight: 'bold',
       color: borderColor,
-      // Keep full opacity during drag to avoid perceived dehighlight while initiating drag
       opacity: 1,
       boxShadow,
       transition: 'all 0.2s ease'
@@ -127,19 +126,15 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     return style;
   }, [selectedFields, allLinkedBoxIds, focusedInputLinkedBoxIds, draggedField]);
 
-  // state change: initial document load (guarded to avoid redundant updates)
   useEffect(() => {
-    // load SVG document
     if (documentData?.SvgInfo?.SvgImages?.[0]) {
       const nextSvg = documentData.SvgInfo.SvgImages[0] as string;
       setSvgContent((prev) => (prev === nextSvg ? prev : nextSvg));
       setLoading((prev) => (prev ? false : prev));
     }
 
-    // load interactive bounding boxes, but only notify parent if changed
     if (documentData?.SvgInfo?.BoundingBoxes) {
       const normalized = normalizeBoundingBoxes(documentData.SvgInfo.BoundingBoxes);
-      // Shallow structural equality check against last notified value
       const prev = lastBoxesRef.current;
       const sameLength = prev ? prev.length === normalized.length : false;
       let same = !!prev && sameLength;
@@ -161,7 +156,6 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     }
   }, [documentData, onBoundingBoxesUpdate]);
 
-  // measure base SVG dimensions (once per svgContent change)
   useEffect(() => {
     if (!svgContent) return;
 
@@ -172,7 +166,6 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       const svgEl = host.querySelector('svg') as (SVGSVGElement | null);
       if (!svgEl) return false;
 
-      // Prefer viewBox for intrinsic size, fallback to bounding box / client rect
       let w = 0; let h = 0;
       if (svgEl.viewBox && svgEl.viewBox.baseVal && svgEl.viewBox.baseVal.width && svgEl.viewBox.baseVal.height) {
         w = svgEl.viewBox.baseVal.width;
@@ -196,7 +189,6 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       }
       return false;
     };
-    // Attempt a few animation frames if initial measure fails (SVG not fully laid out yet)
     let attempts = 0; let raf: number;
     const loop = () => {
       if (tryMeasure() || attempts++ > 5) return;
@@ -206,17 +198,14 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     return () => { if (raf) cancelAnimationFrame(raf); };
   }, [svgContent]);
 
-  // state change: notify viewer transform changes
   useEffect(() => { 
     onViewerTransformChange?.(scale, position); 
   }, [scale, position, onViewerTransformChange]);
 
-  // state change: notify overlay visibility (so Workspace can hide/show lines too)
   useEffect(() => {
     onOverlaysVisibilityChange?.(showOverlays);
   }, [showOverlays, onOverlaysVisibilityChange]);
 
-  // state change: clear selection when clicking anywhere outside the viewer panel
   useEffect(() => {
     const handleGlobalMouseDown = (e: MouseEvent) => {
       const panelEl = containerRef.current;
@@ -232,22 +221,18 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     return () => document.removeEventListener('mousedown', handleGlobalMouseDown);
   }, [selectedFields, onBoundingBoxFocus]);
 
-  // state change: clear external focused box when selection becomes empty
   useEffect(() => {
     if (selectedFields.size === 0) {
       onBoundingBoxFocus?.(null);
     }
   }, [selectedFields, onBoundingBoxFocus]);
 
-  // state change: clear cache when the source document changes (svgContent) or bounding boxes list length changes.
   useEffect(() => {
-    // Intentionally run when svgContent or the number of boxes changes.
     if (svgContent !== undefined || boundingBoxes.length >= 0) {
       boxStyleCacheRef.current.clear();
     }
   }, [svgContent, boundingBoxes.length]);
 
-  // event handler: field clicked
   const handleFieldSelection = (fieldId: string, event: React.MouseEvent) => {
     event.stopPropagation();
     
@@ -259,23 +244,17 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
         newSelection.add(fieldId);
       }
       setSelectedFields(newSelection);
-      // Do not set a focused bounding box when toggling selection with Ctrl/Meta.
-      // Also clear any existing focused box so it isn't treated as focused.
       onBoundingBoxFocus?.(null);
       return;
     } else {
-      // If already selected (single or part of multi), preserve selection.
-      // This prevents visual dehighlight when starting a drag from the item.
       if (!selectedFields.has(fieldId)) {
         setSelectedFields(new Set([fieldId]));
       }
     }
-    // Update focused bounding box to last clicked (single focus concept)
     const box = boundingBoxes.find(b => b.FieldId === fieldId);
     if (box && box.generatedId) onBoundingBoxFocus?.(box.generatedId);
   };
 
-  // event handler: field drag started
   const handleFieldDragStart = (e: React.DragEvent, boundingBox: BoundingBox) => {
     setDraggedField(boundingBox.FieldId);
     
@@ -346,11 +325,9 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     e.dataTransfer.effectAllowed = 'copy';
   };
 
-  // event handler: mouse down on the viewer panel
   const handlePanelMouseDown = (e: React.MouseEvent) => {
     setMouseDownPos({ x: e.clientX, y: e.clientY });
     const target = e.target as HTMLElement;
-    // If focused element is editable, don't hijack interactions (e.g., Space for pan)
     const active = document.activeElement as HTMLElement | null;
     const isEditable = !!(active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable));
     if (isEditable) return;
@@ -371,7 +348,6 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     }
   };
 
-  // event handler: mouse move over the viewer panel
   const handlePanelMouseMove = (e: React.MouseEvent) => {
     if (!isAreaSelecting) return;
     const containerEl = containerRef.current;
@@ -385,7 +361,6 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     }
   };
 
-  // event handler: mouse up on the viewer panel
   const handlePanelMouseUp = (e: React.MouseEvent) => {
     const dx = Math.abs(e.clientX - mouseDownPos.x);
     const dy = Math.abs(e.clientY - mouseDownPos.y);
@@ -404,7 +379,6 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
         if (!(maxX < selectionRect.left || minX > selectionRect.right || maxY < selectionRect.top || minY > selectionRect.bottom)) ids.add(b.FieldId);
       });
       setSelectedFields(ids);
-      // Area selection results in multi-select; clear any focused bounding box.
       onBoundingBoxFocus?.(null);
       cancelSelection();
     } else if (isClick && !isDragging && !isKeyActive) {
@@ -417,7 +391,6 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     setIsDragging(false); setDraggedField(null);
   };
 
-  // event handler: mouse leave on the viewer panel
   const handlePanelMouseLeave = () => {
     setIsDragging(false);
     setDraggedField(null);
@@ -426,24 +399,14 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     }
   };
 
-  const selectionRectBaseStyle = getSelectionRectStyle();
-  const selectionRectStyle: CSSProperties = selectionRectBaseStyle.display === 'none'
-    ? selectionRectBaseStyle
-    : {
-        ...selectionRectBaseStyle,
-        position: 'absolute',
-  border: '1px dashed #2196f3',
-        backgroundColor: 'rgba(33,150,243,0.1)',
-        pointerEvents: 'none',
-        zIndex: 25,
-      };
+  const selectionRectStyle: CSSProperties = getViewerSelectionRectStyle(getSelectionRectStyle());
 
   const scaledWidth = baseSvgDims.width ? baseSvgDims.width * scale : undefined;
   const scaledHeight = baseSvgDims.height ? baseSvgDims.height * scale : undefined;
 
   if (loading) {
     return (
-      <Box sx={{ p: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+      <Box sx={VIEWER_LOADING_BOX_SX}>
         <Typography variant="body1" color="text.secondary" fontStyle="italic">
           Loading document...
         </Typography>
@@ -452,7 +415,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%', gap: 2, p: 2 }}>
+  <Box sx={VIEWER_ROOT_SX}>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between">
         <Stack direction="row" spacing={1} alignItems="center">
           <Chip size="small" variant="outlined" label={`${boundingBoxes.length} fields detected`} />
@@ -515,17 +478,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
 
       <Box
         ref={containerRef}
-        sx={{
-          flex: 1,
-          minHeight: 0,
-          overflow: 'auto',
-          position: 'relative',
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 2,
-          backgroundColor: 'background.paper',
-          cursor: isKeyActive ? (isDragging ? 'grabbing' : 'grab') : 'crosshair',
-        }}
+        sx={VIEWER_CONTAINER_SX(isKeyActive, isDragging)}
         data-scroll-listener
         data-svg-container
         onMouseDown={handlePanelMouseDown}
@@ -534,26 +487,8 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
         onMouseLeave={handlePanelMouseLeave}
       >
         {/** keep scaled size placeholder to prevent border clipping */}
-        <Box
-          ref={svgRef}
-          sx={{
-            position: 'relative',
-            width: scaledWidth || 'auto',
-            height: scaledHeight || 'auto',
-            minWidth: scaledWidth || 'auto',
-            minHeight: scaledHeight || 'auto',
-          }}
-        >
-          <Box
-            sx={{
-              position: 'relative',
-              width: baseSvgDims.width || 'auto',
-              height: baseSvgDims.height || 'auto',
-              transform: `scale(${scale})`,
-              transformOrigin: '0 0',
-              transition: isDragging ? 'none' : 'transform 0s linear',
-            }}
-          >
+        <Box ref={svgRef} sx={VIEWER_SVG_HOST_SX(scaledWidth, scaledHeight)}>
+          <Box sx={VIEWER_SVG_TRANSFORM_SX(baseSvgDims.width || 'auto', baseSvgDims.height || 'auto', scale, isDragging)}>
             <div dangerouslySetInnerHTML={{ __html: svgContent }} />
             {showOverlays && boundingBoxes.map((boundingBox) => {
               const style = getBoundingBoxStyle(boundingBox);
@@ -568,7 +503,6 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
                   onDragStart={(e) => handleFieldDragStart(e, boundingBox)}
                   title={boundingBox.FieldText}
                   onMouseDown={(e) => {
-                    // Prevent collapsing selection on mousedown if this field is in the current multi-select
                     e.stopPropagation();
                   }}
                   onClick={(e) => handleFieldSelection(boundingBox.FieldId, e)}

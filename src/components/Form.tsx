@@ -2,6 +2,15 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Box, Button, Stack, Typography } from '@mui/material';
+import {
+    FORM_ROOT_SX,
+    FORM_SCROLL_AREA_SX,
+    FORM_SECTION_CONTAINER_SX,
+    FORM_CAPTION_UPPER_SX,
+    FORM_LINE_ITEMS_STACK_SX,
+    FORM_ADD_BUTTON_BASE_SX,
+    FORM_ADD_BUTTON_ACTIVE_SX,
+} from '../styles/formStyles';
 import type { PurchaseOrder, LineItem } from '../types/PurchaseOrder';
 import { makeLineItemField } from '../types/fieldIds';
 import { addBlankLineItem as poAddBlankLineItem, removeLineItem, computeNextLineNumber, ensureLineNumberExists, insertBlankLineItem } from '../utils/purchaseOrderMutations';
@@ -16,6 +25,7 @@ import ColumnDropZone from './form/ColumnDropZone';
 import FieldInput from './form/FieldInput';
 import LineItemCard from './form/LineItemCard';
 import useFlashHighlight from '../hooks/useFlashHighlight';
+import { getTextFieldSxFor } from '../styles/fieldStyles';
 
 type BasicFieldKey = Exclude<keyof PurchaseOrder, 'lineItems'>;
 
@@ -109,53 +119,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
     const getTextFieldSx = (fieldId: string) => {
         const highlight = isFieldHighlighted(fieldId);
         const stage = getStage(fieldId);
-        
-        const root: Record<string, any> = {
-            borderRadius: 1.5,
-            backgroundColor: highlight ? 'rgba(76,175,80,0.15)' : 'background.paper',
-            transition: 'box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease',
-            '& fieldset': {
-                borderWidth: highlight ? 2 : 1,
-                borderColor: highlight ? '#4caf50' : 'divider',
-            },
-            '&:hover fieldset': {
-                borderColor: highlight ? '#2e7d32' : 'primary.main',
-            },
-            '&.Mui-focused fieldset': {
-                borderColor: highlight ? '#2e7d32' : 'primary.main',
-                boxShadow: highlight ? '0 0 0 2px rgba(46,125,50,0.25)' : '0 0 0 2px rgba(25,118,210,0.18)',
-            },
-        };
-        
-        if (stage === 'strong') {
-            root.transition = 'background-color 1s ease, box-shadow 1s ease, border-color 1s ease';
-            root.backgroundColor = 'rgba(255,235,59,0.55)';
-            root.boxShadow = '0 0 0 1px rgba(255,193,7,0.8)';
-            root['& fieldset'] = {
-                ...(root['& fieldset'] || {}),
-                borderColor: 'rgba(255,193,7,0.85)',
-                borderWidth: 1,
-            };
-        } 
-        else if (stage === 'fade') {
-            root.transition = 'background-color 1s ease, box-shadow 1s ease, border-color 1s ease';
-            root['& fieldset'] = {
-                ...(root['& fieldset'] || {}),
-                transition: 'border-color 1s ease',
-            };
-        }
-        
-        return {
-            '& .MuiOutlinedInput-root': root,
-            '& input[type="number"]': {
-                appearance: 'textfield',
-                MozAppearance: 'textfield',
-            },
-            '& input[type="number"]::-webkit-outer-spin-button, & input[type="number"]::-webkit-inner-spin-button': {
-                WebkitAppearance: 'none',
-                margin: 0,
-            },
-        };
+        return (getTextFieldSxFor(highlight, stage as any) as unknown) as Record<string, any>;
     };
 
     useEffect(() => {
@@ -684,34 +648,13 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
     };
 
     return (
-        <Box
-            sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
-                overflow: 'hidden',
-                borderRadius: 2,
-                backgroundColor: 'background.paper',
-            }}
-            onClick={handleFormClick}
-        >
-            <Box
-                sx={{
-                    flex: 1,
-                    minHeight: 0,
-                    overflow: 'auto',
-                    p: 3,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 3,
-                }}
-                data-scroll-listener
-            >
+        <Box sx={FORM_ROOT_SX} onClick={handleFormClick}>
+            <Box sx={FORM_SCROLL_AREA_SX} data-scroll-listener>
                 <Typography variant="h5" fontWeight={600} color="text.primary">
                     Purchase Order Form
                 </Typography>
 
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <Box sx={FORM_SECTION_CONTAINER_SX}>
                     <Box>
                         <Typography variant="subtitle1" fontWeight={600} color="text.secondary" gutterBottom>
                             General
@@ -723,7 +666,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                                 const isBasicDropActive = activeBasicDrop === config.id;
                                 return (
                                     <Box key={config.id}>
-                                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                                        <Typography variant="caption" color="text.secondary" sx={FORM_CAPTION_UPPER_SX}>
                                             {config.label}
                                         </Typography>
                                         <FieldInput
@@ -763,9 +706,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                         </Stack>
                     </Box>
 
-                    <Box
-                        sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
-                    >
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <Typography variant="subtitle1" fontWeight={600} color="text.secondary">
                             Line Items
                         </Typography>
@@ -778,7 +719,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                                     onDrop={(col, e) => handleColumnDrop(e, col)}
                                     externallyActive={globalDragActive}
                                 />
-                                <Stack spacing={2} sx={{ pr: 0.5 }}>
+                                <Stack spacing={2} sx={FORM_LINE_ITEMS_STACK_SX}>
                                     {purchaseOrder.lineItems.map((item) => renderLineItemCard(item))}
                                 </Stack>
                             </>
@@ -808,20 +749,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                             setAddButtonDragActive(false);
                             handleAddLineItemDrop(e);
                         }}
-                        sx={{
-                            alignSelf: 'flex-start',
-                            borderRadius: 999,
-                            px: 2.5,
-                            py: 1,
-                            fontWeight: 600,
-                            ...(addButtonDragActive
-                                ? {
-                                    border: '1px dashed rgba(44,123,229,0.75)',
-                                    backgroundColor: 'rgba(44,123,229,0.12)',
-                                    color: 'primary.main',
-                                }
-                                : {}),
-                        }}
+                        sx={([FORM_ADD_BUTTON_BASE_SX, addButtonDragActive ? FORM_ADD_BUTTON_ACTIVE_SX : undefined] as unknown) as any}
                     >
                         Add Line Item
                     </Button>

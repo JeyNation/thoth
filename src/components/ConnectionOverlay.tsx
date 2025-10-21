@@ -7,9 +7,8 @@ export type ClampSides = { left: boolean; right: boolean; top: boolean; bottom: 
 export type OverlayConnection = {
   a: OverlayRect;
   b: OverlayRect;
-  // Optional identifiers to allow actions (e.g., unlink) from the overlay
-  fieldId?: string; // the form field ID linked in this connection
-  boxId?: string;   // the bounding box ID linked in this connection
+  fieldId?: string;
+  boxId?: string;
   aClamped?: boolean;
   bClamped?: boolean;
   aClampSides?: ClampSides;
@@ -25,8 +24,6 @@ type Props = {
   focusSource?: 'viewer' | 'form';
 };
 
-// Presentational overlay: draws curved connections; when a view-side endpoint is clamped,
-// force the curve's tangent at that endpoint to point inward according to the clamped edge(s).
 const ConnectionOverlay: React.FC<Props> = ({ connections, onCenterIconClick, focusSource }) => {
   const center = (r: OverlayRect) => ({ x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2 });
   const boundaryPointToward = (r: OverlayRect, toward: { x: number; y: number }) => {
@@ -43,16 +40,26 @@ const ConnectionOverlay: React.FC<Props> = ({ connections, onCenterIconClick, fo
     }
   };
 
-  const MARKER_RADIUS = 6;
-  const ARROW_SIZE = 14; // length from base to tip
-  const ARROW_HALF = 6;  // half height of base
-  const GAP = 8; // gap between box edge and path endpoints
-  const KAPPA = 0.5522847498; // circle approximation constant
+  const {
+    SVG_CONTAINER_STYLE,
+    PATH_STROKE_COLOR,
+    PATH_STROKE_WIDTH,
+    PATH_DASHARRAY,
+    CLEAR_ICON_STYLE,
+    CLEAR_ICON_FILL,
+    CLEAR_ICON_STROKE,
+    MARKER_RADIUS,
+    ARROW_SIZE,
+    ARROW_HALF,
+    GAP,
+    ICON_R,
+    ICON_STROKE,
+    KAPPA,
+  } = require('../styles/connectionOverlayStyles');
 
   return (
-    <svg width="100%" height="100%" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 4 }}>
+    <svg width="100%" height="100%" style={SVG_CONTAINER_STYLE}>
       {connections.map((conn, i) => {
-        // Build endpoints then normalize so start = left, end = right
         const epA = { rect: conn.a, center: center(conn.a), clamped: !!conn.aClamped, clampSides: conn.aClampSides, side: conn.aSide };
         const epB = { rect: conn.b, center: center(conn.b), clamped: !!conn.bClamped, clampSides: conn.bClampSides, side: conn.bSide };
         const [start, end] = epA.center.x <= epB.center.x ? [epA, epB] : [epB, epA];
@@ -97,9 +104,6 @@ const ConnectionOverlay: React.FC<Props> = ({ connections, onCenterIconClick, fo
         let la = controlLen(na);
         let lb = controlLen(nb);
 
-        // Force tangents on clamped endpoints based on start/end rules
-        // Start (left): x => +1; top => +1y; bottom => -1y
-        // End (right): x => +1; top => -1y; bottom => +1y
         type OutFlags = { left: boolean; right: boolean; top: boolean; bottom: boolean };
         const forcedStartTangent = (out?: OutFlags, sides?: ClampSides): { x: number; y: number } | null => {
           const hx = out ? (out.left || out.right) : (sides ? (sides.left || sides.right) : false);
@@ -122,18 +126,16 @@ const ConnectionOverlay: React.FC<Props> = ({ connections, onCenterIconClick, fo
 
         const mixedOrientation = (Math.abs(na.nx) > 0) !== (Math.abs(nb.nx) > 0);
 
-        // Add a small gap so the line/marker doesn't touch the box edge
-  const pStart = { x: pa.x + tStart.x * GAP, y: pa.y + tStart.y * GAP };
-  const pEnd = { x: pb.x - tEnd.x * GAP, y: pb.y - tEnd.y * GAP };
+        const pStart = { x: pa.x + tStart.x * GAP, y: pa.y + tStart.y * GAP };
+        const pEnd = { x: pb.x - tEnd.x * GAP, y: pb.y - tEnd.y * GAP };
 
-  // Map endpoint positions to their logical sides (viewer/form)
-  const isAStart = start === epA;
-  const posA = isAStart ? pStart : pEnd;
-  const posB = isAStart ? pEnd : pStart;
-  let pView = posA;
-  let pForm = posB;
-  if (epA.side === 'view') pView = posA; else if (epB.side === 'view') pView = posB;
-  if (epA.side === 'form') pForm = posA; else if (epB.side === 'form') pForm = posB;
+        const isAStart = start === epA;
+        const posA = isAStart ? pStart : pEnd;
+        const posB = isAStart ? pEnd : pStart;
+        let pView = posA;
+        let pForm = posB;
+        if (epA.side === 'view') pView = posA; else if (epB.side === 'view') pView = posB;
+        if (epA.side === 'form') pForm = posA; else if (epB.side === 'form') pForm = posB;
 
         if (mixedOrientation) {
           const ddx = pEnd.x - pStart.x; const ddy = pEnd.y - pStart.y;
@@ -141,7 +143,6 @@ const ConnectionOverlay: React.FC<Props> = ({ connections, onCenterIconClick, fo
           const C = KAPPA * R; la = C; lb = C;
         }
 
-        // If the segment is very short, use a simple, gentle curve
         const segLen = Math.hypot(pEnd.x - pStart.x, pEnd.y - pStart.y);
         if (segLen < 80) {
           const SIMPLE_SHORT = Math.min(28, Math.max(12, segLen * 0.4));
@@ -153,7 +154,7 @@ const ConnectionOverlay: React.FC<Props> = ({ connections, onCenterIconClick, fo
         const c2x = pEnd.x - tEnd.x * lb;
         const c2y = pEnd.y - tEnd.y * lb;
 
-  const d = `M ${pStart.x},${pStart.y} C ${c1x},${c1y} ${c2x},${c2y} ${pEnd.x},${pEnd.y}`;
+        const d = `M ${pStart.x},${pStart.y} C ${c1x},${c1y} ${c2x},${c2y} ${pEnd.x},${pEnd.y}`;
 
         const Arrow = ({ x, y, dir }: { x: number; y: number; dir: { x: number; y: number } }) => {
           const len = Math.hypot(dir.x, dir.y) || 1;
@@ -162,11 +163,9 @@ const ConnectionOverlay: React.FC<Props> = ({ connections, onCenterIconClick, fo
           const cx = x + ux * (2 * ARROW_SIZE / 3);
           const cy = y + uy * (2 * ARROW_SIZE / 3);
           const points = `0,0 ${-ARROW_SIZE},${ARROW_HALF} ${-ARROW_SIZE},${-ARROW_HALF}`;
-          return <polygon points={points} fill="#2e7d32" transform={`translate(${cx},${cy}) rotate(${angle})`} />;
+          return <polygon points={points} fill={PATH_STROKE_COLOR} transform={`translate(${cx},${cy}) rotate(${angle})`} />;
         };
 
-        // Clear icon component and placement
-        const ICON_R = 5; const ICON_STROKE = 1.5;
         const stopAll = (e: any) => {
           if (e && typeof e.preventDefault === 'function') e.preventDefault();
           if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
@@ -176,28 +175,24 @@ const ConnectionOverlay: React.FC<Props> = ({ connections, onCenterIconClick, fo
         const ClearIcon = ({ x, y }: { x: number; y: number }) => (
           <g
             transform={`translate(${x},${y})`}
-            style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+            style={CLEAR_ICON_STYLE}
             onMouseDown={(e) => { stopAll(e); }}
             onClick={(e) => { stopAll(e); onCenterIconClick && onCenterIconClick(conn, i); }}
           >
-            <circle r={ICON_R} fill="#fff" stroke="#2e7d32" strokeWidth={ICON_STROKE} />
-            <line x1={-3} y1={-3} x2={3} y2={3} stroke="#2e7d32" strokeWidth={ICON_STROKE} strokeLinecap="round" />
-            <line x1={-3} y1={3} x2={3} y2={-3} stroke="#2e7d32" strokeWidth={ICON_STROKE} strokeLinecap="round" />
+            <circle r={ICON_R} fill={CLEAR_ICON_FILL} stroke={CLEAR_ICON_STROKE} strokeWidth={ICON_STROKE} />
           </g>
         );
 
-  // Determine focused and linked sides
-  const pFocused = focusSource === 'viewer' ? pView : focusSource === 'form' ? pForm : null;
-  const pLinked = focusSource === 'viewer' ? pForm : focusSource === 'form' ? pView : null;
-  // Clear icon sits on the linked side per UX rule
-  const clearX = pLinked ? pLinked.x : pStart.x;
-  const clearY = pLinked ? pLinked.y : pStart.y;
+        const pFocused = focusSource === 'viewer' ? pView : focusSource === 'form' ? pForm : null;
+        const pLinked = focusSource === 'viewer' ? pForm : focusSource === 'form' ? pView : null;
+        
+        const clearX = pLinked ? pLinked.x : pStart.x;
+        const clearY = pLinked ? pLinked.y : pStart.y;
 
         return (
           <g key={i}>
-            <path d={d} stroke="#2e7d32" strokeWidth={2} fill="none" strokeLinecap="round" strokeDasharray="6 4" />
+            <path d={d} stroke={PATH_STROKE_COLOR} strokeWidth={PATH_STROKE_WIDTH} fill="none" strokeLinecap="round" strokeDasharray={PATH_DASHARRAY} />
             {pLinked && <ClearIcon x={clearX} y={clearY} />}
-            {/* Linked side: solid circle; Focused side: no circle or x-circle */}
             {pLinked && <circle cx={pLinked.x} cy={pLinked.y} r={MARKER_RADIUS} fill="#2e7d32" />}
           </g>
         );

@@ -1,7 +1,12 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 import DropZone from '../DropZone';
-import { DROP_ZONE_ACTIVE_STYLE } from '../../styles/dropHighlight';
+import { 
+  ROW_DROP_BASE_STYLE, 
+  ROW_DROP_ACTIVE_STYLE, 
+  ROW_DROP_CONTAINER_SX,
+  ROW_DROP_LABEL_SX 
+} from '../../styles/rowDropStyles';
 
 interface RowDropZoneProps {
   lineNumber: number;
@@ -13,41 +18,18 @@ interface RowDropZoneProps {
 }
 
 const RowDropZone: React.FC<RowDropZoneProps> = ({ lineNumber, isActive, externallyActive = false, onDragOver, onDragLeave, onDrop }) => {
-  const baseStyle: React.CSSProperties = {
-    width: '100%',
-    height: '100%',
-    minHeight: 64,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    borderRadius: 1.5,
-    borderWidth: '1px',
-    borderStyle: 'solid',
-    borderColor: 'transparent',
-    transition: DROP_ZONE_ACTIVE_STYLE.transition,
-    padding: 16,
-  };
-
-  const activeStyle: React.CSSProperties = {
-    borderWidth: DROP_ZONE_ACTIVE_STYLE.borderWidth,
-    borderStyle: DROP_ZONE_ACTIVE_STYLE.borderStyle,
-    borderColor: DROP_ZONE_ACTIVE_STYLE.borderColor,
-    transition: DROP_ZONE_ACTIVE_STYLE.transition,
-  };
-
   return (
-    <Box sx={{ width: 60, alignSelf: 'stretch' }}>
+    <Box sx={ROW_DROP_CONTAINER_SX}>
       <DropZone
-        baseStyle={baseStyle}
-        activeStyle={activeStyle}
+        baseStyle={ROW_DROP_BASE_STYLE}
+        activeStyle={ROW_DROP_ACTIVE_STYLE}
         onDragOver={onDragOver}
         onDragOverExtra={undefined}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
         externallyActive={externallyActive}
       >
-        <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1, paddingTop: '4px' }}>
+        <Typography variant="body2" sx={ROW_DROP_LABEL_SX}>
           {lineNumber}
         </Typography>
       </DropZone>
