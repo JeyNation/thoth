@@ -24,7 +24,6 @@ export const applyDropHighlightSx = (base: Record<string, any>): Record<string, 
     ...base,
     '& .MuiOutlinedInput-root': {
       ...root,
-      // Do not change background on active drop; only apply dashed border and colors.
       transition: 'border-color 0.2s ease',
       '& fieldset': {
         ...fieldset,

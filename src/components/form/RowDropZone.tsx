@@ -10,23 +10,17 @@ import {
 
 interface RowDropZoneProps {
   lineNumber: number;
-  isActive: boolean;
   externallyActive?: boolean;
-  onDragOver: (e: React.DragEvent) => void;
-  onDragLeave: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
 }
 
-const RowDropZone: React.FC<RowDropZoneProps> = ({ lineNumber, isActive, externallyActive = false, onDragOver, onDragLeave, onDrop }) => {
+const RowDropZone: React.FC<RowDropZoneProps> = ({ lineNumber, externallyActive = false, onDrop }) => {
   return (
     <Box sx={ROW_DROP_CONTAINER_SX}>
       <DropZone
+        onDrop={onDrop}
         baseStyle={ROW_DROP_BASE_STYLE}
         activeStyle={ROW_DROP_ACTIVE_STYLE}
-        onDragOver={onDragOver}
-        onDragOverExtra={undefined}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
         externallyActive={externallyActive}
       >
         <Typography variant="body2" sx={ROW_DROP_LABEL_SX}>

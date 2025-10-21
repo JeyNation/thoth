@@ -23,10 +23,7 @@ import {
 
 export interface LineItemCardProps {
   item: LineItem;
-  isRowDropActive: boolean;
   externallyActive?: boolean;
-  onRowDragOver: (e: React.DragEvent) => void;
-  onRowDragLeave: (e: React.DragEvent) => void;
   onRowDrop: (e: React.DragEvent) => void;
   onInsertRelative: (before: boolean) => void;
   onRemove: () => void;
@@ -42,10 +39,7 @@ export interface LineItemCardProps {
 
 const LineItemCard: React.FC<LineItemCardProps> = ({
   item,
-  isRowDropActive,
   externallyActive = false,
-  onRowDragOver,
-  onRowDragLeave,
   onRowDrop,
   onInsertRelative,
   onRemove,
@@ -73,8 +67,7 @@ const LineItemCard: React.FC<LineItemCardProps> = ({
         kind={kind}
         value={value}
         baseSx={baseSx}
-        isDropActive={isDropActive}
-        isGlobalDragActive={externallyActive}
+        isDragActive={isDropActive || externallyActive}
         ariaLabel={aria}
         onChange={(val, opts) => handleLineItemChange(item.lineNumber, field, val, kind, opts)}
         onClear={() => clearLineItemField(item.lineNumber, field, kind)}
@@ -104,10 +97,7 @@ const LineItemCard: React.FC<LineItemCardProps> = ({
       <Stack {...LINE_ITEM_OUTER_STACK_PROPS}>
         <RowDropZone
           lineNumber={item.lineNumber}
-          isActive={isRowDropActive}
           externallyActive={externallyActive}
-          onDragOver={onRowDragOver}
-          onDragLeave={onRowDragLeave}
           onDrop={onRowDrop}
         />
         <Stack {...LINE_ITEM_INNER_STACK_PROPS}>

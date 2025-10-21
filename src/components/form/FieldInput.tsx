@@ -9,19 +9,14 @@ export interface FieldInputProps {
   id?: string;
 
   lineNumber?: number;
-  field?: string;
 
   kind: FieldKind;
   value: string | number;
-  multiline?: boolean;
-  rows?: number;
 
   baseSx: Record<string, any>;
-  isDropActive: boolean;
-  isGlobalDragActive?: boolean;
+  isDragActive: boolean;
   ariaLabel?: string;
 
-  // unified onChange always provides (value, opts?) to support numeric explicitClear
   onChange: (value: string | number, opts?: { explicitClear?: boolean }) => void;
   onClear: () => void;
   onFocus: () => void;
@@ -35,11 +30,8 @@ const FieldInput: React.FC<FieldInputProps> = ({
   id,
   kind,
   value,
-  multiline,
-  rows,
   baseSx,
-  isDropActive,
-  isGlobalDragActive = false,
+  isDragActive,
   ariaLabel,
   onChange,
   onClear,
@@ -49,10 +41,12 @@ const FieldInput: React.FC<FieldInputProps> = ({
   onDragLeave,
   onDrop,
 }) => {
-  const showClear = (kind === 'integer' || kind === 'decimal') ? value !== 0 : typeof value === 'string' && value.trim() !== '';
-  const sx = (isDropActive || isGlobalDragActive) ? applyDropHighlightSx(baseSx) : baseSx;
-
+  const sx = (isDragActive) ? applyDropHighlightSx(baseSx) : baseSx;
   const isNumeric = kind === 'integer' || kind === 'decimal';
+  const showClear = (isNumeric) 
+    ? value !== 0
+    : typeof value === 'string' && value.trim() !== '';
+    
   const [display, setDisplay] = useState<string>(() => (isNumeric ? String(value ?? 0) : (typeof value === 'string' ? value : '')));
   const [isFocused, setIsFocused] = useState(false);
 
@@ -166,8 +160,8 @@ const FieldInput: React.FC<FieldInputProps> = ({
       value={isNumeric ? display : (typeof value === 'string' ? value : String(value))}
       type={type}
       aria-label={ariaLabel}
-      multiline={kind === 'textarea' || !!multiline}
-      minRows={kind === 'textarea' ? (rows ?? 2) : undefined}
+      multiline={kind === 'textarea'}
+      minRows={kind === 'textarea' ? 2 : undefined}
       sx={sx}
       onChange={handleChange}
       onFocus={handleFocus}
@@ -184,7 +178,13 @@ const FieldInput: React.FC<FieldInputProps> = ({
             ...(kind === 'integer'
               ? { min: 0, step: 1, style: { textAlign: 'right' } }
               : kind === 'decimal'
-                ? { inputMode: 'decimal', pattern: '[0-9]*[.]?[0-9]*', style: { textAlign: 'right' }, onKeyDown: handleKeyDown, onPaste: handlePaste }
+                ? { 
+                  inputMode: 'decimal', 
+                  pattern: '[0-9]*[.]?[0-9]*', 
+                  style: { textAlign: 'right' }, 
+                  onKeyDown: handleKeyDown, 
+                  onPaste: handlePaste 
+                }
                 : {}),
           },
         },

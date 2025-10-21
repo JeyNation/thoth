@@ -17,7 +17,6 @@ export interface DropZoneProps {
   onDragOver?: (e: React.DragEvent) => void;
   onDragEnter?: (e: React.DragEvent) => void;
   onDragLeave?: (e: React.DragEvent) => void;
-  onDragOverExtra?: (e: React.DragEvent) => void;
 }
 
 const DropZone: React.FC<DropZoneProps> = ({
@@ -33,7 +32,6 @@ const DropZone: React.FC<DropZoneProps> = ({
   onDragOver,
   onDragEnter,
   onDragLeave,
-  onDragOverExtra
 }) => {
   const [active, setActive] = useState(false);
   const hoverDepthRef = useRef(0);
@@ -53,8 +51,7 @@ const DropZone: React.FC<DropZoneProps> = ({
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     if (onDragOver) onDragOver(e);
-    if (onDragOverExtra) onDragOverExtra(e);
-  }, [onDragOverExtra]);
+  }, [onDragOver]);
 
   const handleDragLeave = useCallback((e?: React.DragEvent) => {
     if (hoverDepthRef.current > 0) {
@@ -70,10 +67,6 @@ const DropZone: React.FC<DropZoneProps> = ({
     clearActiveState();
     onDrop(e);
   }, [clearActiveState, onDrop]);
-
-  const handleDropCapture = useCallback(() => {
-    if (active) clearActiveState();
-  }, [active, clearActiveState]);
 
   useEffect(() => {
     const handleGlobalDrop = () => clearActiveState();
@@ -139,7 +132,6 @@ const DropZone: React.FC<DropZoneProps> = ({
       onDragEnter: handleDragEnter,
       onDragOver: handleDragOver,
       onDragLeave: handleDragLeave,
-      onDropCapture: handleDropCapture,
       onDrop: handleDrop,
     },
     children

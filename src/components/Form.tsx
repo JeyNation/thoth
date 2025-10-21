@@ -617,21 +617,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
             <LineItemCard
                 key={item.lineNumber}
                 item={item}
-                isRowDropActive={isRowDropActive}
                 externallyActive={globalDragActive}
-                onRowDragOver={(e) => {
-                    if (e.dataTransfer.types.includes('application/json')) {
-                        e.preventDefault();
-                        if (activeRowDropLine !== item.lineNumber) {
-                            setActiveRowDropLine(item.lineNumber);
-                        }
-                    }
-                }}
-                onRowDragLeave={(e) => {
-                    const next = e.relatedTarget as Node | null;
-                    if (next && (e.currentTarget as HTMLElement).contains(next)) return;
-                    setActiveRowDropLine((prev) => (prev === item.lineNumber ? null : prev));
-                }}
                 onRowDrop={(e) => { setActiveRowDropLine(null); handleRowDrop(e, item.lineNumber); }}
                 onInsertRelative={(before) => handleInsertLineRelative(item.lineNumber, { before })}
                 onRemove={() => handleRemoveLineItem(item.lineNumber)}
@@ -673,11 +659,8 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                                             id={config.id}
                                             kind={config.kind}
                                             value={value}
-                                            multiline={config.multiline}
-                                            rows={config.rows}
                                             baseSx={baseSx}
-                                            isDropActive={!!isBasicDropActive}
-                                            isGlobalDragActive={globalDragActive}
+                                            isDragActive={!!isBasicDropActive || globalDragActive}
                                             onChange={(val) => handleBasicInfoChange(config.id, val as string, config.kind)}
                                             onClear={() => clearBasicField(config.id, config.kind)}
                                             onFocus={() => { setFocusedFieldIdLocal(config.id); onFieldFocus?.(config.id); }}

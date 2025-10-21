@@ -36,13 +36,11 @@ export interface RowMappingDialogProps {
 
 const RowMappingDialog: React.FC<RowMappingDialogProps> = ({ column, pairs, proposedRows, onChange, onApply, onCancel }) => {
   const rowOptions = useMemo(() => {
-    // Continuous options from 1..N where N grows by the number of unassigned pairs,
-    // so if rows 1..9 exist and 3 more are suggested, options become 1..12.
     const assignedNums = Object.values(proposedRows).filter((v): v is number => typeof v === 'number');
     const maxAssigned = assignedNums.length ? Math.max(...assignedNums) : 0;
     const unassignedCount = pairs.reduce((acc, p) => acc + (typeof proposedRows[p.fieldId] === 'number' ? 0 : 1), 0);
     const maxRow = Math.max(5, maxAssigned + unassignedCount);
-    const EXTRA = 10; // include 10 extra integers beyond computed max
+    const EXTRA = 10;
     return Array.from({ length: maxRow + EXTRA }, (_, idx) => idx + 1);
   }, [pairs, proposedRows]);
 
@@ -92,7 +90,7 @@ const RowMappingDialog: React.FC<RowMappingDialogProps> = ({ column, pairs, prop
                         <MenuItem value="">None</MenuItem>
                         {rowOptions.map((row) => (
                           <MenuItem key={row} value={row}>
-                            Row {row}
+                            {row}
                           </MenuItem>
                         ))}
                       </Select>
