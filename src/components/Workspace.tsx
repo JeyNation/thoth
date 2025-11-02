@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Box, Paper, IconButton, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+import { Box, Paper, IconButton, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText, Tabs, Tab } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import {
     WORKSPACE_ROOT_SX,
@@ -20,6 +20,7 @@ import Form from './Form';
 import Viewer from './Viewer';
 import Debugger from './Debugger';
 import ConnectionOverlay, { type OverlayConnection } from './ConnectionOverlay';
+import Rules from './Rules';
 
 interface WorkspaceProps {
     documentPath: string;
@@ -37,6 +38,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
     const [overlaysVisible, setOverlaysVisible] = useState<boolean>(true);
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
     const menuOpen = Boolean(menuAnchorEl);
+    const [activeTab, setActiveTab] = useState<number>(0);
     
     const { 
         updatePurchaseOrder, 
@@ -358,6 +360,10 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
         setMenuAnchorEl(null);
     };
 
+    const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+        setActiveTab(newValue);
+    };
+
     return (
         <Box sx={WORKSPACE_ROOT_SX}>
             <Box sx={WORKSPACE_INNER_SX}>
@@ -415,12 +421,40 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
                         </Box>
                     </Paper>
                     <Paper elevation={1} sx={WORKSPACE_PANEL_PAPER_SX}>
-                        <Box sx={WORKSPACE_PANEL_BOX_SX} data-form-panel>
-                            <Form
-                                onUpdate={handlePurchaseOrderUpdate}
-                                onFieldFocus={handleFieldFocus}
-                                focusedBoundingBoxId={focusedBoundingBoxId}
-                            />
+                        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                            <Tabs 
+                                value={activeTab} 
+                                onChange={handleTabChange}
+                                sx={{ 
+                                    borderBottom: 1, 
+                                    borderColor: 'divider',
+                                    minHeight: 48,
+                                    '& .MuiTab-root': {
+                                        minHeight: 48,
+                                        '&:focus': {
+                                            outline: 'none',
+                                        },
+                                        '&.Mui-focusVisible': {
+                                            backgroundColor: 'transparent',
+                                        },
+                                    }
+                                }}
+                            >
+                                <Tab label="Form" disableRipple />
+                                <Tab label="Rules" disableRipple />
+                            </Tabs>
+                            <Box sx={{ flex: 1, overflow: 'hidden' }} data-form-panel>
+                                {activeTab === 0 && (
+                                    <Form
+                                        onUpdate={handlePurchaseOrderUpdate}
+                                        onFieldFocus={handleFieldFocus}
+                                        focusedBoundingBoxId={focusedBoundingBoxId}
+                                    />
+                                )}
+                                {activeTab === 1 && (
+                                    <Rules />
+                                )}
+                            </Box>
                         </Box>
                     </Paper>
                 </Box>

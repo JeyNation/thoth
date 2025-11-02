@@ -636,10 +636,6 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
     return (
         <Box sx={FORM_ROOT_SX} onClick={handleFormClick}>
             <Box sx={FORM_SCROLL_AREA_SX} data-scroll-listener>
-                <Typography variant="h5" fontWeight={600} color="text.primary">
-                    Purchase Order Form
-                </Typography>
-
                 <Box sx={FORM_SECTION_CONTAINER_SX}>
                     <Box>
                         <Typography variant="subtitle1" fontWeight={600} color="text.secondary" gutterBottom>
