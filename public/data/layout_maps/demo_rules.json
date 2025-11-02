@@ -1,8 +1,43 @@
 {
-    "id": "demo-layout",
-    "name": "Demo Layout Map",
-    "vendorId": "",
-    "version": "1.0",
-    "fields": [],"createdAt": "2025-11-02T00:00:00Z",
-    "updatedAt": "2025-11-02T00:00:00Z"
+  "id": "demo-layout",
+  "name": "Demo Layout Map",
+  "vendorId": "demo",
+  "version": "1.0",
+  "fields": [
+    {
+      "id": "ship-to",
+      "rules": [
+        {
+          "id": "ship-to-anchor-rule-1",
+          "priority": 1,
+          "ruleType": "anchor",
+          "anchorConfig": {
+            "aliases": ["TO:", "To:", "to:"],
+            "searchZone": {
+              "top": 0,
+              "left": 0,
+              "right": 9999,
+              "bottom": 9999
+            },
+            "instance": 1
+          },
+          "positionConfig": {
+            "type": "relative",
+            "direction": "bottom",
+            "boundingBox": {
+              "top": 10,
+              "left": 0,
+              "right": 200,
+              "bottom": 100
+            }
+          },
+          "parserConfig": {
+            "regex": "^(.+)$"
+          }
+        }
+      ]
+    }
+  ],
+  "createdAt": "2025-11-02T00:00:00Z",
+  "updatedAt": "2025-11-02T00:00:00Z"
 }

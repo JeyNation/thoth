@@ -1,7 +1,7 @@
 ﻿{
     "id":  "pos-layout",
     "name":  "POS Layout Map",
-    "vendorId":  "",
+    "vendorId":  "pos",
     "version":  "1.0",
     "fields":  [],
     "createdAt":  "2025-11-02T00:00:00Z",

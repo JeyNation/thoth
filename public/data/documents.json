@@ -2,29 +2,29 @@
   "documents": [
     {
       "id": "bc_3239393333",
-      "displayName": "Bill of Lading - BC3239393333",
-      "description": "Bill of Lading document",
+      "displayName": "BC Constructions - BC3239393333",
+      "description": "BC Constructions document",
       "fileName": "bc_3239393333.json",
       "createdDate": "2025-11-02"
     },
     {
       "id": "bc_9239393999",
-      "displayName": "Bill of Lading - BC9239393999",
-      "description": "Bill of Lading document",
+      "displayName": "BC Constructions - BC9239393999",
+      "description": "BC Constructions document",
       "fileName": "bc_9239393999.json",
       "createdDate": "2025-11-02"
     },
     {
       "id": "demo_2501161",
-      "displayName": "Demo Document 2501161",
-      "description": "Demo document for testing",
+      "displayName": "Demo International - 2501161",
+      "description": "Demo International for testing",
       "fileName": "demo_2501161.json",
       "createdDate": "2025-11-02"
     },
     {
       "id": "demo_2501162",
-      "displayName": "Demo Document 2501162",
-      "description": "Demo document for testing",
+      "displayName": "Demo International - 2501162",
+      "description": "Demo International for testing",
       "fileName": "demo_2501162.json",
       "createdDate": "2025-11-02"
     },

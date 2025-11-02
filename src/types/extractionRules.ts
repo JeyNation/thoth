@@ -11,7 +11,7 @@ export interface BoundingBox {
 
 export interface AnchorConfig {
     aliases: string[];
-    search_zone: BoundingBox;
+    searchZone: BoundingBox;
     instance: number;
 }
 
@@ -21,7 +21,7 @@ export type PositionType = 'relative' | 'absolute';
 
 export interface PositionConfig {
     type: PositionType;
-    bounding_box: BoundingBox;
+    boundingBox: BoundingBox;
     direction?: Direction;
 }
 
@@ -38,22 +38,22 @@ export type RuleType = 'anchor' | 'regex_match' | 'absolute';
 export interface ExtractionRule {
     id: string;
     priority: number;
-    rule_type: RuleType;
+    ruleType: RuleType;
 }
 
 export interface AnchorRule extends ExtractionRule {
-    rule_type: 'anchor';
-    anchor_config: AnchorConfig;
-    position_config: PositionConfig;
-    parser_config: ParserConfig;
+    ruleType: 'anchor';
+    anchorConfig: AnchorConfig;
+    positionConfig: PositionConfig;
+    parserConfig: ParserConfig;
 }
 
 export interface RegexMatchRule extends ExtractionRule {
-    rule_type: 'regex_match';
+    ruleType: 'regex_match';
 }
 
 export interface AbsoluteRule extends ExtractionRule {
-    rule_type: 'absolute';
+    ruleType: 'absolute';
 }
 
 // ============================================================================
@@ -68,9 +68,9 @@ export interface Field {
 export interface LayoutMap {
     id: string;
     name?: string;
-    vendor_id?: string;
+    vendorId?: string;
     version?: string;
     fields: Field[];
-    created_at?: string;
-    updated_at?: string;
+    createdAt?: string;
+    updatedAt?: string;
 }

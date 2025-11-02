@@ -81,8 +81,8 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
 
   const getBoundingBoxStyle = useCallback((boundingBox: BoundingBox) => {
     const isSelected = selectedFields.has(boundingBox.fieldId);
-    const isLinked = allLinkedBoxIds.has(boundingBox.generatedId);
-    const isFocusedLinked = focusedInputLinkedBoxIds.has(boundingBox.generatedId);
+    const isLinked = allLinkedBoxIds.has(boundingBox.id);
+    const isFocusedLinked = focusedInputLinkedBoxIds.has(boundingBox.id);
     const isDragged = draggedField === boundingBox.fieldId;
 
     const key = `${boundingBox.minX}|${boundingBox.minY}|${boundingBox.width}|${boundingBox.height}|${isSelected?1:0}${isLinked?1:0}${isFocusedLinked?1:0}${isDragged?1:0}`;
@@ -158,7 +158,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
           const a = prev![i]; const b = normalized[i];
           if (
             a.fieldId !== b.fieldId ||
-            a.generatedId !== b.generatedId ||
+            a.id !== b.id ||
             a.minX !== b.minX || a.minY !== b.minY || a.width !== b.width || a.height !== b.height
           ) { same = false; break; }
         }
@@ -315,7 +315,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       }
     }
     const box = boundingBoxes.find(b => b.fieldId === fieldId);
-    if (box && box.generatedId) onBoundingBoxFocus?.(box.generatedId);
+    if (box && box.id) onBoundingBoxFocus?.(box.id);
   };
 
   const handleFieldDragStart = (e: React.DragEvent, boundingBox: BoundingBox) => {
@@ -372,14 +372,14 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       const maxYb = Math.max(...ys);
       const centerX = (minXb + maxXb) / 2;
       const centerY = (minYb + maxYb) / 2;
-      return { fieldId: b.fieldId, boxId: b.generatedId!, text: b.fieldText, centerX, left: minXb, right: maxXb, top: minYb, bottom: maxYb, centerY };
+      return { fieldId: b.fieldId, boxId: b.id!, text: b.fieldText, centerX, left: minXb, right: maxXb, top: minYb, bottom: maxYb, centerY };
     });
 
     const dragData = {
       text: dragText,
       fieldId: boundingBox.fieldId,
       fieldIds: dragFieldIds,
-      boundingBoxIds: selectedBoxesForDrag.map(b => b.generatedId!),
+      boundingBoxIds: selectedBoxesForDrag.map(b => b.id!),
       pairs: pairsWithCenters,
       isMultiField: dragFieldIds.length > 1
     };
@@ -589,12 +589,12 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
                   <div dangerouslySetInnerHTML={{ __html: pageContent }} />
                   {showOverlays && pageBoxes.map((boundingBox) => {
                     const style = getBoundingBoxStyle(boundingBox);
-                    const isFocusedLinked = !!(boundingBox.generatedId && focusedInputLinkedBoxIds.has(boundingBox.generatedId));
+                    const isFocusedLinked = !!(boundingBox.id && focusedInputLinkedBoxIds.has(boundingBox.id));
                   return (
                     <Box
                       key={boundingBox.fieldId}
                       data-field-id={boundingBox.fieldId}
-                      data-box-id={boundingBox.generatedId}
+                      data-box-id={boundingBox.id}
                       data-focused-linked={isFocusedLinked ? 'true' : undefined}
                       draggable
                       onDragStart={(e) => handleFieldDragStart(e, boundingBox)}

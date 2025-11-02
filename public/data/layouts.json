@@ -1,0 +1,32 @@
+{
+  "layouts": [
+    {
+      "id": "demo-layout",
+      "displayName": "Demo Layout Rules",
+      "description": "Demo extraction rules for testing",
+      "fileName": "demo_rules.json",
+      "createdDate": "2025-11-02"
+    },
+    {
+      "id": "bc-layout",
+      "displayName": "Bill of Lading Rules",
+      "description": "Extraction rules for Bill of Lading documents",
+      "fileName": "bc_rules.json",
+      "createdDate": "2025-11-02"
+    },
+    {
+      "id": "mp-layout",
+      "displayName": "Material Packing Rules",
+      "description": "Extraction rules for Material Packing documents",
+      "fileName": "mp_rules.json",
+      "createdDate": "2025-11-02"
+    },
+    {
+      "id": "pos-layout",
+      "displayName": "Purchase Order Rules",
+      "description": "Extraction rules for Purchase Order documents",
+      "fileName": "pos_rules.json",
+      "createdDate": "2025-11-02"
+    }
+  ]
+}

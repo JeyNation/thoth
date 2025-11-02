@@ -1,7 +1,7 @@
 ﻿{
     "id":  "mp-layout",
     "name":  "MP Layout Map",
-    "vendorId":  "",
+    "vendorId":  "mp",
     "version":  "1.0",
     "fields":  [],
     "createdAt":  "2025-11-02T00:00:00Z",

@@ -32,9 +32,9 @@ const computeGeometry = (ids: string[] | null | undefined, boundingBoxes?: Bound
   if (!ids || !ids.length || !boundingBoxes) return [];
   const out: FieldSourceGeom[] = [];
   ids.forEach(id => {
-    const bb = boundingBoxes.find(b => b.generatedId === id);
-    if (bb && bb.Points?.length) {
-      const xs = bb.Points.map(p => p.X); const ys = bb.Points.map(p => p.Y);
+    const bb = boundingBoxes.find(b => b.id === id);
+    if (bb && bb.points?.length) {
+      const xs = bb.points.map(p => p.x); const ys = bb.points.map(p => p.y);
       out.push({ id, top: Math.min(...ys), left: Math.min(...xs), right: Math.max(...xs), bottom: Math.max(...ys) });
     }
   });

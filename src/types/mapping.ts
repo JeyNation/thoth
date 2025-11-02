@@ -1,16 +1,6 @@
-// Centralized shared mapping & geometry types
+import type { BoundingBox as BaseBoundingBox } from './boundingBox';
 
-export interface RawBoundingBoxPoint { x: number; y: number; }
-export interface RawBoundingBox {
-  fieldId: string;
-  fieldText: string;
-  points: RawBoundingBoxPoint[];
-  page: number;
-}
-
-// Normalized bounding box with generated id and cached geometry
-export interface BoundingBox extends RawBoundingBox {
-  generatedId: string; // always present after normalization
+export interface BoundingBox extends BaseBoundingBox {
   minX: number;
   minY: number;
   maxX: number;
@@ -19,19 +9,32 @@ export interface BoundingBox extends RawBoundingBox {
   height: number;
 }
 
-export interface FieldSourceGeom { id: string; top: number; left: number; right: number; bottom: number; }
-export interface FieldSourceEntry { ids: string[]; boxes: FieldSourceGeom[]; }
-// Convenience aggregation / derived collections
-export type FieldSources = Record<string, FieldSourceEntry>;
-// Reverse lookup index: boxId -> array of fieldIds that reference it (constructed on demand)
-export type ReverseFieldSourceIndex = Record<string, string[]>;
-// Flattened form used by heuristic utilities (fieldId bundled alongside ids & boxes)
-export interface SourceWithGeometry { fieldId: string; ids: string[]; boxes: FieldSourceGeom[]; }
+export interface FieldSourceGeom {
+  id: string;
+  top: number;
+  left: number;
+  right: number;
+  bottom: number;
+}
 
-// Drag multi-field pair (subset captured for mapping heuristics)
+export interface FieldSourceEntry {
+  ids: string[];
+  boxes: FieldSourceGeom[];
+}
+
+export type FieldSources = Record<string, FieldSourceEntry>;
+
+export type ReverseFieldSourceIndex = Record<string, string[]>;
+
+export interface SourceWithGeometry {
+  fieldId: string;
+  ids: string[];
+  boxes: FieldSourceGeom[];
+}
+
 export interface MultiFieldPair {
-  fieldId: string; // original OCR field id
-  boxId: string;   // bounding box generatedId
+  fieldId: string;
+  boxId: string;
   text: string;
   centerX?: number;
   centerY?: number;
@@ -57,7 +60,7 @@ export const isMultiFieldDragPayload = (val: unknown): val is MultiFieldDragPayl
   return true;
 };
 
-export const normalizeBoundingBoxes = (raw: RawBoundingBox[]): BoundingBox[] => {
+export const normalizeBoundingBoxes = (raw: BaseBoundingBox[]): BoundingBox[] => {
   return raw.map((box, index) => {
     const xs = box.points.map(p => p.x);
     const ys = box.points.map(p => p.y);
@@ -67,7 +70,7 @@ export const normalizeBoundingBoxes = (raw: RawBoundingBox[]): BoundingBox[] => 
     const maxY = Math.max(...ys);
     return {
       ...box,
-      generatedId: `bbox-${box.fieldId}-${index}`,
+      id: `bbox-${box.fieldId}-${index}`,
       minX,
       minY,
       maxX,

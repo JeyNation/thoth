@@ -1,13 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { LayoutMap } from '@/types/extractionRules';
-
-export interface BoundingBox {
-    generatedId: string;
-    text: string;
-    page: number;
-    points: Array<{ x: number; y: number }>;
-    confidence?: number;
-}
+import { ExtractionEngine, type FieldExtraction } from '@/services/extractionEngine';
+import type { BoundingBox } from '@/types/boundingBox';
 
 export interface ExtractionRequest {
     boundingBoxes: BoundingBox[];
@@ -15,7 +9,7 @@ export interface ExtractionRequest {
 }
 
 export interface ExtractionResult {
-    extractedData: Record<string, string>;
+    extractions: FieldExtraction[];
     matchedRules: string[];
     unmatchedRules: string[];
     errors?: string[];
@@ -41,16 +35,19 @@ export async function POST(request: Request) {
         
         if (!body.layoutMap.id) {
             return NextResponse.json(
-                { error: 'layoutMap.map_id is required' },
+                { error: 'layoutMap.id is required' },
                 { status: 400 }
             );
         }
         
+        const engine = new ExtractionEngine(body.boundingBoxes, body.layoutMap);
+        const engineResult = engine.extract();
+        
         const result: ExtractionResult = {
-            extractedData: {},
-            matchedRules: [],
-            unmatchedRules: [],
-            errors: ['Extraction engine not implemented yet']
+            extractions: engineResult.extractions,
+            matchedRules: engineResult.matchedRules,
+            unmatchedRules: engineResult.unmatchedRules,
+            errors: engineResult.errors
         };
         
         return NextResponse.json(result);

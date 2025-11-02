@@ -1,7 +1,7 @@
 ﻿{
     "id":  "bc-layout",
     "name":  "BC Layout Map",
-    "vendorId":  "",
+    "vendorId":  "bc",
     "version":  "1.0",
     "fields":  [],
     "createdAt":  "2025-11-02T00:00:00Z",

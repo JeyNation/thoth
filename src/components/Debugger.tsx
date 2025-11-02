@@ -37,7 +37,7 @@ const Debugger: React.FC<DebuggerProps> = ({ boundingBoxes, focusedInputField, f
                 .map(([fid]) => fid)
             : [];
         const box = focusedBoundingBoxId
-            ? boundingBoxes.find(b => b.generatedId === focusedBoundingBoxId)
+            ? boundingBoxes.find(b => b.id === focusedBoundingBoxId)
             : null;
         return { linkedFormFieldsForFocusedBox: linked, focusedBox: box };
     }, [boundingBoxes, fieldSources, focusedBoundingBoxId]);

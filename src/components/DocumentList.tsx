@@ -9,7 +9,6 @@ import {
   ListItem,
   ListItemButton,
   ListItemText,
-  CircularProgress,
   Alert,
 } from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
@@ -56,13 +55,18 @@ const DocumentList: React.FC<DocumentListProps> = ({ onDocumentSelect }) => {
     return (
       <Box
         sx={{
+          maxWidth: 1200,
+          margin: '0 auto',
+          padding: 3,
           display: 'flex',
-          justifyContent: 'center',
           alignItems: 'center',
+          justifyContent: 'center',
           minHeight: '60vh',
         }}
       >
-        <CircularProgress />
+        <Typography variant="body1" color="text.secondary" fontStyle="italic">
+          Loading documents...
+        </Typography>
       </Box>
     );
   }

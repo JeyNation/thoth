@@ -1,7 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Box, TextField, Button, Typography, Paper } from '@mui/material';
+import { Box, TextField, Button, Typography, Paper, Select, MenuItem, FormControl, InputLabel, SelectChangeEvent } from '@mui/material';
+
+interface DocumentInfo {
+    id: string;
+    displayName: string;
+    description: string;
+    fileName: string;
+    createdDate: string;
+}
+
+interface LayoutInfo {
+    id: string;
+    displayName: string;
+    description: string;
+    fileName: string;
+    createdDate: string;
+}
 
 export default function SandboxPage() {
     const [boundingBoxes, setBoundingBoxes] = useState('[]');
@@ -10,30 +26,69 @@ export default function SandboxPage() {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [dataLoading, setDataLoading] = useState(true);
+    
+    const [documents, setDocuments] = useState<DocumentInfo[]>([]);
+    const [layouts, setLayouts] = useState<LayoutInfo[]>([]);
+    const [selectedDocument, setSelectedDocument] = useState('');
+    const [selectedLayout, setSelectedLayout] = useState('');
 
-    const loadDemoData = async () => {
+    const loadAvailableData = async () => {
+        try {
+            const [docsResponse, layoutsResponse] = await Promise.all([
+                fetch('/data/documents.json'),
+                fetch('/data/layouts.json')
+            ]);
+
+            const docsData = await docsResponse.json();
+            const layoutsData = await layoutsResponse.json();
+
+            setDocuments(docsData.documents || []);
+            setLayouts(layoutsData.layouts || []);
+
+            // Set defaults
+            if (docsData.documents.length > 0) {
+                setSelectedDocument(docsData.documents[0].fileName);
+            }
+            if (layoutsData.layouts.length > 0) {
+                setSelectedLayout(layoutsData.layouts[0].fileName);
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to load available data');
+        }
+    };
+
+    const loadSelectedData = async () => {
+        if (!selectedDocument || !selectedLayout) return;
+        
         setDataLoading(true);
         try {
             const [docResponse, layoutResponse] = await Promise.all([
-                fetch('/data/documents/demo_2501161.json'),
-                fetch('/data/layout_maps/demo_2501161_layout.json')
+                fetch(`/data/documents/${selectedDocument}`),
+                fetch(`/data/layout_maps/${selectedLayout}`)
             ]);
 
             const docData = await docResponse.json();
             const layoutData = await layoutResponse.json();
 
-            setBoundingBoxes(JSON.stringify(docData.BoundingBoxes || [], null, 2));
+            setBoundingBoxes(JSON.stringify(docData.boundingBoxes || [], null, 2));
             setLayoutMap(JSON.stringify(layoutData, null, 2));
+            setError(null);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to load demo data');
+            setError(err instanceof Error ? err.message : 'Failed to load selected data');
         } finally {
             setDataLoading(false);
         }
     };
 
     useEffect(() => {
-        loadDemoData();
+        loadAvailableData();
     }, []);
+
+    useEffect(() => {
+        if (selectedDocument && selectedLayout) {
+            loadSelectedData();
+        }
+    }, [selectedDocument, selectedLayout]);
 
     const handleExtract = async () => {
         setLoading(true);
@@ -69,20 +124,53 @@ export default function SandboxPage() {
         }
     };
 
+    const handleDocumentChange = (event: SelectChangeEvent) => {
+        setSelectedDocument(event.target.value);
+    };
+
+    const handleLayoutChange = (event: SelectChangeEvent) => {
+        setSelectedLayout(event.target.value);
+    };
+
     return (
         <Box sx={{ p: 4 }}>
             <Typography variant="h4" gutterBottom>
                 Extraction API Sandbox
             </Typography>
 
-            <Button 
-                variant="outlined" 
-                onClick={loadDemoData}
-                sx={{ mb: 2 }}
-                disabled={dataLoading}
-            >
-                {dataLoading ? 'Loading...' : 'Reload Demo Data'}
-            </Button>
+            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                <FormControl fullWidth>
+                    <InputLabel>Document</InputLabel>
+                    <Select
+                        value={selectedDocument}
+                        label="Document"
+                        onChange={handleDocumentChange}
+                        disabled={dataLoading}
+                    >
+                        {documents.map((doc) => (
+                            <MenuItem key={doc.id} value={doc.fileName}>
+                                {doc.displayName}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+
+                <FormControl fullWidth>
+                    <InputLabel>Layout Rules</InputLabel>
+                    <Select
+                        value={selectedLayout}
+                        label="Layout Rules"
+                        onChange={handleLayoutChange}
+                        disabled={dataLoading}
+                    >
+                        {layouts.map((layout) => (
+                            <MenuItem key={layout.id} value={layout.fileName}>
+                                {layout.displayName}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+            </Box>
 
             <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                 <Paper sx={{ flex: 1, p: 2 }}>
