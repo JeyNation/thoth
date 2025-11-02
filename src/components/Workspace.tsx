@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Box, Paper } from '@mui/material';
+import { Box, Paper, IconButton, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
 import {
     WORKSPACE_ROOT_SX,
     WORKSPACE_INNER_SX,
@@ -19,8 +20,10 @@ import Form from './Form';
 import Viewer from './Viewer';
 import Debugger from './Debugger';
 import ConnectionOverlay, { type OverlayConnection } from './ConnectionOverlay';
+import DocumentList from './DocumentList';
 
 const Workspace: React.FC = () => {
+    const [selectedDocumentPath, setSelectedDocumentPath] = useState<string | null>(null);
     const [documentData, setDocumentData] = useState<any>(null);
     const [focusedInputField, setFocusedInputField] = useState<string | null>(null);
     const [focusedBoundingBoxId, setFocusedBoundingBoxId] = useState<string | null>(null);
@@ -29,6 +32,8 @@ const Workspace: React.FC = () => {
     const [debuggerHeight, setDebuggerHeight] = useState<number>(140);
     const [connections, setConnections] = useState<OverlayConnection[]>([]);
     const [overlaysVisible, setOverlaysVisible] = useState<boolean>(true);
+    const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+    const menuOpen = Boolean(menuAnchorEl);
     
     const { 
         updatePurchaseOrder, 
@@ -200,11 +205,13 @@ const Workspace: React.FC = () => {
     }, [focusedInputField, focusedBoundingBoxId]);
 
     useEffect(() => {
-        fetch('/data/sample_document_data.json')
+        if (!selectedDocumentPath) return;
+        
+        fetch(selectedDocumentPath)
             .then(r => { if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
             .then(setDocumentData)
             .catch(err => console.error('Failed loading document data', err));
-    }, []);
+    }, [selectedDocumentPath]);
 
     useEffect(() => {
         const fn = recomputeRef.current;
@@ -327,9 +334,69 @@ const Workspace: React.FC = () => {
         }
     }, []);
 
+    const handleDocumentSelect = (documentPath: string) => {
+        setSelectedDocumentPath(documentPath);
+    };
+
+    const handleBackToList = () => {
+        setSelectedDocumentPath(null);
+        setDocumentData(null);
+        setMenuAnchorEl(null);
+    };
+
+    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+        setMenuAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setMenuAnchorEl(null);
+    };
+
+    // Show document list if no document is selected
+    if (!selectedDocumentPath) {
+        return (
+            <Box sx={WORKSPACE_ROOT_SX}>
+                <DocumentList onDocumentSelect={handleDocumentSelect} />
+            </Box>
+        );
+    }
+
     return (
         <Box sx={WORKSPACE_ROOT_SX}>
             <Box sx={WORKSPACE_INNER_SX}>
+                <Box sx={{ position: 'absolute', top: 16, right: 16, zIndex: 1000 }}>
+                    <Tooltip title="Menu">
+                        <IconButton
+                            onClick={handleMenuOpen}
+                            size="small"
+                            sx={{
+                                color: 'white',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                },
+                            }}
+                        >
+                            <MenuIcon />
+                        </IconButton>
+                    </Tooltip>
+                    <Menu
+                        anchorEl={menuAnchorEl}
+                        open={menuOpen}
+                        onClose={handleMenuClose}
+                        anchorOrigin={{
+                            vertical: 'bottom',
+                            horizontal: 'right',
+                        }}
+                        transformOrigin={{
+                            vertical: 'top',
+                            horizontal: 'right',
+                        }}
+                    >
+                        <MenuItem onClick={handleBackToList}>
+                            <ListItemText>Back to Documents</ListItemText>
+                        </MenuItem>
+                    </Menu>
+                </Box>
                 <Box sx={WORKSPACE_GRID_SX}>
                     {overlaysVisible && (
                         <ConnectionOverlay
