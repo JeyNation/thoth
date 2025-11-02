@@ -130,8 +130,8 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
   }, [selectedFields, allLinkedBoxIds, focusedInputLinkedBoxIds, draggedField]);
 
   useEffect(() => {
-    if (documentData?.SvgInfo?.SvgImages) {
-      const images = documentData.SvgInfo.SvgImages as string[];
+    if (documentData?.SvgImages) {
+      const images = documentData.SvgImages as string[];
       setTotalPages(images.length);
       
       // Reset to first page when document changes
@@ -148,8 +148,8 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       setLoading((prev) => (prev ? false : prev));
     }
 
-    if (documentData?.SvgInfo?.BoundingBoxes) {
-      const normalized = normalizeBoundingBoxes(documentData.SvgInfo.BoundingBoxes);
+    if (documentData?.BoundingBoxes) {
+      const normalized = normalizeBoundingBoxes(documentData.BoundingBoxes);
       const prev = lastBoxesRef.current;
       const sameLength = prev ? prev.length === normalized.length : false;
       let same = !!prev && sameLength;
@@ -557,7 +557,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
         onMouseUp={handlePanelMouseUp}
         onMouseLeave={handlePanelMouseLeave}
       >
-        {documentData?.SvgInfo?.SvgImages && (documentData.SvgInfo.SvgImages as string[]).slice(0, loadedPages).map((pageContent: string, pageIndex: number) => {
+        {documentData?.SvgImages && (documentData.SvgImages as string[]).slice(0, loadedPages).map((pageContent: string, pageIndex: number) => {
           // Extract dimensions from each page's SVG
           const parser = new DOMParser();
           const doc = parser.parseFromString(pageContent, 'image/svg+xml');
