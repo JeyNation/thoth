@@ -4,8 +4,8 @@ import { describe, it, expect } from 'vitest';
 interface FieldSourceGeom { id: string; top: number; left: number; right: number; bottom: number; }
 interface FieldSourceEntry { ids: string[]; boxes: FieldSourceGeom[]; }
 type LocalFieldSources = Record<string, FieldSourceEntry>;
-interface BoundingBoxPoint { X: number; Y: number; }
-interface BoundingBox { generatedId: string; Points: BoundingBoxPoint[]; }
+interface BoundingBoxPoint { x: number; y: number; }
+interface BoundingBox { generatedId: string; points: BoundingBoxPoint[]; }
 interface MappingState { fieldSources: LocalFieldSources; past: LocalFieldSources[]; future: LocalFieldSources[]; }
 type Action =
   | { type: 'UPDATE_ONE'; fieldId: string; sourceIds: string[] | null; boundingBoxes?: BoundingBox[] }
@@ -17,7 +17,7 @@ const computeGeometry = (ids: string[] | null | undefined, boxes?: BoundingBox[]
   return ids.map(id => {
     const bb = boxes.find(b => b.generatedId === id);
     if (!bb) return { id, top:0,left:0,right:0,bottom:0 };
-    const xs = bb.Points.map(p=>p.X); const ys = bb.Points.map(p=>p.Y);
+    const xs = bb.points.map(p=>p.x); const ys = bb.points.map(p=>p.y);
     return { id, top: Math.min(...ys), left: Math.min(...xs), right: Math.max(...xs), bottom: Math.max(...ys) };
   });
 };
@@ -55,8 +55,8 @@ const reducer = (state: MappingState, action: Action): MappingState => {
 };
 
 const sampleBoxes: BoundingBox[] = [
-  { generatedId: 'bbox-A-0', Points: [{X:0,Y:0},{X:10,Y:0},{X:10,Y:10},{X:0,Y:10}] },
-  { generatedId: 'bbox-B-0', Points: [{X:20,Y:5},{X:30,Y:5},{X:30,Y:15},{X:20,Y:15}] }
+  { generatedId: 'bbox-A-0', points: [{x:0,y:0},{x:10,y:0},{x:10,y:10},{x:0,y:10}] },
+  { generatedId: 'bbox-B-0', points: [{x:20,y:5},{x:30,y:5},{x:30,y:15},{x:20,y:15}] }
 ];
 
 describe('mapping reducer', () => {

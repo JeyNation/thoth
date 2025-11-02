@@ -6,8 +6,8 @@ interface PurchaseOrder { documentNumber: string; customerNumber: string; shipTo
 interface FieldSourceGeom { id: string; top: number; left: number; right: number; bottom: number; }
 interface FieldSourceEntry { ids: string[]; boxes: FieldSourceGeom[]; }
 type FieldSources = Record<string, FieldSourceEntry>;
-interface BoundingBoxPoint { X: number; Y: number; }
-interface BoundingBox { generatedId: string; Points: BoundingBoxPoint[]; }
+interface BoundingBoxPoint { x: number; y: number; }
+interface BoundingBox { generatedId: string; points: BoundingBoxPoint[]; }
 interface HistorySnapshot { fieldSources: FieldSources; purchaseOrder: PurchaseOrder; }
 interface State { fieldSources: FieldSources; purchaseOrder: PurchaseOrder; past: HistorySnapshot[]; future: HistorySnapshot[]; boundingBoxes: BoundingBox[]; }
 
@@ -25,7 +25,7 @@ const computeGeometry = (ids: string[] | null | undefined, boxes?: BoundingBox[]
   return ids.map(id => {
     const bb = boxes.find(b => b.generatedId === id);
     if (!bb) return { id, top:0,left:0,right:0,bottom:0 };
-    const xs = bb.Points.map(p=>p.X); const ys = bb.Points.map(p=>p.Y);
+    const xs = bb.points.map(p=>p.x); const ys = bb.points.map(p=>p.y);
     return { id, top: Math.min(...ys), left: Math.min(...xs), right: Math.max(...xs), bottom: Math.max(...ys) };
   });
 };

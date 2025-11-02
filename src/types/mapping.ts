@@ -1,11 +1,11 @@
 // Centralized shared mapping & geometry types
 
-export interface RawBoundingBoxPoint { X: number; Y: number; }
+export interface RawBoundingBoxPoint { x: number; y: number; }
 export interface RawBoundingBox {
-  FieldId: string;
-  FieldText: string;
-  Points: RawBoundingBoxPoint[];
-  Page: number;
+  fieldId: string;
+  fieldText: string;
+  points: RawBoundingBoxPoint[];
+  page: number;
 }
 
 // Normalized bounding box with generated id and cached geometry
@@ -59,15 +59,15 @@ export const isMultiFieldDragPayload = (val: unknown): val is MultiFieldDragPayl
 
 export const normalizeBoundingBoxes = (raw: RawBoundingBox[]): BoundingBox[] => {
   return raw.map((box, index) => {
-    const xs = box.Points.map(p => p.X);
-    const ys = box.Points.map(p => p.Y);
+    const xs = box.points.map(p => p.x);
+    const ys = box.points.map(p => p.y);
     const minX = Math.min(...xs);
     const minY = Math.min(...ys);
     const maxX = Math.max(...xs);
     const maxY = Math.max(...ys);
     return {
       ...box,
-      generatedId: `bbox-${box.FieldId}-${index}`,
+      generatedId: `bbox-${box.fieldId}-${index}`,
       minX,
       minY,
       maxX,

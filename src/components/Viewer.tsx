@@ -80,13 +80,13 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
   }, [fieldSources, reverseIndex]);
 
   const getBoundingBoxStyle = useCallback((boundingBox: BoundingBox) => {
-    const isSelected = selectedFields.has(boundingBox.FieldId);
+    const isSelected = selectedFields.has(boundingBox.fieldId);
     const isLinked = allLinkedBoxIds.has(boundingBox.generatedId);
     const isFocusedLinked = focusedInputLinkedBoxIds.has(boundingBox.generatedId);
-    const isDragged = draggedField === boundingBox.FieldId;
+    const isDragged = draggedField === boundingBox.fieldId;
 
     const key = `${boundingBox.minX}|${boundingBox.minY}|${boundingBox.width}|${boundingBox.height}|${isSelected?1:0}${isLinked?1:0}${isFocusedLinked?1:0}${isDragged?1:0}`;
-    const cached = boxStyleCacheRef.current.get(boundingBox.FieldId);
+    const cached = boxStyleCacheRef.current.get(boundingBox.fieldId);
     if (cached && cached.key === key) return cached.style;
 
     let backgroundColor = 'rgba(0, 123, 255, 0.1)';
@@ -125,13 +125,13 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       transition: 'all 0.2s ease'
     };
 
-    boxStyleCacheRef.current.set(boundingBox.FieldId, { key, style });
+    boxStyleCacheRef.current.set(boundingBox.fieldId, { key, style });
     return style;
   }, [selectedFields, allLinkedBoxIds, focusedInputLinkedBoxIds, draggedField]);
 
   useEffect(() => {
-    if (documentData?.SvgImages) {
-      const images = documentData.SvgImages as string[];
+    if (documentData?.svgImages) {
+      const images = documentData.svgImages as string[];
       setTotalPages(images.length);
       
       // Reset to first page when document changes
@@ -148,8 +148,8 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       setLoading((prev) => (prev ? false : prev));
     }
 
-    if (documentData?.BoundingBoxes) {
-      const normalized = normalizeBoundingBoxes(documentData.BoundingBoxes);
+    if (documentData?.boundingBoxes) {
+      const normalized = normalizeBoundingBoxes(documentData.boundingBoxes);
       const prev = lastBoxesRef.current;
       const sameLength = prev ? prev.length === normalized.length : false;
       let same = !!prev && sameLength;
@@ -157,7 +157,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
         for (let i = 0; i < prev!.length; i++) {
           const a = prev![i]; const b = normalized[i];
           if (
-            a.FieldId !== b.FieldId ||
+            a.fieldId !== b.fieldId ||
             a.generatedId !== b.generatedId ||
             a.minX !== b.minX || a.minY !== b.minY || a.width !== b.width || a.height !== b.height
           ) { same = false; break; }
@@ -314,24 +314,24 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
         setSelectedFields(new Set([fieldId]));
       }
     }
-    const box = boundingBoxes.find(b => b.FieldId === fieldId);
+    const box = boundingBoxes.find(b => b.fieldId === fieldId);
     if (box && box.generatedId) onBoundingBoxFocus?.(box.generatedId);
   };
 
   const handleFieldDragStart = (e: React.DragEvent, boundingBox: BoundingBox) => {
-    setDraggedField(boundingBox.FieldId);
+    setDraggedField(boundingBox.fieldId);
     
-    let dragText = boundingBox.FieldText;
-    let dragFieldIds = [boundingBox.FieldId];
+    let dragText = boundingBox.fieldText;
+    let dragFieldIds = [boundingBox.fieldId];
     
-    if (selectedFields.has(boundingBox.FieldId) && selectedFields.size > 1) {
-      const selectedBoxes = boundingBoxes.filter(box => selectedFields.has(box.FieldId));
+    if (selectedFields.has(boundingBox.fieldId) && selectedFields.size > 1) {
+      const selectedBoxes = boundingBoxes.filter(box => selectedFields.has(box.fieldId));
       
       selectedBoxes.sort((a, b) => {
-        const aTop = Math.min(...a.Points.map(p => p.Y));
-        const bTop = Math.min(...b.Points.map(p => p.Y));
-        const aLeft = Math.min(...a.Points.map(p => p.X));
-        const bLeft = Math.min(...b.Points.map(p => p.X));
+        const aTop = Math.min(...a.points.map(p => p.y));
+        const bTop = Math.min(...b.points.map(p => p.y));
+        const aLeft = Math.min(...a.points.map(p => p.x));
+        const bLeft = Math.min(...b.points.map(p => p.x));
         
         if (Math.abs(aTop - bTop) < 10) {
           return aLeft - bLeft;
@@ -341,11 +341,11 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       
       const textParts: string[] = [];
       for (let i = 0; i < selectedBoxes.length; i++) {
-        textParts.push(selectedBoxes[i].FieldText);
+        textParts.push(selectedBoxes[i].fieldText);
         
         if (i < selectedBoxes.length - 1) {
-          const currentTop = Math.min(...selectedBoxes[i].Points.map(p => p.Y));
-          const nextTop = Math.min(...selectedBoxes[i + 1].Points.map(p => p.Y));
+          const currentTop = Math.min(...selectedBoxes[i].points.map(p => p.y));
+          const nextTop = Math.min(...selectedBoxes[i + 1].points.map(p => p.y));
           
           if (Math.abs(nextTop - currentTop) > 10) {
             textParts.push('\n');
@@ -356,28 +356,28 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       }
       
       dragText = textParts.join('');
-      dragFieldIds = selectedBoxes.map(box => box.FieldId);
+      dragFieldIds = selectedBoxes.map(box => box.fieldId);
     }
     
-    const selectedBoxesForDrag = (selectedFields.has(boundingBox.FieldId) && selectedFields.size > 1)
-      ? boundingBoxes.filter(box => selectedFields.has(box.FieldId))
+    const selectedBoxesForDrag = (selectedFields.has(boundingBox.fieldId) && selectedFields.size > 1)
+      ? boundingBoxes.filter(box => selectedFields.has(box.fieldId))
       : [boundingBox];
 
     const pairsWithCenters = selectedBoxesForDrag.map(b => {
-      const xs = b.Points.map(p => p.X);
-      const ys = b.Points.map(p => p.Y);
+      const xs = b.points.map(p => p.x);
+      const ys = b.points.map(p => p.y);
       const minXb = Math.min(...xs);
       const maxXb = Math.max(...xs);
       const minYb = Math.min(...ys);
       const maxYb = Math.max(...ys);
       const centerX = (minXb + maxXb) / 2;
       const centerY = (minYb + maxYb) / 2;
-      return { fieldId: b.FieldId, boxId: b.generatedId!, text: b.FieldText, centerX, left: minXb, right: maxXb, top: minYb, bottom: maxYb, centerY };
+      return { fieldId: b.fieldId, boxId: b.generatedId!, text: b.fieldText, centerX, left: minXb, right: maxXb, top: minYb, bottom: maxYb, centerY };
     });
 
     const dragData = {
       text: dragText,
-      fieldId: boundingBox.FieldId,
+      fieldId: boundingBox.fieldId,
       fieldIds: dragFieldIds,
       boundingBoxIds: selectedBoxesForDrag.map(b => b.generatedId!),
       pairs: pairsWithCenters,
@@ -437,9 +437,9 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       };
       const ids = new Set<string>();
       boundingBoxes.forEach(b => {
-        const xs = b.Points.map(p => p.X); const ys = b.Points.map(p => p.Y);
+        const xs = b.points.map(p => p.x); const ys = b.points.map(p => p.y);
         const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
-        if (!(maxX < selectionRect.left || minX > selectionRect.right || maxY < selectionRect.top || minY > selectionRect.bottom)) ids.add(b.FieldId);
+        if (!(maxX < selectionRect.left || minX > selectionRect.right || maxY < selectionRect.top || minY > selectionRect.bottom)) ids.add(b.fieldId);
       });
       setSelectedFields(ids);
       onBoundingBoxFocus?.(null);
@@ -557,7 +557,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
         onMouseUp={handlePanelMouseUp}
         onMouseLeave={handlePanelMouseLeave}
       >
-        {documentData?.SvgImages && (documentData.SvgImages as string[]).slice(0, loadedPages).map((pageContent: string, pageIndex: number) => {
+        {documentData?.svgImages && (documentData.svgImages as string[]).slice(0, loadedPages).map((pageContent: string, pageIndex: number) => {
           // Extract dimensions from each page's SVG
           const parser = new DOMParser();
           const doc = parser.parseFromString(pageContent, 'image/svg+xml');
@@ -575,7 +575,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
             }
           }
           
-          const pageBoxes = boundingBoxes.filter(box => box.Page === pageIndex + 1);
+          const pageBoxes = boundingBoxes.filter(box => box.page === pageIndex + 1);
           
           return (
             <Box key={pageIndex}>
@@ -592,17 +592,17 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
                     const isFocusedLinked = !!(boundingBox.generatedId && focusedInputLinkedBoxIds.has(boundingBox.generatedId));
                   return (
                     <Box
-                      key={boundingBox.FieldId}
-                      data-field-id={boundingBox.FieldId}
+                      key={boundingBox.fieldId}
+                      data-field-id={boundingBox.fieldId}
                       data-box-id={boundingBox.generatedId}
                       data-focused-linked={isFocusedLinked ? 'true' : undefined}
                       draggable
                       onDragStart={(e) => handleFieldDragStart(e, boundingBox)}
-                      title={boundingBox.FieldText}
+                      title={boundingBox.fieldText}
                       onMouseDown={(e) => {
                         e.stopPropagation();
                       }}
-                      onClick={(e) => handleFieldSelection(boundingBox.FieldId, e)}
+                      onClick={(e) => handleFieldSelection(boundingBox.fieldId, e)}
                       style={style}
                     />
                   );
