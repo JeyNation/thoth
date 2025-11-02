@@ -25,21 +25,21 @@ export async function GET() {
     const documentsWithPageCount = await Promise.all(
       metadata.documents.map(async (doc: any) => {
         try {
-          const docPath = path.join(process.cwd(), 'public', 'data', doc.fileName);
+          const docPath = path.join(process.cwd(), 'public', 'data', 'documents', doc.fileName);
           const docContent = await fs.readFile(docPath, 'utf-8');
           const docData = JSON.parse(docContent);
           const pageCount = docData.SvgInfo?.SvgImages?.length || 1;
           
           return {
             ...doc,
-            path: `/data/${doc.fileName}`,
+            path: `/data/documents/${doc.fileName}`,
             pageCount
           };
         } catch (error) {
           console.error(`Error reading document ${doc.fileName}:`, error);
           return {
             ...doc,
-            path: `/data/${doc.fileName}`,
+            path: `/data/documents/${doc.fileName}`,
             pageCount: 1
           };
         }
