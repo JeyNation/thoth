@@ -97,7 +97,7 @@ export const DEBUGGER_INFO_VALUE_SX: SxProps<Theme> = {
   color: 'rgba(255,255,255,0.85)',
 };
 
-export default {
+const debuggerStyles = {
   DEBUGGER_CONTAINER_SX,
   DEBUGGER_HEADER_TITLE_SX,
   DEBUGGER_HIDE_BUTTON_SX,
@@ -113,3 +113,5 @@ export default {
   DEBUGGER_INFO_LABEL_SX,
   DEBUGGER_INFO_VALUE_SX,
 };
+
+export default debuggerStyles;

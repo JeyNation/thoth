@@ -21,6 +21,7 @@ export interface DocumentMetadata {
   fileName: string;
   createdDate?: string;
   path: string;
+  pageCount?: number;
 }
 
 interface DocumentListProps {
@@ -77,15 +78,11 @@ const DocumentList: React.FC<DocumentListProps> = ({ onDocumentSelect }) => {
   return (
     <Box
       sx={{
-        maxWidth: 800,
+        maxWidth: 1200,
         margin: '0 auto',
         padding: 3,
       }}
     >
-      <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 3 }}>
-        Available Documents
-      </Typography>
-      
       {documents.length === 0 ? (
         <Alert severity="info">No documents found in the data folder.</Alert>
       ) : (
@@ -114,7 +111,24 @@ const DocumentList: React.FC<DocumentListProps> = ({ onDocumentSelect }) => {
                       <DescriptionIcon color="primary" fontSize="large" />
                       <ListItemText
                         primary={doc.displayName}
-                        secondary={doc.description || doc.fileName}
+                        secondary={
+                          <>
+                            {doc.description || doc.fileName}
+                            {doc.pageCount && doc.pageCount > 1 && (
+                              <Typography
+                                component="span"
+                                variant="body2"
+                                sx={{
+                                  ml: 1,
+                                  color: 'primary.main',
+                                  fontWeight: 500,
+                                }}
+                              >
+                                ({doc.pageCount} pages)
+                              </Typography>
+                            )}
+                          </>
+                        }
                         primaryTypographyProps={{
                           variant: 'h6',
                           component: 'div',

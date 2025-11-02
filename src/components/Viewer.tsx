@@ -47,6 +47,9 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
   const [draggedField, setDraggedField] = useState<string | null>(null);
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set());
   const [mouseDownPos, setMouseDownPos] = useState({ x: 0, y: 0 });
+  const [loadedPages, setLoadedPages] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const { fieldSources, reverseIndex } = useMapping();
   const { scale, setScale, resetView } = useZoom({ containerRef,
@@ -127,9 +130,21 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
   }, [selectedFields, allLinkedBoxIds, focusedInputLinkedBoxIds, draggedField]);
 
   useEffect(() => {
-    if (documentData?.SvgInfo?.SvgImages?.[0]) {
-      const nextSvg = documentData.SvgInfo.SvgImages[0] as string;
-      setSvgContent((prev) => (prev === nextSvg ? prev : nextSvg));
+    if (documentData?.SvgInfo?.SvgImages) {
+      const images = documentData.SvgInfo.SvgImages as string[];
+      setTotalPages(images.length);
+      
+      // Reset to first page when document changes
+      setLoadedPages(1);
+      
+      // For single page, just use the SVG directly
+      if (images.length === 1) {
+        setSvgContent(images[0]);
+      } else {
+        // For multiple pages, we need to render them separately (will be handled in render)
+        setSvgContent(images[0]); // Start with first page
+      }
+      
       setLoading((prev) => (prev ? false : prev));
     }
 
@@ -220,6 +235,54 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     document.addEventListener('mousedown', handleGlobalMouseDown);
     return () => document.removeEventListener('mousedown', handleGlobalMouseDown);
   }, [selectedFields, onBoundingBoxFocus]);
+
+  // Lazy loading scroll listener
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      if (isLoadingMore || loadedPages >= totalPages) return;
+
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 100; // 100px threshold
+
+      if (scrolledToBottom && loadedPages < totalPages) {
+        setIsLoadingMore(true);
+        // Use setTimeout to defer the state update and allow render to complete
+        setTimeout(() => {
+          setLoadedPages(prev => Math.min(prev + 1, totalPages));
+          setIsLoadingMore(false);
+        }, 100);
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [loadedPages, totalPages, isLoadingMore]);
+
+  // Auto-load next page if no scrollbar (content fits in viewport)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || isLoadingMore || loadedPages >= totalPages) return;
+
+    const checkIfNeedsMorePages = () => {
+      const { scrollHeight, clientHeight } = container;
+      const hasScrollbar = scrollHeight > clientHeight;
+
+      if (!hasScrollbar && loadedPages < totalPages) {
+        setIsLoadingMore(true);
+        setTimeout(() => {
+          setLoadedPages(prev => Math.min(prev + 1, totalPages));
+          setIsLoadingMore(false);
+        }, 100);
+      }
+    };
+
+    // Check after a short delay to ensure DOM has rendered
+    const timeoutId = setTimeout(checkIfNeedsMorePages, 200);
+    return () => clearTimeout(timeoutId);
+  }, [loadedPages, totalPages, isLoadingMore, svgContent]);
 
   useEffect(() => {
     if (selectedFields.size === 0) {
@@ -419,6 +482,14 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between">
         <Stack direction="row" spacing={1} alignItems="center">
           <Chip size="small" variant="outlined" label={`${boundingBoxes.length} fields detected`} />
+          {totalPages > 1 && (
+            <Chip 
+              size="small" 
+              variant="outlined" 
+              label={`Page ${loadedPages} of ${totalPages} loaded`}
+              color={loadedPages < totalPages ? 'primary' : 'default'}
+            />
+          )}
         </Stack>
         <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
           <Tooltip title="Zoom In">
@@ -486,33 +557,81 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
         onMouseUp={handlePanelMouseUp}
         onMouseLeave={handlePanelMouseLeave}
       >
-        {/** keep scaled size placeholder to prevent border clipping */}
-        <Box ref={svgRef} sx={VIEWER_SVG_HOST_SX(scaledWidth, scaledHeight)}>
-          <Box sx={VIEWER_SVG_TRANSFORM_SX(baseSvgDims.width || 'auto', baseSvgDims.height || 'auto', scale, isDragging)}>
-            <div dangerouslySetInnerHTML={{ __html: svgContent }} />
-            {showOverlays && boundingBoxes.map((boundingBox) => {
-              const style = getBoundingBoxStyle(boundingBox);
-              const isFocusedLinked = !!(boundingBox.generatedId && focusedInputLinkedBoxIds.has(boundingBox.generatedId));
-              return (
-                <Box
-                  key={boundingBox.FieldId}
-                  data-field-id={boundingBox.FieldId}
-                  data-box-id={boundingBox.generatedId}
-                  data-focused-linked={isFocusedLinked ? 'true' : undefined}
-                  draggable
-                  onDragStart={(e) => handleFieldDragStart(e, boundingBox)}
-                  title={boundingBox.FieldText}
-                  onMouseDown={(e) => {
-                    e.stopPropagation();
-                  }}
-                  onClick={(e) => handleFieldSelection(boundingBox.FieldId, e)}
-                  style={style}
-                />
-              );
-            })}
-            <Box style={selectionRectStyle} />
+        {documentData?.SvgInfo?.SvgImages && (documentData.SvgInfo.SvgImages as string[]).slice(0, loadedPages).map((pageContent: string, pageIndex: number) => {
+          // Extract dimensions from each page's SVG
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(pageContent, 'image/svg+xml');
+          const svgEl = doc.querySelector('svg');
+          let pageWidth = baseSvgDims.width;
+          let pageHeight = baseSvgDims.height;
+          
+          if (svgEl) {
+            if (svgEl.viewBox && svgEl.viewBox.baseVal && svgEl.viewBox.baseVal.width) {
+              pageWidth = svgEl.viewBox.baseVal.width;
+              pageHeight = svgEl.viewBox.baseVal.height;
+            } else if (svgEl.getAttribute('width') && svgEl.getAttribute('height')) {
+              pageWidth = parseFloat(svgEl.getAttribute('width')!);
+              pageHeight = parseFloat(svgEl.getAttribute('height')!);
+            }
+          }
+          
+          const pageBoxes = boundingBoxes.filter(box => box.Page === pageIndex + 1);
+          
+          return (
+            <Box key={pageIndex}>
+              <Box 
+                ref={pageIndex === 0 ? svgRef : undefined}
+                sx={{
+                  ...VIEWER_SVG_HOST_SX(pageWidth * scale, pageHeight * scale),
+                }}
+              >
+                <Box sx={VIEWER_SVG_TRANSFORM_SX(pageWidth || 'auto', pageHeight || 'auto', scale, isDragging)}>
+                  <div dangerouslySetInnerHTML={{ __html: pageContent }} />
+                  {showOverlays && pageBoxes.map((boundingBox) => {
+                    const style = getBoundingBoxStyle(boundingBox);
+                    const isFocusedLinked = !!(boundingBox.generatedId && focusedInputLinkedBoxIds.has(boundingBox.generatedId));
+                  return (
+                    <Box
+                      key={boundingBox.FieldId}
+                      data-field-id={boundingBox.FieldId}
+                      data-box-id={boundingBox.generatedId}
+                      data-focused-linked={isFocusedLinked ? 'true' : undefined}
+                      draggable
+                      onDragStart={(e) => handleFieldDragStart(e, boundingBox)}
+                      title={boundingBox.FieldText}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                      }}
+                      onClick={(e) => handleFieldSelection(boundingBox.FieldId, e)}
+                      style={style}
+                    />
+                  );
+                })}
+                {pageIndex === 0 && <Box style={selectionRectStyle} />}
+              </Box>
+            </Box>
+            {pageIndex < loadedPages - 1 && (
+              <Box sx={{ 
+                width: '100%', 
+                height: '1px', 
+                backgroundColor: 'divider',
+                my: 2
+              }} />
+            )}
           </Box>
-        </Box>
+          );
+        })}
+        {isLoadingMore && (
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            padding: 2,
+            color: 'text.secondary'
+          }}>
+            <Typography variant="body2" fontStyle="italic">Loading more pages...</Typography>
+          </Box>
+        )}
       </Box>
     </Box>
   );

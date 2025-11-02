@@ -68,7 +68,7 @@ export const LINE_ITEM_DIVIDER_SX: SxProps<Theme> = {
   borderColor: 'divider',
 };
 
-export default {
+const lineItemCardStyles = {
   LINE_ITEM_PAPER_SX,
   LINE_ITEM_STACK_SX,
   LINE_ITEM_TOTAL_SX,
@@ -76,3 +76,5 @@ export default {
   LINE_ITEM_CAPTION_SX,
   LINE_ITEM_DIVIDER_SX,
 };
+
+export default lineItemCardStyles;

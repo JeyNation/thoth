@@ -49,7 +49,7 @@ export const FORM_ADD_BUTTON_ACTIVE_SX: SxProps<Theme> = {
   color: 'primary.main',
 };
 
-export default {
+const formStyles = {
   FORM_ROOT_SX,
   FORM_SCROLL_AREA_SX,
   FORM_SECTION_CONTAINER_SX,
@@ -58,3 +58,5 @@ export default {
   FORM_ADD_BUTTON_BASE_SX,
   FORM_ADD_BUTTON_ACTIVE_SX,
 };
+
+export default formStyles;

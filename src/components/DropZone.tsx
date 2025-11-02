@@ -46,7 +46,7 @@ const DropZone: React.FC<DropZoneProps> = ({
     hoverDepthRef.current += 1;
     if (!active) setActive(true);
     if (onDragEnter) onDragEnter(e);
-  }, [active]);
+  }, [active, onDragEnter]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();

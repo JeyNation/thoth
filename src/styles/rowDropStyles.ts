@@ -36,9 +36,11 @@ export const ROW_DROP_LABEL_SX: SxProps<Theme> = {
   paddingTop: '4px',
 };
 
-export default {
+const rowDropStyles = {
   ROW_DROP_BASE_STYLE,
   ROW_DROP_ACTIVE_STYLE,
   ROW_DROP_LABEL_SX,
   ROW_DROP_CONTAINER_SX,
 };
+
+export default rowDropStyles;

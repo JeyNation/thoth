@@ -56,4 +56,6 @@ export function getTextFieldSxFor(highlight: boolean, stage?: 'strong' | 'fade' 
   };
 }
 
-export default { getTextFieldSxFor };
+const fieldStyles = { getTextFieldSxFor };
+
+export default fieldStyles;

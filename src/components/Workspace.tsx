@@ -20,10 +20,13 @@ import Form from './Form';
 import Viewer from './Viewer';
 import Debugger from './Debugger';
 import ConnectionOverlay, { type OverlayConnection } from './ConnectionOverlay';
-import DocumentList from './DocumentList';
 
-const Workspace: React.FC = () => {
-    const [selectedDocumentPath, setSelectedDocumentPath] = useState<string | null>(null);
+interface WorkspaceProps {
+    documentPath: string;
+    onBackToList: () => void;
+}
+
+const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => {
     const [documentData, setDocumentData] = useState<any>(null);
     const [focusedInputField, setFocusedInputField] = useState<string | null>(null);
     const [focusedBoundingBoxId, setFocusedBoundingBoxId] = useState<string | null>(null);
@@ -44,7 +47,8 @@ const Workspace: React.FC = () => {
         canRedo, 
         fieldSources, 
         reverseIndex, 
-        updateFieldSources 
+        updateFieldSources,
+        replaceAll
     } = useMapping();
     
     const isResizingRef = useRef(false);
@@ -205,13 +209,13 @@ const Workspace: React.FC = () => {
     }, [focusedInputField, focusedBoundingBoxId]);
 
     useEffect(() => {
-        if (!selectedDocumentPath) return;
+        if (!documentPath) return;
         
-        fetch(selectedDocumentPath)
+        fetch(documentPath)
             .then(r => { if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
             .then(setDocumentData)
             .catch(err => console.error('Failed loading document data', err));
-    }, [selectedDocumentPath]);
+    }, [documentPath]);
 
     useEffect(() => {
         const fn = recomputeRef.current;
@@ -325,7 +329,7 @@ const Workspace: React.FC = () => {
         if (focusedInputField === fieldId && next.length === 0) {
             setFocusedInputField(null);
         }
-    }, [focusedInputField, focusedBoundingBoxId, updateFieldSources]);
+    }, [focusedInputField, updateFieldSources]);
 
     const handleViewerTransformChange = useCallback((_scale: number, _pos: { x: number; y: number }) => {
         const fn = recomputeRef.current;
@@ -334,14 +338,16 @@ const Workspace: React.FC = () => {
         }
     }, []);
 
-    const handleDocumentSelect = (documentPath: string) => {
-        setSelectedDocumentPath(documentPath);
-    };
-
-    const handleBackToList = () => {
-        setSelectedDocumentPath(null);
+    const handleBackToListClick = () => {
+        // Reset all state when going back to document list
+        setConnections([]);
+        setFocusedInputField(null);
+        setFocusedBoundingBoxId(null);
+        replaceAll({}); // Clear all field mappings
+        updatePurchaseOrder({ documentNumber: '', customerNumber: '', shipToAddress: '', lineItems: [] }); // Reset purchase order
         setDocumentData(null);
         setMenuAnchorEl(null);
+        onBackToList();
     };
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -351,15 +357,6 @@ const Workspace: React.FC = () => {
     const handleMenuClose = () => {
         setMenuAnchorEl(null);
     };
-
-    // Show document list if no document is selected
-    if (!selectedDocumentPath) {
-        return (
-            <Box sx={WORKSPACE_ROOT_SX}>
-                <DocumentList onDocumentSelect={handleDocumentSelect} />
-            </Box>
-        );
-    }
 
     return (
         <Box sx={WORKSPACE_ROOT_SX}>
@@ -392,7 +389,7 @@ const Workspace: React.FC = () => {
                             horizontal: 'right',
                         }}
                     >
-                        <MenuItem onClick={handleBackToList}>
+                        <MenuItem onClick={handleBackToListClick}>
                             <ListItemText>Back to Documents</ListItemText>
                         </MenuItem>
                     </Menu>
@@ -450,9 +447,9 @@ const Workspace: React.FC = () => {
     );
 };
 
-const WorkspaceWithProvider: React.FC = () => (
+const WorkspaceWithProvider: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => (
     <MappingProvider>
-        <Workspace />
+        <Workspace documentPath={documentPath} onBackToList={onBackToList} />
     </MappingProvider>
 );
 

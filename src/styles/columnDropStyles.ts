@@ -46,9 +46,11 @@ export const COLUMN_DROP_LABEL_SX: SxProps<Theme> = {
   color: 'text.secondary',
 };
 
-export default {
+const columnDropStyles = {
   COLUMN_DROP_BASE_STYLE,
   COLUMN_DROP_ACTIVE_STYLE,
   COLUMN_DROP_CONTAINER_SX,
   COLUMN_DROP_LABEL_SX,
 };
+
+export default columnDropStyles;

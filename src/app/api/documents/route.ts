@@ -9,6 +9,7 @@ export interface DocumentMetadata {
   fileName: string;
   createdDate?: string;
   path: string;
+  pageCount?: number;
 }
 
 export async function GET() {
@@ -20,13 +21,32 @@ export async function GET() {
     const metadataContent = await fs.readFile(metadataPath, 'utf-8');
     const metadata = JSON.parse(metadataContent);
     
-    // Add the full path to each document
-    const documents: DocumentMetadata[] = metadata.documents.map((doc: any) => ({
-      ...doc,
-      path: `/data/${doc.fileName}`
-    }));
+    // Read each document to get page count
+    const documentsWithPageCount = await Promise.all(
+      metadata.documents.map(async (doc: any) => {
+        try {
+          const docPath = path.join(process.cwd(), 'public', 'data', doc.fileName);
+          const docContent = await fs.readFile(docPath, 'utf-8');
+          const docData = JSON.parse(docContent);
+          const pageCount = docData.SvgInfo?.SvgImages?.length || 1;
+          
+          return {
+            ...doc,
+            path: `/data/${doc.fileName}`,
+            pageCount
+          };
+        } catch (error) {
+          console.error(`Error reading document ${doc.fileName}:`, error);
+          return {
+            ...doc,
+            path: `/data/${doc.fileName}`,
+            pageCount: 1
+          };
+        }
+      })
+    );
     
-    return NextResponse.json({ documents });
+    return NextResponse.json({ documents: documentsWithPageCount });
   } catch (error) {
     console.error('Error reading documents metadata:', error);
     return NextResponse.json(

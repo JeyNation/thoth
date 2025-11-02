@@ -35,7 +35,7 @@ export const ICON_STROKE = 1.5;
 // Curve constant
 export const KAPPA = 0.5522847498;
 
-export default {
+const connectionOverlayStyles = {
   SVG_CONTAINER_STYLE,
   PATH_STROKE_COLOR,
   PATH_STROKE_WIDTH,
@@ -51,3 +51,5 @@ export default {
   ICON_STROKE,
   KAPPA,
 };
+
+export default connectionOverlayStyles;

@@ -78,7 +78,7 @@ export const WORKSPACE_DEBUG_CONTAINER_SX = (height: number): SxProps<Theme> => 
   boxShadow: '0 -6px 16px rgba(15,23,42,0.55)',
 });
 
-export default {
+const workspaceStyles = {
   WORKSPACE_ROOT_SX,
   WORKSPACE_INNER_SX,
   WORKSPACE_GRID_SX,
@@ -88,3 +88,5 @@ export default {
   WORKSPACE_DEBUG_RESIZER_SX,
   WORKSPACE_DEBUG_CONTAINER_SX,
 };
+
+export default workspaceStyles;

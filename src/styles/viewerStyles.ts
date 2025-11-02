@@ -61,7 +61,7 @@ export const getSelectionRectStyle = (base: CSSProperties): CSSProperties => {
   };
 };
 
-export default {
+const viewerStyles = {
   VIEWER_LOADING_BOX_SX,
   VIEWER_ROOT_SX,
   VIEWER_CONTAINER_SX,
@@ -69,3 +69,5 @@ export default {
   VIEWER_SVG_TRANSFORM_SX,
   getSelectionRectStyle,
 };
+
+export default viewerStyles;
