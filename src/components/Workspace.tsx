@@ -15,6 +15,9 @@ import {
 } from '../styles/workspaceStyles';
 import type { PurchaseOrder } from '../types/PurchaseOrder';
 import type { BoundingBox } from '../types/mapping';
+import type { BoundingBox as ExtractionBoundingBox } from '../types/boundingBox';
+import type { LayoutMap } from '../types/extractionRules';
+import { ExtractionEngine } from '../services/extractionEngine';
 import { useMapping, MappingProvider } from '../context/MappingContext';
 import Form from './Form';
 import Viewer from './Viewer';
@@ -39,8 +42,10 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
     const menuOpen = Boolean(menuAnchorEl);
     const [activeTab, setActiveTab] = useState<number>(0);
+    const [hasRunAutoExtraction, setHasRunAutoExtraction] = useState(false);
     
     const { 
+        purchaseOrder,
         updatePurchaseOrder, 
         recomputeGeometry, 
         undo, 
@@ -50,7 +55,8 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
         fieldSources, 
         reverseIndex, 
         updateFieldSources,
-        replaceAll
+        replaceAll,
+        applyTransaction
     } = useMapping();
     
     const isResizingRef = useRef(false);
@@ -213,11 +219,98 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
     useEffect(() => {
         if (!documentPath) return;
         
+        // Reset auto-extraction flag when document changes
+        setHasRunAutoExtraction(false);
+        
         fetch(documentPath)
             .then(r => { if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
             .then(setDocumentData)
             .catch(err => console.error('Failed loading document data', err));
     }, [documentPath]);
+
+    // Auto-extract fields when document and bounding boxes are loaded (only once)
+    useEffect(() => {
+        if (!documentData || !documentData.vendorId || boundingBoxes.length === 0 || hasRunAutoExtraction) return;
+
+        const runAutoExtraction = async () => {
+            try {
+                // Fetch the layout map for this vendor
+                const layoutResponse = await fetch(`/data/layout_maps/${documentData.vendorId}_rules.json`);
+                if (!layoutResponse.ok) {
+                    console.log(`No layout rules found for vendor: ${documentData.vendorId}`);
+                    return;
+                }
+
+                const layoutMap: LayoutMap = await layoutResponse.json();
+                
+                // Convert mapping BoundingBox to extraction BoundingBox format
+                const extractionBoxes: ExtractionBoundingBox[] = boundingBoxes.map(box => ({
+                    id: box.id,
+                    fieldId: box.fieldId,
+                    fieldText: box.fieldText,
+                    page: box.page,
+                    points: box.points
+                }));
+
+                // Run extraction
+                const engine = new ExtractionEngine(extractionBoxes, layoutMap);
+                const result = engine.extract();
+
+                console.log('Auto-extraction result:', result);
+
+                // Apply extractions to form
+                if (result.extractions.length > 0) {
+                    const mappingUpdates: Array<{ fieldId: string; sourceIds: string[] }> = [];
+                    const updatedPO = { ...purchaseOrder };
+
+                    result.extractions.forEach(extraction => {
+                        // Collect all source field IDs from segments (these are OCR field IDs like "field_123")
+                        const allSourceFieldIds = extraction.segments.flatMap(seg => seg.sourceFieldIds);
+                        
+                        // Find the corresponding bounding box IDs (like "bbox-field_123-0")
+                        const boundingBoxIds = boundingBoxes
+                            .filter(box => allSourceFieldIds.includes(box.fieldId))
+                            .map(box => box.id);
+                        
+                        // Map extraction field IDs to purchase order fields
+                        let poFieldId = extraction.extractionFieldId;
+                        if (extraction.extractionFieldId === 'ship-to') {
+                            poFieldId = 'shipToAddress';
+                        }
+                        
+                        // Add to mapping updates (use bounding box IDs, not OCR field IDs)
+                        mappingUpdates.push({
+                            fieldId: poFieldId,
+                            sourceIds: boundingBoxIds
+                        });
+
+                        // Update the purchase order value
+                        (updatedPO as any)[poFieldId] = extraction.value;
+                        
+                        console.log(`Auto-extracted ${poFieldId}:`, extraction.value);
+                        console.log(`Linked to bounding boxes:`, boundingBoxIds);
+                    });
+
+                    // Apply both mapping and purchase order updates in a single transaction
+                    // This will link the bounding boxes to the form field
+                    applyTransaction({
+                        mappingUpdates,
+                        purchaseOrder: updatedPO,
+                        boundingBoxes // Pass all bounding boxes for geometry computation
+                    });
+                    
+                    console.log('Auto-extraction applied successfully');
+                    
+                    // Mark auto-extraction as complete to prevent re-running
+                    setHasRunAutoExtraction(true);
+                }
+            } catch (error) {
+                console.error('Auto-extraction failed:', error);
+            }
+        };
+
+        runAutoExtraction();
+    }, [documentData, boundingBoxes, hasRunAutoExtraction, applyTransaction]);
 
     useEffect(() => {
         const fn = recomputeRef.current;
