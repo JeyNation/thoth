@@ -26,36 +26,9 @@ import FieldInput from './form/FieldInput';
 import LineItemCard from './form/LineItemCard';
 import useFlashHighlight from '../hooks/useFlashHighlight';
 import { getTextFieldSxFor } from '../styles/fieldStyles';
+import { BASIC_INFO_FIELDS, type FormFieldConfig } from '../config/formFields';
 
 type BasicFieldKey = Exclude<keyof PurchaseOrder, 'lineItems'>;
-
-const BASIC_FIELD_CONFIGS: BasicFieldConfig[] = [
-    {
-        id: 'documentNumber',
-        label: 'Document Number',
-        kind: 'text',
-    },
-    {
-        id: 'customerNumber',
-        label: 'Customer Number',
-        kind: 'text',
-    },
-    {
-        id: 'shipToAddress',
-        label: 'Ship To Address',
-        kind: 'textarea',
-        multiline: true,
-        rows: 3,
-    },
-];
-
-interface BasicFieldConfig {
-    id: BasicFieldKey;
-    label: string;
-    kind: 'text' | 'textarea';
-    multiline?: boolean;
-    rows?: number;
-}
 
 interface FormProps {
     onUpdate: (purchaseOrder: PurchaseOrder) => void;
@@ -642,29 +615,30 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                             General
                         </Typography>
                         <Stack spacing={2}>
-                            {BASIC_FIELD_CONFIGS.map((config) => {
-                                const value = purchaseOrder[config.id] as string;
-                                const baseSx = getTextFieldSx(config.id);
-                                const isBasicDropActive = activeBasicDrop === config.id;
+                            {BASIC_INFO_FIELDS.map((config) => {
+                                const fieldId = config.id as BasicFieldKey;
+                                const value = purchaseOrder[fieldId] as string;
+                                const baseSx = getTextFieldSx(fieldId);
+                                const isBasicDropActive = activeBasicDrop === fieldId;
                                 return (
-                                    <Box key={config.id}>
+                                    <Box key={fieldId}>
                                         <Typography variant="caption" color="text.secondary" sx={FORM_CAPTION_UPPER_SX}>
                                             {config.label}
                                         </Typography>
                                         <FieldInput
-                                            id={config.id}
+                                            id={fieldId}
                                             kind={config.kind}
                                             value={value}
                                             baseSx={baseSx}
                                             isDragActive={!!isBasicDropActive || globalDragActive}
-                                            onChange={(val) => handleBasicInfoChange(config.id, val as string, config.kind)}
-                                            onClear={() => clearBasicField(config.id, config.kind)}
-                                            onFocus={() => { setFocusedFieldIdLocal(config.id); onFieldFocus?.(config.id); }}
+                                            onChange={(val) => handleBasicInfoChange(fieldId, val as string, config.kind)}
+                                            onClear={() => clearBasicField(fieldId, config.kind)}
+                                            onFocus={() => { setFocusedFieldIdLocal(fieldId); onFieldFocus?.(fieldId); }}
                                             onBlur={() => { setFocusedFieldIdLocal(null); onFieldFocus?.(null); }}
                                             onDragOver={(e) => {
                                                 if (e.dataTransfer.types.includes('application/json')) {
                                                     e.preventDefault();
-                                                    if (!isBasicDropActive) setActiveBasicDrop(config.id);
+                                                    if (!isBasicDropActive) setActiveBasicDrop(fieldId);
                                                 }
                                             }}
                                             onDragLeave={(e) => {
@@ -672,11 +646,11 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                                                 if (next && (e.currentTarget as HTMLElement).contains(next)) {
                                                     return;
                                                 }
-                                                setActiveBasicDrop((prev) => (prev === config.id ? null : prev));
+                                                setActiveBasicDrop((prev) => (prev === fieldId ? null : prev));
                                             }}
                                             onDrop={(e) => {
                                                 setActiveBasicDrop(null);
-                                                handleBasicDrop(e, config.id, config.kind);
+                                                handleBasicDrop(e, fieldId, config.kind);
                                             }}
                                         />
                                     </Box>

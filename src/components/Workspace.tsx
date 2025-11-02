@@ -18,6 +18,7 @@ import type { BoundingBox } from '../types/mapping';
 import type { BoundingBox as ExtractionBoundingBox } from '../types/boundingBox';
 import type { LayoutMap } from '../types/extractionRules';
 import { ExtractionEngine } from '../services/extractionEngine';
+import { EXTRACTION_FIELD_MAPPING } from '../config/formFields';
 import { useMapping, MappingProvider } from '../context/MappingContext';
 import Form from './Form';
 import Viewer from './Viewer';
@@ -272,11 +273,8 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
                             .filter(box => allSourceFieldIds.includes(box.fieldId))
                             .map(box => box.id);
                         
-                        // Map extraction field IDs to purchase order fields
-                        let poFieldId = extraction.extractionFieldId;
-                        if (extraction.extractionFieldId === 'ship-to') {
-                            poFieldId = 'shipToAddress';
-                        }
+                        // Use the centralized mapping to convert extraction field IDs to purchase order field IDs
+                        const poFieldId = EXTRACTION_FIELD_MAPPING[extraction.extractionFieldId] || extraction.extractionFieldId;
                         
                         // Add to mapping updates (use bounding box IDs, not OCR field IDs)
                         mappingUpdates.push({
