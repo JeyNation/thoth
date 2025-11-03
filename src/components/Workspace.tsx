@@ -340,7 +340,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
         };
 
         runAutoExtraction();
-    }, [documentData, boundingBoxes, hasRunAutoExtraction, applyTransaction, getLayoutMapForVendor]);
+    }, [documentData, boundingBoxes, hasRunAutoExtraction, applyTransaction, getLayoutMapForVendor, purchaseOrder]);
 
     useEffect(() => {
         const fn = recomputeRef.current;

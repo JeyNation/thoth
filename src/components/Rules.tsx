@@ -10,7 +10,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { BASIC_INFO_FIELDS, EXTRACTION_FIELD_MAPPING } from '../config/formFields';
-import type { AnchorMatchMode, Direction, LayoutMap, RuleType } from '../types/extractionRules';
+import type { AnchorMatchMode, Direction, RuleType } from '../types/extractionRules';
+import { useLayoutMap } from '../hooks/useLayoutMap';
 import { getTextFieldSxFor } from '../styles/fieldStyles';
 
 interface RegexPattern {
@@ -43,34 +44,8 @@ interface RulesProps {
     onRerunExtraction?: () => void;
 }
 
-const STORAGE_KEY_PREFIX = 'thoth:layoutMap:';
-
-const getStorageKey = (vendorId: string) => `${STORAGE_KEY_PREFIX}${vendorId}`;
-
-const readLayoutMapFromStorage = (vendorId: string): LayoutMap | null => {
-    if (typeof window === 'undefined') return null;
-    try {
-        const raw = window.localStorage.getItem(getStorageKey(vendorId));
-        if (!raw) return null;
-        return JSON.parse(raw) as LayoutMap;
-    } catch (error) {
-        console.warn('Failed to read layout map from localStorage', error);
-        return null;
-    }
-};
-
-const writeLayoutMapToStorage = (vendorId: string, layoutMap: LayoutMap) => {
-    if (typeof window === 'undefined') return;
-    try {
-        window.localStorage.setItem(getStorageKey(vendorId), JSON.stringify(layoutMap));
-    } catch (error) {
-        console.warn('Failed to persist layout map to localStorage', error);
-    }
-};
-
 const Rules: React.FC<RulesProps> = ({ vendorId, onRerunExtraction }) => {
-    const [layoutMap, setLayoutMap] = useState<LayoutMap | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { layoutMap, loading, saveLayoutMap } = useLayoutMap(vendorId);
     const [fieldRules, setFieldRules] = useState<Record<string, FieldRule[]>>({});
     const [anchorInputs, setAnchorInputs] = useState<Record<string, string>>({});
     const [editingAnchor, setEditingAnchor] = useState<{ ruleId: string; index: number } | null>(null);
@@ -96,12 +71,6 @@ const Rules: React.FC<RulesProps> = ({ vendorId, onRerunExtraction }) => {
     const handleRerunCancel = () => {
         setShowRerunDialog(false);
     };
-
-    useEffect(() => {
-        if (vendorId) {
-            loadLayoutMap(vendorId);
-        }
-    }, [vendorId]);
 
     useEffect(() => {
         if (!layoutMap) return;
@@ -149,41 +118,13 @@ const Rules: React.FC<RulesProps> = ({ vendorId, onRerunExtraction }) => {
 
         console.log('Final converted rules:', convertedRules);
         setFieldRules(convertedRules);
+        // Reset ephemeral state when layout map changes
+        setHasUnsavedChanges(false);
+        setEditingRuleId(null);
+        setAnchorInputs({});
+        setEditingAnchor(null);
+        setPatternInputs({});
     }, [layoutMap]);
-
-    const loadLayoutMap = async (vendorId: string) => {
-        setLoading(true);
-        try {
-            const stored = readLayoutMapFromStorage(vendorId);
-            if (stored) {
-                setLayoutMap(stored);
-                setHasUnsavedChanges(false);
-                setEditingRuleId(null);
-                setAnchorInputs({});
-                setEditingAnchor(null);
-                setPatternInputs({});
-                return;
-            }
-
-            const response = await fetch(`/data/layout_maps/${vendorId}_rules.json`);
-            if (response.ok) {
-                const data = await response.json();
-                setLayoutMap(data);
-                setHasUnsavedChanges(false);
-                setEditingRuleId(null);
-                setAnchorInputs({});
-                setEditingAnchor(null);
-                setPatternInputs({});
-            } else {
-                setLayoutMap(null);
-            }
-        } catch (error) {
-            console.error('Failed to load layout map:', error);
-            setLayoutMap(null);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleAddRule = (fieldId: string) => {
         const newRule: FieldRule = {
@@ -649,8 +590,8 @@ const Rules: React.FC<RulesProps> = ({ vendorId, onRerunExtraction }) => {
 
         const { rules: fieldRulesSnapshot } = finalizePendingAnchor(editingRuleId);
 
-        // Convert FieldRule format back to LayoutMap format
-        const updatedFields = Object.entries(fieldRules).map(([fieldId, rules]) => ({
+    // Convert FieldRule format back to LayoutMap format
+    const updatedFields = Object.entries(fieldRulesSnapshot).map(([fieldId, rules]) => ({
             id: fieldId,
             rules: rules.map((rule, index) => {
                 let normalizedRuleType: RuleType;
@@ -726,13 +667,11 @@ const Rules: React.FC<RulesProps> = ({ vendorId, onRerunExtraction }) => {
             updatedAt: new Date().toISOString(),
         };
 
-        console.log('Persisting layout map to localStorage:', updatedLayoutMap);
+        console.log('Persisting layout map via hook:', updatedLayoutMap);
 
         if (layoutMap.vendorId) {
-            writeLayoutMapToStorage(layoutMap.vendorId, updatedLayoutMap);
+            saveLayoutMap(updatedLayoutMap);
         }
-
-        setLayoutMap(updatedLayoutMap);
         setHasUnsavedChanges(false);
         setEditingRuleId(null);
     };
@@ -1370,9 +1309,9 @@ const Rules: React.FC<RulesProps> = ({ vendorId, onRerunExtraction }) => {
                     onClick={handleRerunClick}
                     disabled={!onRerunExtraction}
                     startIcon={<PlayArrowIcon fontSize="small" />}
-                    sx={{ minWidth: 150, borderRadius: 999, px: 2.5, py: 1, fontWeight: 600 }}
+                    sx={{ minWidth: 200, borderRadius: 999, px: 2.5, py: 1, fontWeight: 600 }}
                 >
-                    Rerun Extraction
+                    {hasUnsavedChanges ? 'Save & Rerun Extraction' : 'Rerun Extraction'}
                 </Button>
                 <Button
                     variant="contained"
@@ -1394,12 +1333,13 @@ const Rules: React.FC<RulesProps> = ({ vendorId, onRerunExtraction }) => {
                 aria-describedby="rerun-dialog-description"
             >
                 <DialogTitle id="rerun-dialog-title" sx={{ pb: 1 }}>
-                    Rerun Extraction?
+                    {hasUnsavedChanges ? 'Save & Rerun Extraction?' : 'Rerun Extraction?'}
                 </DialogTitle>
                 <DialogContent dividers sx={{ py: 2 }}>
                     <DialogContentText id="rerun-dialog-description">
-                        This will clear all currently mapped fields and re-extract data using the current rules. 
-                        Any manual edits or mappings will be lost. Are you sure you want to continue?
+                        {hasUnsavedChanges
+                            ? 'We will save your current rule changes and then clear all mapped fields to re-extract using those rules. Any manual edits or mappings will be lost. Continue?'
+                            : 'This will clear all currently mapped fields and re-extract data using the current rules. Any manual edits or mappings will be lost. Continue?'}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, py: 2 }}>
@@ -1412,13 +1352,13 @@ const Rules: React.FC<RulesProps> = ({ vendorId, onRerunExtraction }) => {
                         Cancel
                     </Button>
                     <Button 
-                        onClick={handleRerunConfirm} 
+                        onClick={async () => { if (hasUnsavedChanges) { await handleSave(); } handleRerunConfirm(); }} 
                         variant="contained"
                         disableFocusRipple
                         disableRipple
                         sx={{ borderRadius: 999, px: 2.5, py: 1, fontWeight: 600 }}
                     >
-                        Rerun Extraction
+                        {hasUnsavedChanges ? 'Save & Rerun' : 'Rerun Extraction'}
                     </Button>
                 </DialogActions>
             </Dialog>
