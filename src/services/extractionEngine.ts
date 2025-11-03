@@ -24,10 +24,14 @@ export interface ExtractionEngineResult {
 export class ExtractionEngine {
     private boundingBoxes: BoundingBox[];
     private layoutMap: LayoutMap;
+    private documentBounds: { width: number; height: number };
 
     constructor(boundingBoxes: BoundingBox[], layoutMap: LayoutMap) {
         this.boundingBoxes = boundingBoxes;
         this.layoutMap = layoutMap;
+        
+        // Calculate document dimensions from all bounding boxes
+        this.documentBounds = this.calculateDocumentBounds();
     }
 
     public extract(): ExtractionEngineResult {
@@ -37,6 +41,8 @@ export class ExtractionEngine {
         const errors: string[] = [];
 
         for (const field of this.layoutMap.fields) {
+
+            console.log('Extracting field:', field.id);
 
             const fieldResult = this.extractField(field);
             
@@ -91,7 +97,6 @@ export class ExtractionEngine {
     private executeAnchorRule(fieldId: string, rule: AnchorRule): FieldExtraction | null {
         const anchorResult = this.findAnchor(rule.anchorConfig);
         
-        console.log('Anchor box found:', anchorResult);
         if (!anchorResult) {
             return null;
         }
@@ -101,7 +106,6 @@ export class ExtractionEngine {
         // Try to extract from the same box first (for cases like "PO: 123456" in one field)
         const sameBoxExtraction = this.tryExtractFromAnchorBox(anchorBox, matchedAlias, rule);
         if (sameBoxExtraction) {
-            console.log('Extracted from same box as anchor:', sameBoxExtraction);
             return {
                 extractionFieldId: fieldId,
                 value: sameBoxExtraction.value,
@@ -113,7 +117,6 @@ export class ExtractionEngine {
         // Fall back to looking for separate boxes in the relative position
         const extractionBoxes = this.findExtractionBox(anchorBox, rule.positionConfig, anchorBox.fieldId);
         
-        console.log('Extraction boxes found:', extractionBoxes);
         if (!extractionBoxes || extractionBoxes.length === 0) {
             return null;
         }
@@ -200,15 +203,18 @@ export class ExtractionEngine {
         const ignoreCase = config.ignoreCase !== false; // Default true
         const normalizeWhitespace = config.normalizeWhitespace !== false; // Default true
 
+        // Normalize the search zone from 0-1 coordinates to absolute pixel coordinates
+        const absoluteSearchZone = this.normalizeSearchZone(config.searchZone);
+
         const candidateBoxes: Array<{ box: BoundingBox; matchedAlias: string }> = [];
 
         for (const box of this.boundingBoxes) {
             const boxBounds = this.calculateBounds(box.points);
             
-            if (boxBounds.top < config.searchZone.top) continue;
-            if (boxBounds.left < config.searchZone.left) continue;
-            if (boxBounds.right > config.searchZone.right) continue;
-            if (boxBounds.bottom > config.searchZone.bottom) continue;
+            if (boxBounds.top < absoluteSearchZone.top) continue;
+            if (boxBounds.left < absoluteSearchZone.left) continue;
+            if (boxBounds.right > absoluteSearchZone.right) continue;
+            if (boxBounds.bottom > absoluteSearchZone.bottom) continue;
 
             // Normalize the text from the bounding box
             let normalizedText = box.fieldText;
@@ -356,32 +362,45 @@ export class ExtractionEngine {
             
             switch (direction) {
                 case 'bottom':
+                    // Start from left-bottom corner of anchor
                     searchArea = {
                         top: anchorBounds.bottom + config.boundingBox.top,
                         left: anchorBounds.left + config.boundingBox.left,
-                        right: anchorBounds.right + config.boundingBox.right,
+                        right: anchorBounds.left + config.boundingBox.right,
                         bottom: anchorBounds.bottom + config.boundingBox.bottom,
                     };
                     break;
                 case 'top':
+                    // Start from left-top corner of anchor
                     searchArea = {
                         top: anchorBounds.top + config.boundingBox.top,
                         left: anchorBounds.left + config.boundingBox.left,
-                        right: anchorBounds.right + config.boundingBox.right,
+                        right: anchorBounds.left + config.boundingBox.right,
                         bottom: anchorBounds.top + config.boundingBox.bottom,
                     };
                     break;
                 case 'right':
+                    // Start from right-top corner of anchor
                     searchArea = {
                         top: anchorBounds.top + config.boundingBox.top,
                         left: anchorBounds.right + config.boundingBox.left,
                         right: anchorBounds.right + config.boundingBox.right,
-                        bottom: anchorBounds.bottom + config.boundingBox.bottom,
+                        bottom: anchorBounds.top + config.boundingBox.bottom,
                     };
                     break;
                 case 'left':
+                    // Start from left-top corner of anchor
                     searchArea = {
                         top: anchorBounds.top + config.boundingBox.top,
+                        left: anchorBounds.left + config.boundingBox.left,
+                        right: anchorBounds.left + config.boundingBox.right,
+                        bottom: anchorBounds.top + config.boundingBox.bottom,
+                    };
+                    break;
+                default:
+                    // Default to bottom if direction is unknown
+                    searchArea = {
+                        top: anchorBounds.bottom + config.boundingBox.top,
                         left: anchorBounds.left + config.boundingBox.left,
                         right: anchorBounds.left + config.boundingBox.right,
                         bottom: anchorBounds.bottom + config.boundingBox.bottom,
@@ -419,6 +438,9 @@ export class ExtractionEngine {
 
     private parseText(text: string, config: AnchorRule['parserConfig']): string | null {
         try {
+            // Default fallbackToFullText to true if not explicitly set
+            const fallbackToFullText = config?.fallbackToFullText !== false;
+            
             // Determine which patterns to use
             let patternsToUse: Array<{ regex: string; priority: number }> = [];
 
@@ -431,7 +453,7 @@ export class ExtractionEngine {
 
             if (patternsToUse.length === 0) {
                 // No patterns defined, return the text as-is if fallback is enabled
-                return config.fallbackToFullText ? text : null;
+                return fallbackToFullText ? text : null;
             }
 
             // Sort by priority (lower number = higher priority)
@@ -457,15 +479,52 @@ export class ExtractionEngine {
             }
 
             // All patterns failed
-            if (config.fallbackToFullText) {
+            if (fallbackToFullText) {
                 return text;
             }
 
             return null;
         } catch (error) {
             console.error('Regex parsing error:', error);
-            return config.fallbackToFullText ? text : null;
+            // Default fallbackToFullText to true if not explicitly set
+            return config.fallbackToFullText !== false ? text : null;
         }
+    }
+
+    private calculateDocumentBounds(): { width: number; height: number } {
+        if (this.boundingBoxes.length === 0) {
+            // Default to standard page size if no boxes
+            return { width: 1700, height: 2200 };
+        }
+
+        let maxRight = 0;
+        let maxBottom = 0;
+
+        for (const box of this.boundingBoxes) {
+            const bounds = this.calculateBounds(box.points);
+            maxRight = Math.max(maxRight, bounds.right);
+            maxBottom = Math.max(maxBottom, bounds.bottom);
+        }
+
+        return {
+            width: maxRight || 1700,
+            height: maxBottom || 2200
+        };
+    }
+
+    private normalizeSearchZone(searchZone: { top: number; left: number; right: number; bottom: number }): { top: number; left: number; right: number; bottom: number } {
+        // If values are already in absolute coordinates (> 1), return as-is for backwards compatibility
+        if (searchZone.top > 1 || searchZone.left > 1 || searchZone.right > 1 || searchZone.bottom > 1) {
+            return searchZone;
+        }
+
+        // Convert normalized coordinates (0-1) to absolute pixel coordinates
+        return {
+            top: searchZone.top * this.documentBounds.height,
+            left: searchZone.left * this.documentBounds.width,
+            right: searchZone.right * this.documentBounds.width,
+            bottom: searchZone.bottom * this.documentBounds.height
+        };
     }
 
     private calculateBounds(points: Array<{ x: number; y: number }>): { top: number; left: number; right: number; bottom: number } {

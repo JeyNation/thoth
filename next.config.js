@@ -3,6 +3,9 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  experimental: {
+    cssPreload: false,
+  },
   // Configure static file serving
   async rewrites() {
     return [

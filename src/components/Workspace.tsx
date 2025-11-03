@@ -44,6 +44,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
     const menuOpen = Boolean(menuAnchorEl);
     const [activeTab, setActiveTab] = useState<number>(0);
     const [hasRunAutoExtraction, setHasRunAutoExtraction] = useState(false);
+    const layoutMapCacheRef = useRef<{ vendorId: string; layoutMap: LayoutMap } | null>(null);
     
     const { 
         purchaseOrder,
@@ -235,14 +236,27 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
 
         const runAutoExtraction = async () => {
             try {
-                // Fetch the layout map for this vendor
-                const layoutResponse = await fetch(`/data/layout_maps/${documentData.vendorId}_rules.json`);
-                if (!layoutResponse.ok) {
-                    console.log(`No layout rules found for vendor: ${documentData.vendorId}`);
-                    return;
-                }
+                let layoutMap: LayoutMap;
+                
+                // Check if we have a cached layout map for this vendor
+                if (layoutMapCacheRef.current && layoutMapCacheRef.current.vendorId === documentData.vendorId) {
+                    layoutMap = layoutMapCacheRef.current.layoutMap;
+                } else {
+                    // Fetch the layout map for this vendor
+                    const layoutResponse = await fetch(`/data/layout_maps/${documentData.vendorId}_rules.json`);
+                    if (!layoutResponse.ok) {
+                        console.log(`No layout rules found for vendor: ${documentData.vendorId}`);
+                        return;
+                    }
 
-                const layoutMap: LayoutMap = await layoutResponse.json();
+                    layoutMap = await layoutResponse.json();
+                    
+                    // Cache the layout map
+                    layoutMapCacheRef.current = {
+                        vendorId: documentData.vendorId,
+                        layoutMap
+                    };
+                }
                 
                 // Convert mapping BoundingBox to extraction BoundingBox format
                 const extractionBoxes: ExtractionBoundingBox[] = boundingBoxes.map(box => ({
@@ -256,8 +270,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
                 // Run extraction
                 const engine = new ExtractionEngine(extractionBoxes, layoutMap);
                 const result = engine.extract();
-
-                console.log('Auto-extraction result:', result);
 
                 // Apply extractions to form
                 if (result.extractions.length > 0) {
@@ -284,9 +296,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
 
                         // Update the purchase order value
                         (updatedPO as any)[poFieldId] = extraction.value;
-                        
-                        console.log(`Auto-extracted ${poFieldId}:`, extraction.value);
-                        console.log(`Linked to bounding boxes:`, boundingBoxIds);
                     });
 
                     // Apply both mapping and purchase order updates in a single transaction
@@ -296,8 +305,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
                         purchaseOrder: updatedPO,
                         boundingBoxes // Pass all bounding boxes for geometry computation
                     });
-                    
-                    console.log('Auto-extraction applied successfully');
                     
                     // Mark auto-extraction as complete to prevent re-running
                     setHasRunAutoExtraction(true);
@@ -339,6 +346,100 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
     }, [undo, redo, canUndo, canRedo]);
 
     const handlePurchaseOrderUpdate = (updated: PurchaseOrder) => updatePurchaseOrder(updated);
+    
+    const handleRerunExtraction = async () => {
+        if (!documentData || !documentData.vendorId || boundingBoxes.length === 0) {
+            console.log('Cannot rerun extraction: missing document data or bounding boxes');
+            return;
+        }
+
+        try {
+            // Always fetch fresh layout map to get the latest saved rules
+            // Add cache-busting timestamp to ensure we don't get cached response
+            const layoutResponse = await fetch(`/data/layout_maps/${documentData.vendorId}_rules.json?t=${Date.now()}`);
+            if (!layoutResponse.ok) {
+                console.log(`No layout rules found for vendor: ${documentData.vendorId}`);
+                alert('No layout rules found for this vendor');
+                return;
+            }
+
+            const layoutMap: LayoutMap = await layoutResponse.json();
+            
+            // Update the cache with fresh data
+            layoutMapCacheRef.current = {
+                vendorId: documentData.vendorId,
+                layoutMap
+            };
+            
+            console.log('Rerunning extraction with fresh rules:', layoutMap);
+            
+            // Convert mapping BoundingBox to extraction BoundingBox format
+            const extractionBoxes: ExtractionBoundingBox[] = boundingBoxes.map(box => ({
+                id: box.id,
+                fieldId: box.fieldId,
+                fieldText: box.fieldText,
+                page: box.page,
+                points: box.points
+            }));
+
+            // Run extraction
+            const engine = new ExtractionEngine(extractionBoxes, layoutMap);
+            const result = engine.extract();
+
+            // Clear all existing mappings and reset purchase order
+            replaceAll({});
+            const clearedPO: PurchaseOrder = { 
+                documentNumber: '', 
+                customerNumber: '', 
+                documentDate: '', 
+                shipToAddress: '', 
+                lineItems: [] 
+            };
+
+            // Apply extractions to form
+            if (result.extractions.length > 0) {
+                const mappingUpdates: Array<{ fieldId: string; sourceIds: string[] }> = [];
+                const updatedPO = { ...clearedPO };
+
+                result.extractions.forEach(extraction => {
+                    // Collect all source field IDs from segments (these are OCR field IDs like "field_123")
+                    const allSourceFieldIds = extraction.segments.flatMap(seg => seg.sourceFieldIds);
+                    
+                    // Find the corresponding bounding box IDs (like "bbox-field_123-0")
+                    const boundingBoxIds = boundingBoxes
+                        .filter(box => allSourceFieldIds.includes(box.fieldId))
+                        .map(box => box.id);
+                    
+                    // Use the centralized mapping to convert extraction field IDs to purchase order field IDs
+                    const poFieldId = EXTRACTION_FIELD_MAPPING[extraction.extractionFieldId] || extraction.extractionFieldId;
+                    
+                    // Add to mapping updates (use bounding box IDs, not OCR field IDs)
+                    mappingUpdates.push({
+                        fieldId: poFieldId,
+                        sourceIds: boundingBoxIds
+                    });
+
+                    // Update the purchase order value
+                    (updatedPO as any)[poFieldId] = extraction.value;
+                });
+
+                // Apply both mapping and purchase order updates in a single transaction
+                applyTransaction({
+                    mappingUpdates,
+                    purchaseOrder: updatedPO,
+                    boundingBoxes
+                });
+            } else {
+                // No extractions, just update with cleared PO
+                updatePurchaseOrder(clearedPO);
+            }
+            
+            console.log('Extraction rerun completed');
+        } catch (error) {
+            console.error('Rerun extraction failed:', error);
+            alert(`Failed to rerun extraction: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    };
     
     const handleFieldFocus = (fieldId: string | null) => {
         setFocusedInputField(fieldId);
@@ -440,6 +541,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
         updatePurchaseOrder({ documentNumber: '', customerNumber: '', documentDate: '', shipToAddress: '', lineItems: [] }); // Reset purchase order
         setDocumentData(null);
         setMenuAnchorEl(null);
+        layoutMapCacheRef.current = null; // Clear the cache
         onBackToList();
     };
 
@@ -543,7 +645,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
                                     />
                                 )}
                                 {activeTab === 1 && (
-                                    <Rules />
+                                    <Rules vendorId={documentData?.vendorId} onRerunExtraction={handleRerunExtraction} />
                                 )}
                             </Box>
                         </Box>

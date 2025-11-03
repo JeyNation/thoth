@@ -1,9 +1,88 @@
-﻿{
-    "id":  "bc-layout",
-    "name":  "BC Layout Map",
-    "vendorId":  "bc",
-    "version":  "1.0",
-    "fields":  [],
-    "createdAt":  "2025-11-02T00:00:00Z",
-    "updatedAt":  "2025-11-02T00:00:00Z"
+{
+  "id": "bc-layout",
+  "name": "BC Layout Map",
+  "vendorId": "bc",
+  "version": "1.0",
+  "fields": [
+    {
+      "id": "document-number",
+      "rules": [
+        {
+          "id": "document-number_rule_1762138951295",
+          "priority": 1,
+          "ruleType": "anchor",
+          "anchorConfig": {
+            "aliases": [
+              "Order"
+            ],
+            "searchZone": {
+              "top": 0,
+              "left": 0.5,
+              "right": 1,
+              "bottom": 0.5
+            },
+            "instance": 1,
+            "matchMode": "startsWith",
+            "ignoreCase": true,
+            "normalizeWhitespace": true
+          },
+          "positionConfig": {
+            "type": "relative",
+            "direction": "right",
+            "boundingBox": {
+              "top": 0,
+              "left": 0,
+              "right": 300,
+              "bottom": 20
+            }
+          },
+          "parserConfig": {
+            "patterns": [],
+            "fallbackToFullText": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "ship-to",
+      "rules": [
+        {
+          "id": "ship-to_rule_1762140267492",
+          "priority": 1,
+          "ruleType": "anchor",
+          "anchorConfig": {
+            "aliases": [
+              "Ship To:"
+            ],
+            "searchZone": {
+              "top": 0,
+              "left": 0,
+              "right": 1,
+              "bottom": 1
+            },
+            "instance": 1,
+            "matchMode": "exact",
+            "ignoreCase": true,
+            "normalizeWhitespace": false
+          },
+          "positionConfig": {
+            "type": "relative",
+            "direction": "right",
+            "boundingBox": {
+              "top": 0,
+              "left": 0,
+              "right": 300,
+              "bottom": 100
+            }
+          },
+          "parserConfig": {
+            "patterns": [],
+            "fallbackToFullText": true
+          }
+        }
+      ]
+    }
+  ],
+  "createdAt": "2025-11-02T00:00:00Z",
+  "updatedAt": "2025-11-03T03:38:56.117Z"
 }

@@ -12,12 +12,20 @@
           "priority": 1,
           "ruleType": "anchor",
           "anchorConfig": {
-            "aliases": ["PO:", "P.O.:", "PO #:", "PO#:", "Purchase Order:", "Order Number:"],
+            "aliases": [
+              "PO:",
+              "P.O.:",
+              "PO #:",
+              "PO#:",
+              "Purchase Order:",
+              "Order Number:",
+              "Hello:"
+            ],
             "searchZone": {
               "top": 0,
               "left": 0,
-              "right": 9999,
-              "bottom": 9999
+              "right": 1,
+              "bottom": 0.9
             },
             "instance": 1,
             "matchMode": "startsWith",
@@ -58,18 +66,23 @@
           "priority": 1,
           "ruleType": "anchor",
           "anchorConfig": {
-            "aliases": ["SHIP TO:", "Ship To:", "ship to:"],
+            "aliases": [
+              "ship to:"
+            ],
             "searchZone": {
               "top": 0,
               "left": 0,
-              "right": 9999,
-              "bottom": 9999
+              "right": 1,
+              "bottom": 1
             },
-            "instance": 1
+            "instance": 1,
+            "matchMode": "startsWith",
+            "ignoreCase": true,
+            "normalizeWhitespace": false
           },
           "positionConfig": {
             "type": "relative",
-            "direction": "bottom",
+            "direction": "below",
             "boundingBox": {
               "top": 10,
               "left": 0,
@@ -78,12 +91,52 @@
             }
           },
           "parserConfig": {
-            "regex": "^(.+)$"
+            "patterns": [],
+            "fallbackToFullText": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "document-date",
+      "rules": [
+        {
+          "id": "rule-1",
+          "priority": 1,
+          "ruleType": "anchor",
+          "anchorConfig": {
+            "aliases": [
+              "PO DATE"
+            ],
+            "searchZone": {
+              "top": 0,
+              "left": 0,
+              "right": 9999,
+              "bottom": 9999
+            },
+            "instance": 1,
+            "matchMode": "exact",
+            "ignoreCase": true,
+            "normalizeWhitespace": true
+          },
+          "positionConfig": {
+            "type": "relative",
+            "direction": "bottom",
+            "boundingBox": {
+              "top": 0,
+              "left": 0,
+              "right": 200,
+              "bottom": 20
+            }
+          },
+          "parserConfig": {
+            "patterns": [],
+            "fallbackToFullText": true
           }
         }
       ]
     }
   ],
   "createdAt": "2025-11-02T00:00:00Z",
-  "updatedAt": "2025-11-02T00:00:00Z"
+  "updatedAt": "2025-11-03T04:36:43.531Z"
 }
