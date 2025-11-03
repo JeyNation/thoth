@@ -4,6 +4,20 @@ import type { MultiFieldPair, SourceWithGeometry } from '../types/mapping';
 import { makeLineItemField, parseLineItemField } from '../types/fieldIds';
 import { uniq } from './uniq';
 import { parseIntegerSafe, parseDecimalSafe } from './numbers';
+import { EXTRACTION_FIELD_MAPPING } from '../config/formFields';
+
+/**
+ * Converts a form field ID to its corresponding extraction field ID.
+ * For example: 'documentNumber' -> 'document-number'
+ * Falls back to the original field ID if no mapping is found.
+ */
+export const getExtractionFieldId = (formFieldId: string): string => {
+  const extractionFieldId = Object.entries(EXTRACTION_FIELD_MAPPING).find(
+    ([_, mappedFormFieldId]) => mappedFormFieldId === formFieldId
+  )?.[0];
+  
+  return extractionFieldId || formFieldId;
+};
 
 export const sanitizeText = (raw: string, kind: string): string => {
   let processedText: string = raw ?? '';

@@ -24,7 +24,7 @@ import Form from './Form';
 import Viewer from './Viewer';
 import Debugger from './Debugger';
 import ConnectionOverlay, { type OverlayConnection } from './ConnectionOverlay';
-import Rules from './Rules';
+import { Rules } from './Rules';
 
 interface WorkspaceProps {
     documentPath: string;
