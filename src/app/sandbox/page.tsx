@@ -25,7 +25,6 @@ export default function SandboxPage() {
     const [result, setResult] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
-    const [dataLoading, setDataLoading] = useState(true);
     
     const [documents, setDocuments] = useState<DocumentInfo[]>([]);
     const [layouts, setLayouts] = useState<LayoutInfo[]>([]);
@@ -44,14 +43,6 @@ export default function SandboxPage() {
 
             setDocuments(docsData.documents || []);
             setLayouts(layoutsData.layouts || []);
-
-            // Set defaults
-            if (docsData.documents.length > 0) {
-                setSelectedDocument(docsData.documents[0].fileName);
-            }
-            if (layoutsData.layouts.length > 0) {
-                setSelectedLayout(layoutsData.layouts[0].fileName);
-            }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to load available data');
         }
@@ -60,7 +51,10 @@ export default function SandboxPage() {
     const loadSelectedData = async () => {
         if (!selectedDocument || !selectedLayout) return;
         
-        setDataLoading(true);
+        setLoading(true);
+        setError(null);
+        setResult(null);
+
         try {
             const [docResponse, layoutResponse] = await Promise.all([
                 fetch(`/data/documents/${selectedDocument}`),
@@ -70,43 +64,31 @@ export default function SandboxPage() {
             const docData = await docResponse.json();
             const layoutData = await layoutResponse.json();
 
-            setBoundingBoxes(JSON.stringify(docData.boundingBoxes || [], null, 2));
-            setLayoutMap(JSON.stringify(layoutData, null, 2));
-            setError(null);
+            const boundingBoxesStr = JSON.stringify(docData.boundingBoxes || [], null, 2);
+            const layoutMapStr = JSON.stringify(layoutData, null, 2);
+
+            setBoundingBoxes(boundingBoxesStr);
+            setLayoutMap(layoutMapStr);
+
+            // Auto-extract after loading
+            await extractData(docData.boundingBoxes || [], layoutData);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to load selected data');
         } finally {
-            setDataLoading(false);
+            setLoading(false);
         }
     };
 
-    useEffect(() => {
-        loadAvailableData();
-    }, []);
-
-    useEffect(() => {
-        if (selectedDocument && selectedLayout) {
-            loadSelectedData();
-        }
-    }, [selectedDocument, selectedLayout]);
-
-    const handleExtract = async () => {
-        setLoading(true);
-        setError(null);
-        setResult(null);
-
+    const extractData = async (boundingBoxesData: any, layoutMapData: any) => {
         try {
-            const boundingBoxesJson = JSON.parse(boundingBoxes);
-            const layoutMapJson = JSON.parse(layoutMap);
-
             const response = await fetch('/api/extract', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    boundingBoxes: boundingBoxesJson,
-                    layoutMap: layoutMapJson,
+                    boundingBoxes: boundingBoxesData,
+                    layoutMap: layoutMapData,
                 }),
             });
 
@@ -117,6 +99,25 @@ export default function SandboxPage() {
             } else {
                 setResult(data);
             }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Unknown error during extraction');
+        }
+    };
+
+    useEffect(() => {
+        loadAvailableData();
+    }, []);
+
+    const handleExtract = async () => {
+        setLoading(true);
+        setError(null);
+        setResult(null);
+
+        try {
+            const boundingBoxesJson = JSON.parse(boundingBoxes);
+            const layoutMapJson = JSON.parse(layoutMap);
+
+            await extractData(boundingBoxesJson, layoutMapJson);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Unknown error');
         } finally {
@@ -133,19 +134,18 @@ export default function SandboxPage() {
     };
 
     return (
-        <Box sx={{ p: 4 }}>
-            <Typography variant="h4" gutterBottom>
+        <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Typography variant="h4" sx={{ flexShrink: 0, fontWeight: 600 }}>
                 Extraction API Sandbox
             </Typography>
 
-            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                <FormControl fullWidth>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexShrink: 0 }}>
+                <FormControl sx={{ flex: 1 }}>
                     <InputLabel>Document</InputLabel>
                     <Select
                         value={selectedDocument}
                         label="Document"
                         onChange={handleDocumentChange}
-                        disabled={dataLoading}
                     >
                         {documents.map((doc) => (
                             <MenuItem key={doc.id} value={doc.fileName}>
@@ -155,13 +155,12 @@ export default function SandboxPage() {
                     </Select>
                 </FormControl>
 
-                <FormControl fullWidth>
+                <FormControl sx={{ flex: 1 }}>
                     <InputLabel>Layout Rules</InputLabel>
                     <Select
                         value={selectedLayout}
                         label="Layout Rules"
                         onChange={handleLayoutChange}
-                        disabled={dataLoading}
                     >
                         {layouts.map((layout) => (
                             <MenuItem key={layout.id} value={layout.fileName}>
@@ -170,68 +169,109 @@ export default function SandboxPage() {
                         ))}
                     </Select>
                 </FormControl>
-            </Box>
 
-            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                <Paper sx={{ flex: 1, p: 2 }}>
-                    <Typography variant="h6" gutterBottom>
-                        Bounding Boxes (JSON)
-                    </Typography>
-                    <TextField
-                        fullWidth
-                        multiline
-                        rows={15}
-                        value={boundingBoxes}
-                        onChange={(e) => setBoundingBoxes(e.target.value)}
-                        variant="outlined"
-                        sx={{ fontFamily: 'monospace', fontSize: '12px' }}
-                    />
-                </Paper>
-
-                <Paper sx={{ flex: 1, p: 2 }}>
-                    <Typography variant="h6" gutterBottom>
-                        Layout Map (JSON)
-                    </Typography>
-                    <TextField
-                        fullWidth
-                        multiline
-                        rows={15}
-                        value={layoutMap}
-                        onChange={(e) => setLayoutMap(e.target.value)}
-                        variant="outlined"
-                        sx={{ fontFamily: 'monospace', fontSize: '12px' }}
-                    />
-                </Paper>
-            </Box>
-
-            <Box sx={{ mt: 2, textAlign: 'center' }}>
                 <Button 
-                    variant="contained" 
-                    onClick={handleExtract}
-                    disabled={loading}
-                    size="large"
+                    variant="contained"
+                    onClick={loadSelectedData}
+                    disabled={!selectedDocument || !selectedLayout || loading}
+                    sx={{ minWidth: '120px', height: '56px' }}
                 >
-                    {loading ? 'Extracting...' : 'Extract'}
+                    {loading ? 'Loading...' : 'Load & Extract'}
                 </Button>
             </Box>
 
+            {result && (
+                <Box sx={{ display: 'flex', gap: 2, flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                    <Paper elevation={1} sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: 3 }}>
+                        <Typography variant="h6" gutterBottom>
+                            Bounding Boxes (JSON)
+                        </Typography>
+                        <TextField
+                            fullWidth
+                            multiline
+                            value={boundingBoxes}
+                            onChange={(e) => setBoundingBoxes(e.target.value)}
+                            variant="outlined"
+                            sx={{ 
+                                fontFamily: 'monospace', 
+                                fontSize: '12px', 
+                                flex: 1,
+                                '& .MuiInputBase-root': {
+                                    height: '100%',
+                                    alignItems: 'flex-start'
+                                },
+                                '& textarea': {
+                                    height: '100% !important',
+                                    overflow: 'auto !important'
+                                }
+                            }}
+                        />
+                    </Paper>
+
+                    <Paper elevation={1} sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: 3 }}>
+                        <Typography variant="h6" gutterBottom>
+                            Layout Map (JSON)
+                        </Typography>
+                        <TextField
+                            fullWidth
+                            multiline
+                            value={layoutMap}
+                            onChange={(e) => setLayoutMap(e.target.value)}
+                            variant="outlined"
+                            sx={{ 
+                                fontFamily: 'monospace', 
+                                fontSize: '12px', 
+                                flex: 1,
+                                '& .MuiInputBase-root': {
+                                    height: '100%',
+                                    alignItems: 'flex-start'
+                                },
+                                '& textarea': {
+                                    height: '100% !important',
+                                    overflow: 'auto !important'
+                                }
+                            }}
+                        />
+                    </Paper>
+
+                    <Paper elevation={1} sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: 3 }}>
+                        <Typography variant="h6" gutterBottom>
+                            Result
+                        </Typography>
+                        <TextField
+                            fullWidth
+                            multiline
+                            value={result ? JSON.stringify(result, null, 2) : ''}
+                            variant="outlined"
+                            InputProps={{
+                                readOnly: true,
+                            }}
+                            sx={{ 
+                                fontFamily: 'monospace', 
+                                fontSize: '12px', 
+                                flex: 1,
+                                bgcolor: '#e8f5e9',
+                                '& .MuiInputBase-root': {
+                                    height: '100%',
+                                    alignItems: 'flex-start',
+                                    bgcolor: '#e8f5e9'
+                                },
+                                '& textarea': {
+                                    height: '100% !important',
+                                    overflow: 'auto !important'
+                                }
+                            }}
+                        />
+                    </Paper>
+                </Box>
+            )}
+
             {error && (
-                <Paper sx={{ p: 2, mt: 2, bgcolor: '#ffebee' }}>
+                <Paper elevation={1} sx={{ p: 2, bgcolor: '#ffebee', maxHeight: '150px', overflow: 'auto', flexShrink: 0, borderRadius: 3 }}>
                     <Typography variant="h6" color="error" gutterBottom>
                         Error
                     </Typography>
-                    <pre style={{ overflow: 'auto' }}>{error}</pre>
-                </Paper>
-            )}
-
-            {result && (
-                <Paper sx={{ p: 2, mt: 2, bgcolor: '#e8f5e9' }}>
-                    <Typography variant="h6" gutterBottom>
-                        Result
-                    </Typography>
-                    <pre style={{ overflow: 'auto' }}>
-                        {JSON.stringify(result, null, 2)}
-                    </pre>
+                    <pre style={{ margin: 0, overflow: 'auto' }}>{error}</pre>
                 </Paper>
             )}
         </Box>
