@@ -10,7 +10,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { BASIC_INFO_FIELDS, EXTRACTION_FIELD_MAPPING } from '../config/formFields';
-import type { LayoutMap } from '../types/extractionRules';
+import type { AnchorMatchMode, Direction, LayoutMap, RuleType } from '../types/extractionRules';
 import { getTextFieldSxFor } from '../styles/fieldStyles';
 
 interface RegexPattern {
@@ -42,6 +42,31 @@ interface RulesProps {
     vendorId?: string;
     onRerunExtraction?: () => void;
 }
+
+const STORAGE_KEY_PREFIX = 'thoth:layoutMap:';
+
+const getStorageKey = (vendorId: string) => `${STORAGE_KEY_PREFIX}${vendorId}`;
+
+const readLayoutMapFromStorage = (vendorId: string): LayoutMap | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+        const raw = window.localStorage.getItem(getStorageKey(vendorId));
+        if (!raw) return null;
+        return JSON.parse(raw) as LayoutMap;
+    } catch (error) {
+        console.warn('Failed to read layout map from localStorage', error);
+        return null;
+    }
+};
+
+const writeLayoutMapToStorage = (vendorId: string, layoutMap: LayoutMap) => {
+    if (typeof window === 'undefined') return;
+    try {
+        window.localStorage.setItem(getStorageKey(vendorId), JSON.stringify(layoutMap));
+    } catch (error) {
+        console.warn('Failed to persist layout map to localStorage', error);
+    }
+};
 
 const Rules: React.FC<RulesProps> = ({ vendorId, onRerunExtraction }) => {
     const [layoutMap, setLayoutMap] = useState<LayoutMap | null>(null);
@@ -129,13 +154,32 @@ const Rules: React.FC<RulesProps> = ({ vendorId, onRerunExtraction }) => {
     const loadLayoutMap = async (vendorId: string) => {
         setLoading(true);
         try {
+            const stored = readLayoutMapFromStorage(vendorId);
+            if (stored) {
+                setLayoutMap(stored);
+                setHasUnsavedChanges(false);
+                setEditingRuleId(null);
+                setAnchorInputs({});
+                setEditingAnchor(null);
+                setPatternInputs({});
+                return;
+            }
+
             const response = await fetch(`/data/layout_maps/${vendorId}_rules.json`);
             if (response.ok) {
                 const data = await response.json();
                 setLayoutMap(data);
+                setHasUnsavedChanges(false);
+                setEditingRuleId(null);
+                setAnchorInputs({});
+                setEditingAnchor(null);
+                setPatternInputs({});
+            } else {
+                setLayoutMap(null);
             }
         } catch (error) {
             console.error('Failed to load layout map:', error);
+            setLayoutMap(null);
         } finally {
             setLoading(false);
         }
@@ -606,18 +650,29 @@ const Rules: React.FC<RulesProps> = ({ vendorId, onRerunExtraction }) => {
         const { rules: fieldRulesSnapshot } = finalizePendingAnchor(editingRuleId);
 
         // Convert FieldRule format back to LayoutMap format
-        const updatedFields = Object.entries(fieldRulesSnapshot).map(([fieldId, rules]) => ({
+        const updatedFields = Object.entries(fieldRules).map(([fieldId, rules]) => ({
             id: fieldId,
             rules: rules.map((rule, index) => {
-                const baseRule = {
-                    id: rule.id,
-                    priority: index + 1,
-                    ruleType: rule.ruleType === 'regex' ? 'regex_match' : rule.ruleType,
-                };
+                let normalizedRuleType: RuleType;
+                switch (rule.ruleType) {
+                    case 'anchor':
+                        normalizedRuleType = 'anchor';
+                        break;
+                    case 'regex':
+                        normalizedRuleType = 'regex_match';
+                        break;
+                    case 'absolute':
+                        normalizedRuleType = 'absolute';
+                        break;
+                    default:
+                        normalizedRuleType = 'anchor';
+                        break;
+                }
 
-                if (rule.ruleType === 'anchor') {
+                if (normalizedRuleType === 'anchor') {
                     return {
-                        ...baseRule,
+                        id: rule.id,
+                        priority: index + 1,
                         ruleType: 'anchor' as const,
                         anchorConfig: {
                             aliases: rule.anchors || [],
@@ -628,13 +683,13 @@ const Rules: React.FC<RulesProps> = ({ vendorId, onRerunExtraction }) => {
                                 bottom: parseFloat(rule.searchZoneBottom || '1'),
                             },
                             instance: 1,
-                            matchMode: rule.matchMode,
+                            matchMode: (rule.matchMode || undefined) as AnchorMatchMode | undefined,
                             ignoreCase: rule.ignoreCase,
                             normalizeWhitespace: rule.normalizeWhitespace,
                         },
                         positionConfig: {
                             type: 'relative' as const,
-                            direction: rule.direction,
+                            direction: (rule.direction || undefined) as Direction | undefined,
                             boundingBox: {
                                 top: parseFloat(rule.offsetY || '0'),
                                 left: parseFloat(rule.offsetX || '0'),
@@ -649,7 +704,19 @@ const Rules: React.FC<RulesProps> = ({ vendorId, onRerunExtraction }) => {
                     };
                 }
 
-                return baseRule;
+                if (normalizedRuleType === 'regex_match') {
+                    return {
+                        id: rule.id,
+                        priority: index + 1,
+                        ruleType: 'regex_match' as const,
+                    };
+                }
+
+                return {
+                    id: rule.id,
+                    priority: index + 1,
+                    ruleType: 'absolute' as const,
+                };
             }),
         }));
 
@@ -659,38 +726,15 @@ const Rules: React.FC<RulesProps> = ({ vendorId, onRerunExtraction }) => {
             updatedAt: new Date().toISOString(),
         };
 
-        console.log('Saving layout map:', updatedLayoutMap);
-        
-        try {
-            const response = await fetch('/api/layout-maps', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(updatedLayoutMap),
-            });
+        console.log('Persisting layout map to localStorage:', updatedLayoutMap);
 
-            if (!response.ok) {
-                const error = await response.json();
-                console.error('Failed to save layout map:', error);
-                alert(`Failed to save: ${error.message || 'Unknown error'}`);
-                return;
-            }
-
-            const result = await response.json();
-            console.log('Layout map saved successfully:', result);
-            
-            // Update local state with the saved layout map
-            setLayoutMap(result.layoutMap);
-            setHasUnsavedChanges(false);
-            
-            // Close edit mode
-            setEditingRuleId(null);
-            
-        } catch (error) {
-            console.error('Error saving layout map:', error);
-            alert(`Error saving layout map: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        if (layoutMap.vendorId) {
+            writeLayoutMapToStorage(layoutMap.vendorId, updatedLayoutMap);
         }
+
+        setLayoutMap(updatedLayoutMap);
+        setHasUnsavedChanges(false);
+        setEditingRuleId(null);
     };
 
     if (!vendorId) {

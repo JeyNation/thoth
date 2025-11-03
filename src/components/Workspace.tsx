@@ -31,6 +31,22 @@ interface WorkspaceProps {
     onBackToList: () => void;
 }
 
+const STORAGE_KEY_PREFIX = 'thoth:layoutMap:';
+
+const getStorageKey = (vendorId: string) => `${STORAGE_KEY_PREFIX}${vendorId}`;
+
+const readLayoutMapFromStorage = (vendorId: string): LayoutMap | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+        const raw = window.localStorage.getItem(getStorageKey(vendorId));
+        if (!raw) return null;
+        return JSON.parse(raw) as LayoutMap;
+    } catch (error) {
+        console.warn('Failed to read layout map from localStorage', error);
+        return null;
+    }
+};
+
 const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => {
     const [documentData, setDocumentData] = useState<any>(null);
     const [focusedInputField, setFocusedInputField] = useState<string | null>(null);
@@ -61,6 +77,31 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
         applyTransaction
     } = useMapping();
     
+    const getLayoutMapForVendor = useCallback(async (vendorId: string): Promise<LayoutMap | null> => {
+        const stored = readLayoutMapFromStorage(vendorId);
+        if (stored) {
+            layoutMapCacheRef.current = { vendorId, layoutMap: stored };
+            return stored;
+        }
+
+        if (layoutMapCacheRef.current && layoutMapCacheRef.current.vendorId === vendorId) {
+            return layoutMapCacheRef.current.layoutMap;
+        }
+
+        try {
+            const response = await fetch(`/data/layout_maps/${vendorId}_rules.json?t=${Date.now()}`);
+            if (!response.ok) {
+                return null;
+            }
+            const data: LayoutMap = await response.json();
+            layoutMapCacheRef.current = { vendorId, layoutMap: data };
+            return data;
+        } catch (error) {
+            console.error('Failed to load layout map for vendor', vendorId, error);
+            return null;
+        }
+    }, []);
+
     const isResizingRef = useRef(false);
     const startYRef = useRef(0);
     const startHeightRef = useRef(140);
@@ -236,26 +277,10 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
 
         const runAutoExtraction = async () => {
             try {
-                let layoutMap: LayoutMap;
-                
-                // Check if we have a cached layout map for this vendor
-                if (layoutMapCacheRef.current && layoutMapCacheRef.current.vendorId === documentData.vendorId) {
-                    layoutMap = layoutMapCacheRef.current.layoutMap;
-                } else {
-                    // Fetch the layout map for this vendor
-                    const layoutResponse = await fetch(`/data/layout_maps/${documentData.vendorId}_rules.json`);
-                    if (!layoutResponse.ok) {
-                        console.log(`No layout rules found for vendor: ${documentData.vendorId}`);
-                        return;
-                    }
-
-                    layoutMap = await layoutResponse.json();
-                    
-                    // Cache the layout map
-                    layoutMapCacheRef.current = {
-                        vendorId: documentData.vendorId,
-                        layoutMap
-                    };
+                const layoutMap = await getLayoutMapForVendor(documentData.vendorId);
+                if (!layoutMap) {
+                    console.log(`No layout rules found for vendor: ${documentData.vendorId}`);
+                    return;
                 }
                 
                 // Convert mapping BoundingBox to extraction BoundingBox format
@@ -315,7 +340,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
         };
 
         runAutoExtraction();
-    }, [documentData, boundingBoxes, hasRunAutoExtraction, applyTransaction]);
+    }, [documentData, boundingBoxes, hasRunAutoExtraction, applyTransaction, getLayoutMapForVendor]);
 
     useEffect(() => {
         const fn = recomputeRef.current;
@@ -354,22 +379,12 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
         }
 
         try {
-            // Always fetch fresh layout map to get the latest saved rules
-            // Add cache-busting timestamp to ensure we don't get cached response
-            const layoutResponse = await fetch(`/data/layout_maps/${documentData.vendorId}_rules.json?t=${Date.now()}`);
-            if (!layoutResponse.ok) {
+            const layoutMap = await getLayoutMapForVendor(documentData.vendorId);
+            if (!layoutMap) {
                 console.log(`No layout rules found for vendor: ${documentData.vendorId}`);
                 alert('No layout rules found for this vendor');
                 return;
             }
-
-            const layoutMap: LayoutMap = await layoutResponse.json();
-            
-            // Update the cache with fresh data
-            layoutMapCacheRef.current = {
-                vendorId: documentData.vendorId,
-                layoutMap
-            };
             
             console.log('Rerunning extraction with fresh rules:', layoutMap);
             
