@@ -89,14 +89,29 @@ export class ExtractionEngine {
     }
 
     private executeAnchorRule(fieldId: string, rule: AnchorRule): FieldExtraction | null {
-        const anchorBox = this.findAnchor(rule.anchorConfig);
+        const anchorResult = this.findAnchor(rule.anchorConfig);
         
-        console.log('Anchor box found:', anchorBox);
-        if (!anchorBox) {
+        console.log('Anchor box found:', anchorResult);
+        if (!anchorResult) {
             return null;
         }
 
-        const extractionBoxes = this.findExtractionBox(anchorBox, rule.positionConfig);
+        const { box: anchorBox, matchedAlias } = anchorResult;
+
+        // Try to extract from the same box first (for cases like "PO: 123456" in one field)
+        const sameBoxExtraction = this.tryExtractFromAnchorBox(anchorBox, matchedAlias, rule);
+        if (sameBoxExtraction) {
+            console.log('Extracted from same box as anchor:', sameBoxExtraction);
+            return {
+                extractionFieldId: fieldId,
+                value: sameBoxExtraction.value,
+                segments: sameBoxExtraction.segments,
+                ruleId: rule.id
+            };
+        }
+
+        // Fall back to looking for separate boxes in the relative position
+        const extractionBoxes = this.findExtractionBox(anchorBox, rule.positionConfig, anchorBox.fieldId);
         
         console.log('Extraction boxes found:', extractionBoxes);
         if (!extractionBoxes || extractionBoxes.length === 0) {
@@ -179,21 +194,65 @@ export class ExtractionEngine {
         };
     }
 
-    private findAnchor(config: AnchorRule['anchorConfig']): BoundingBox | null {
-        const candidateBoxes = this.boundingBoxes.filter(box => {
+    private findAnchor(config: AnchorRule['anchorConfig']): { box: BoundingBox; matchedAlias: string } | null {
+        // Set defaults
+        const matchMode = config.matchMode || 'exact';
+        const ignoreCase = config.ignoreCase !== false; // Default true
+        const normalizeWhitespace = config.normalizeWhitespace !== false; // Default true
 
+        const candidateBoxes: Array<{ box: BoundingBox; matchedAlias: string }> = [];
+
+        for (const box of this.boundingBoxes) {
             const boxBounds = this.calculateBounds(box.points);
             
-            if (boxBounds.top < config.searchZone.top) return false;
-            if (boxBounds.left < config.searchZone.left) return false;
-            if (boxBounds.right > config.searchZone.right) return false;
-            if (boxBounds.bottom > config.searchZone.bottom) return false;
+            if (boxBounds.top < config.searchZone.top) continue;
+            if (boxBounds.left < config.searchZone.left) continue;
+            if (boxBounds.right > config.searchZone.right) continue;
+            if (boxBounds.bottom > config.searchZone.bottom) continue;
 
-            const normalizedText = box.fieldText.trim();
-            return config.aliases.some(alias => 
-                normalizedText.toLowerCase() === alias.toLowerCase()
-            );
-        });
+            // Normalize the text from the bounding box
+            let normalizedText = box.fieldText;
+            if (normalizeWhitespace) {
+                normalizedText = normalizedText.replace(/\s+/g, ' ').trim();
+            }
+            if (ignoreCase) {
+                normalizedText = normalizedText.toLowerCase();
+            }
+
+            // Check if any alias matches using the specified match mode
+            for (const alias of config.aliases) {
+                let normalizedAlias = alias;
+                if (normalizeWhitespace) {
+                    normalizedAlias = normalizedAlias.replace(/\s+/g, ' ').trim();
+                }
+                if (ignoreCase) {
+                    normalizedAlias = normalizedAlias.toLowerCase();
+                }
+
+                let isMatch = false;
+                switch (matchMode) {
+                    case 'exact':
+                        isMatch = normalizedText === normalizedAlias;
+                        break;
+                    case 'startsWith':
+                        isMatch = normalizedText.startsWith(normalizedAlias);
+                        break;
+                    case 'contains':
+                        isMatch = normalizedText.includes(normalizedAlias);
+                        break;
+                    case 'endsWith':
+                        isMatch = normalizedText.endsWith(normalizedAlias);
+                        break;
+                    default:
+                        isMatch = normalizedText === normalizedAlias;
+                }
+
+                if (isMatch) {
+                    candidateBoxes.push({ box, matchedAlias: alias });
+                    break; // Stop checking other aliases for this box
+                }
+            }
+        }
 
         if (candidateBoxes.length === 0) {
             return null;
@@ -203,7 +262,91 @@ export class ExtractionEngine {
         return candidateBoxes[instanceIndex] || null;
     }
 
-    private findExtractionBox(anchorBox: BoundingBox, config: AnchorRule['positionConfig']): BoundingBox[] {
+    private tryExtractFromAnchorBox(
+        anchorBox: BoundingBox, 
+        matchedAlias: string, 
+        rule: AnchorRule
+    ): { value: string; segments: FieldExtractionSegment[] } | null {
+        // Only try to extract from the same box if we're looking to the right
+        // (This handles cases like "PO: 123456" in a single field)
+        if (rule.positionConfig.direction !== 'right') {
+            return null;
+        }
+
+        const fullText = anchorBox.fieldText;
+        const matchMode = rule.anchorConfig.matchMode || 'exact';
+        const ignoreCase = rule.anchorConfig.ignoreCase !== false;
+        const normalizeWhitespace = rule.anchorConfig.normalizeWhitespace !== false;
+
+        // Normalize the full text
+        let normalizedText = fullText;
+        if (normalizeWhitespace) {
+            normalizedText = normalizedText.replace(/\s+/g, ' ').trim();
+        }
+
+        // Find where the alias appears in the text
+        let aliasToFind = matchedAlias;
+        if (normalizeWhitespace) {
+            aliasToFind = aliasToFind.replace(/\s+/g, ' ').trim();
+        }
+
+        let searchText = normalizedText;
+        let searchAlias = aliasToFind;
+        
+        if (ignoreCase) {
+            searchText = searchText.toLowerCase();
+            searchAlias = searchAlias.toLowerCase();
+        }
+
+        let valueStartIndex = -1;
+
+        switch (matchMode) {
+            case 'exact':
+                // For exact match, the entire field is the anchor, no value to extract
+                return null;
+            case 'startsWith':
+                if (searchText.startsWith(searchAlias)) {
+                    valueStartIndex = aliasToFind.length;
+                }
+                break;
+            case 'contains':
+                const containsIndex = searchText.indexOf(searchAlias);
+                if (containsIndex !== -1) {
+                    valueStartIndex = containsIndex + aliasToFind.length;
+                }
+                break;
+            case 'endsWith':
+                // If it ends with the alias, there's no value after it
+                return null;
+        }
+
+        if (valueStartIndex === -1) {
+            return null;
+        }
+
+        // Extract the value part (everything after the alias)
+        const valuePart = normalizedText.substring(valueStartIndex).trim();
+        
+        if (!valuePart) {
+            return null;
+        }
+
+        // Parse using the same patterns - they work for both same-box and separate-box
+        const parsed = this.parseText(valuePart, rule.parserConfig);
+        if (!parsed) {
+            return null;
+        }
+
+        return {
+            value: parsed, // Use the parsed value, not the raw valuePart
+            segments: [{
+                text: parsed,
+                sourceFieldIds: [anchorBox.fieldId]
+            }]
+        };
+    }
+
+    private findExtractionBox(anchorBox: BoundingBox, config: AnchorRule['positionConfig'], excludeFieldId?: string): BoundingBox[] {
         const anchorBounds = this.calculateBounds(anchorBox.points);
         
         let searchArea: { top: number; left: number; right: number; bottom: number };
@@ -250,6 +393,11 @@ export class ExtractionEngine {
         }
 
         const candidateBoxes = this.boundingBoxes.filter(box => {
+            // Exclude the anchor box itself
+            if (excludeFieldId && box.fieldId === excludeFieldId) {
+                return false;
+            }
+
             const boxBounds = this.calculateBounds(box.points);
             const isOverlap = this.isOverlapping(boxBounds, searchArea);
             
@@ -271,17 +419,52 @@ export class ExtractionEngine {
 
     private parseText(text: string, config: AnchorRule['parserConfig']): string | null {
         try {
-            const regex = new RegExp(config.regex);
-            const match = text.match(regex);
-            
-            if (!match) {
-                return null;
+            // Determine which patterns to use
+            let patternsToUse: Array<{ regex: string; priority: number }> = [];
+
+            if (config.patterns && config.patterns.length > 0) {
+                patternsToUse = [...config.patterns];
+            } else if (config.regex) {
+                // Legacy support: convert single regex to pattern
+                patternsToUse = [{ regex: config.regex, priority: 1 }];
             }
 
-            return match[1] || match[0];
+            if (patternsToUse.length === 0) {
+                // No patterns defined, return the text as-is if fallback is enabled
+                return config.fallbackToFullText ? text : null;
+            }
+
+            // Sort by priority (lower number = higher priority)
+            patternsToUse.sort((a, b) => a.priority - b.priority);
+
+            // Try each pattern in order
+            for (const pattern of patternsToUse) {
+                try {
+                    const regex = new RegExp(pattern.regex);
+                    const match = text.match(regex);
+                    
+                    if (match) {
+                        // Return first capture group if available, otherwise the whole match
+                        const result = match[1] !== undefined ? match[1] : match[0];
+                        if (result && result.trim().length > 0) {
+                            return result.trim();
+                        }
+                    }
+                } catch (patternError) {
+                    console.warn(`Pattern "${pattern.regex}" failed:`, patternError);
+                    continue; // Try next pattern
+                }
+            }
+
+            // All patterns failed
+            if (config.fallbackToFullText) {
+                return text;
+            }
+
+            return null;
         } catch (error) {
             console.error('Regex parsing error:', error);
-            return null;
+            return config.fallbackToFullText ? text : null;
         }
     }
 

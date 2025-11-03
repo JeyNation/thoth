@@ -437,7 +437,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
         setFocusedInputField(null);
         setFocusedBoundingBoxId(null);
         replaceAll({}); // Clear all field mappings
-        updatePurchaseOrder({ documentNumber: '', customerNumber: '', shipToAddress: '', lineItems: [] }); // Reset purchase order
+        updatePurchaseOrder({ documentNumber: '', customerNumber: '', documentDate: '', shipToAddress: '', lineItems: [] }); // Reset purchase order
         setDocumentData(null);
         setMenuAnchorEl(null);
         onBackToList();

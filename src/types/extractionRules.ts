@@ -9,10 +9,15 @@ export interface BoundingBox {
 // Rule Configuration
 // ============================================================================
 
+export type AnchorMatchMode = 'exact' | 'startsWith' | 'contains' | 'endsWith';
+
 export interface AnchorConfig {
     aliases: string[];
     searchZone: BoundingBox;
     instance: number;
+    matchMode?: AnchorMatchMode;  // Default: 'exact'
+    ignoreCase?: boolean;          // Default: true
+    normalizeWhitespace?: boolean; // Default: true
 }
 
 export type Direction = 'top' | 'bottom' | 'left' | 'right';
@@ -25,8 +30,15 @@ export interface PositionConfig {
     direction?: Direction;
 }
 
-export interface ParserConfig {
+export interface ParserPattern {
     regex: string;
+    priority: number; // Lower number = higher priority (try first)
+}
+
+export interface ParserConfig {
+    patterns?: ParserPattern[];  // List of patterns to try in priority order
+    regex?: string;              // Legacy: single regex (converted to patterns internally)
+    fallbackToFullText?: boolean; // If all patterns fail, return the full text anyway (default: false)
 }
 
 // ============================================================================

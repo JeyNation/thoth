@@ -205,7 +205,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         onFieldFocus && onFieldFocus(null);
     };
 
-    const handleBasicDrop = (e: React.DragEvent, targetField: string, fieldKind: 'text' | 'textarea') => {
+    const handleBasicDrop = (e: React.DragEvent, targetField: string, fieldKind: 'text' | 'textarea' | 'date') => {
         e.preventDefault();
         const data = e.dataTransfer.getData('application/json');
         if (!data) { 

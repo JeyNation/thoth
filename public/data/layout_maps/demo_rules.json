@@ -5,6 +5,52 @@
   "version": "1.0",
   "fields": [
     {
+      "id": "document-number",
+      "rules": [
+        {
+          "id": "document-number-anchor-rule-1",
+          "priority": 1,
+          "ruleType": "anchor",
+          "anchorConfig": {
+            "aliases": ["PO:", "P.O.:", "PO #:", "PO#:", "Purchase Order:", "Order Number:"],
+            "searchZone": {
+              "top": 0,
+              "left": 0,
+              "right": 9999,
+              "bottom": 9999
+            },
+            "instance": 1,
+            "matchMode": "startsWith",
+            "ignoreCase": true,
+            "normalizeWhitespace": true
+          },
+          "positionConfig": {
+            "type": "relative",
+            "direction": "right",
+            "boundingBox": {
+              "top": 0,
+              "left": 5,
+              "right": 200,
+              "bottom": 20
+            }
+          },
+          "parserConfig": {
+            "patterns": [
+              {
+                "regex": "^([A-Z0-9-]+)(?:\\s+REF#|\\s+Ref|\\s|$)",
+                "priority": 1
+              },
+              {
+                "regex": "^([A-Z0-9-]+)",
+                "priority": 2
+              }
+            ],
+            "fallbackToFullText": true
+          }
+        }
+      ]
+    },
+    {
       "id": "ship-to",
       "rules": [
         {

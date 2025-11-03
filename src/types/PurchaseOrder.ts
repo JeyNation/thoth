@@ -9,6 +9,7 @@ export interface LineItem {
 export interface PurchaseOrder {
   documentNumber: string;
   customerNumber: string;
+  documentDate: string;
   shipToAddress: string;
   lineItems: LineItem[];
 }

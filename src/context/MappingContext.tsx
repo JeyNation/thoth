@@ -150,7 +150,7 @@ interface MappingContextValue {
 const MappingContext = createContext<MappingContextValue | undefined>(undefined);
 
 export const MappingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const initialPO: PurchaseOrder = { documentNumber: '', customerNumber: '', shipToAddress: '', lineItems: [] };
+  const initialPO: PurchaseOrder = { documentNumber: '', customerNumber: '', documentDate: '', shipToAddress: '', lineItems: [] };
   const [state, dispatch] = useReducer(reducer, { fieldSources: {}, purchaseOrder: initialPO, past: [], future: [], boundingBoxes: [] } as MappingState);
   const fieldSources = state.fieldSources;
   const purchaseOrder = state.purchaseOrder;

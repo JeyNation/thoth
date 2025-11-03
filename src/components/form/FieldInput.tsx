@@ -3,7 +3,7 @@ import { TextField } from '@mui/material';
 import ClearAdornment from './ClearAdornment';
 import { applyDropHighlightSx } from '../../styles/dropHighlight';
 
-export type FieldKind = 'text' | 'textarea' | 'integer' | 'decimal';
+export type FieldKind = 'text' | 'textarea' | 'integer' | 'decimal' | 'date';
 
 export interface FieldInputProps {
   id?: string;
@@ -149,7 +149,7 @@ const FieldInput: React.FC<FieldInputProps> = ({
     if (cleaned.length === 0) e.preventDefault();
   };
 
-  const type = kind === 'integer' ? 'number' : (kind === 'decimal' ? 'text' : 'text');
+  const type = kind === 'integer' ? 'number' : (kind === 'decimal' ? 'text' : (kind === 'date' ? 'date' : 'text'));
 
   return (
     <TextField

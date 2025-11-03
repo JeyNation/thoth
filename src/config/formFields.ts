@@ -1,7 +1,7 @@
 export interface FormFieldConfig {
   id: string;
   label: string;
-  kind: 'text' | 'textarea';
+  kind: 'text' | 'textarea' | 'date';
   required?: boolean;
   multiline?: boolean;
   rows?: number;
@@ -18,6 +18,11 @@ export const BASIC_INFO_FIELDS: FormFieldConfig[] = [
     id: 'customerNumber',
     label: 'Customer Number',
     kind: 'text',
+  },
+  {
+    id: 'documentDate',
+    label: 'Document Date',
+    kind: 'date',
   },
   {
     id: 'shipToAddress',
@@ -39,5 +44,6 @@ export const LINE_ITEM_FIELDS = {
 export const EXTRACTION_FIELD_MAPPING: Record<string, string> = {
   'ship-to': 'shipToAddress',
   'document-number': 'documentNumber',
+  'document-date': 'documentDate',
   'customer-number': 'customerNumber',
 };
