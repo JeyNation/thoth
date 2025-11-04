@@ -46,7 +46,7 @@ const FieldInput: React.FC<FieldInputProps> = ({
   const sx = (isDragActive) ? applyDropHighlightSx(baseSx) : baseSx;
   const isNumeric = kind === 'integer' || kind === 'decimal';
   const showClear = (isNumeric) 
-    ? value !== 0
+    ? value != null && value !== 0
     : typeof value === 'string' && value.trim() !== '';
     
   const [display, setDisplay] = useState<string>(() => (isNumeric ? String(value ?? 0) : (typeof value === 'string' ? value : '')));
