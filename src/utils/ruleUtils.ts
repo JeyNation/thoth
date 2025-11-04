@@ -4,6 +4,10 @@ type FieldRule = AnchorRule | RegexMatchRule | AbsoluteRule;
 
 export function generatePseudoRule(rule: FieldRule): string[] {
     const lines: string[] = [];
+    const ordinal = (n: number) => {
+        const s = ["th", "st", "nd", "rd"], v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    };
     
     // Add rule ID and type
     lines.push(`ID: ${rule.id}`);
@@ -22,6 +26,17 @@ export function generatePseudoRule(rule: FieldRule): string[] {
         }
         if (rule.anchorConfig.normalizeWhitespace !== undefined) {
             lines.push(`Normalize Whitespace: ${rule.anchorConfig.normalizeWhitespace}`);
+        }
+        // Occurrence details (nth from start/end)
+        if (rule.anchorConfig) {
+            const from = (rule.anchorConfig as any).instanceFrom as 'start' | 'end' | undefined;
+            const idx = rule.anchorConfig.instance ?? 1;
+            if (from) {
+                lines.push(`Occurrence: ${ordinal(idx)} from ${from === 'start' ? 'start' : 'end'}`);
+            } else if (idx) {
+                // Backward-compat: if only instance provided, assume from start
+                lines.push(`Occurrence: ${ordinal(idx)} from start`);
+            }
         }
         if ((rule.positionConfig as any).startingPosition) {
             lines.push(`Starting Position: ${(rule.positionConfig as any).startingPosition}`);
@@ -64,6 +79,7 @@ export const createDefaultAnchorRule = (fieldId: string): AnchorRule => ({
         aliases: [],
         searchZone: { top: 0, left: 0, right: 1, bottom: 1 },
         instance: 1,
+        instanceFrom: 'start',
         matchMode: 'exact',
         ignoreCase: true,
         normalizeWhitespace: true
@@ -93,6 +109,7 @@ export const createRuleByType = (ruleId: string, ruleType: RuleType): FieldRule 
                 aliases: [],
                 searchZone: { top: 0, left: 0, right: 1, bottom: 1 },
                 instance: 1,
+                instanceFrom: 'start',
                 matchMode: 'exact',
                 ignoreCase: true,
                 normalizeWhitespace: true

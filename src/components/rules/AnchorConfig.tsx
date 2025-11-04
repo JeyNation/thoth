@@ -104,7 +104,7 @@ export const AnchorConfig: React.FC<AnchorConfigProps> = ({
 
     return (
         <Box>
-            <SubsectionLabel>Anchor Text</SubsectionLabel>
+            <SubsectionLabel>Anchor</SubsectionLabel>
             <Stack direction="row" spacing={1} alignItems="flex-start" flexWrap="wrap" sx={{ mb: 1 }}>
                 {anchors.map((anchor, anchorIndex) => (
                     <Chip
@@ -188,6 +188,41 @@ export const AnchorConfig: React.FC<AnchorConfigProps> = ({
                     <MenuItem value="endsWith">Ends With</MenuItem>
                 </Select>
             </FormControl>
+            {/* Occurrence controls: pick from First/Last and Nth occurrence */}
+            <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                <FormControl size="small" sx={{ flex: 1 }}>
+                    <InputLabel>Pick From</InputLabel>
+                    <Select
+                        label="Pick From"
+                        value={(rule.anchorConfig as any)?.instanceFrom || 'start'}
+                        onChange={(e) => onUpdateField({
+                            anchorConfig: {
+                                ...rule.anchorConfig,
+                                instanceFrom: e.target.value as any
+                            }
+                        })}
+                    >
+                        <MenuItem value="start">First</MenuItem>
+                        <MenuItem value="end">Last</MenuItem>
+                    </Select>
+                </FormControl>
+                <TextInput
+                    type="number"
+                    label="Occurrence"
+                    value={String(rule.anchorConfig?.instance ?? 1)}
+                    onChange={(value) => {
+                        const n = Math.max(1, Number(value) || 1);
+                        onUpdateField({
+                            anchorConfig: {
+                                ...rule.anchorConfig,
+                                instance: n
+                            }
+                        });
+                    }}
+                    inputProps={{ step: 1, min: 1 }}
+                    sx={{ flex: 1 }}
+                />
+            </Stack>
             {/* Flags (placed after Match Mode within Anchor Text section) */}
             <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
                 <FormControlLabel

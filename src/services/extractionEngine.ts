@@ -268,7 +268,14 @@ export class ExtractionEngine {
             return null;
         }
 
-        const instanceIndex = config.instance - 1;
+        const from = (config as any).instanceFrom === 'end' ? 'end' : 'start';
+        const instance = Math.max(1, config.instance || 1);
+        let instanceIndex = from === 'start'
+            ? instance - 1
+            : candidateBoxes.length - instance;
+        if (instanceIndex < 0 || instanceIndex >= candidateBoxes.length) {
+            return null;
+        }
         return candidateBoxes[instanceIndex] || null;
     }
 

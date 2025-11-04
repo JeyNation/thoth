@@ -86,6 +86,7 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
                             aliases: rule.anchorConfig?.aliases || [],
                             searchZone: rule.anchorConfig?.searchZone || DEFAULT_SEARCH_ZONE,
                             instance: rule.anchorConfig?.instance || 1,
+                            instanceFrom: (rule.anchorConfig as any)?.instanceFrom || 'start',
                             matchMode: rule.anchorConfig?.matchMode || 'exact',
                             ignoreCase: rule.anchorConfig?.ignoreCase ?? true,
                             normalizeWhitespace: rule.anchorConfig?.normalizeWhitespace ?? true

@@ -22,6 +22,8 @@ export interface AnchorConfig {
     aliases: string[];
     searchZone: BoundingBox;
     instance: number;
+    // Where to count the instance from: 'start' (first, second, ...) or 'end' (last, second from last, ...)
+    instanceFrom?: 'start' | 'end';
     matchMode?: AnchorMatchMode;  // Default: 'exact'
     ignoreCase?: boolean;          // Default: true
     normalizeWhitespace?: boolean; // Default: true
