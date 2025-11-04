@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Paper, Stack, Chip, FormControl, InputLabel, Select, MenuItem, Box, Divider, FormControlLabel, Switch, TextField } from '@mui/material';
+import { Paper, Stack, Chip, FormControl, InputLabel, Select, MenuItem, Box, Divider, FormControlLabel, Switch } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import { EditRuleProps } from '../../types/rulesComponents';
 import { SearchZone } from './SearchZone';
@@ -8,6 +8,7 @@ import { AnchorConfig } from './AnchorConfig';
 import { AnchorRule, RegexMatchRule, AbsoluteRule } from '../../types/extractionRules';
 import { SubsectionLabel } from '../common/SubsectionLabel';
 import { IconButton } from '../common/IconButton';
+import { TextInput } from '../common/TextInput';
 
 export const EditRule: React.FC<EditRuleProps> = ({
     rule,
@@ -231,13 +232,12 @@ export const EditRule: React.FC<EditRuleProps> = ({
                                 </Select>
                             </FormControl>
                             <Stack direction="row" spacing={1}>
-                                <TextField
-                                    size="small"
+                                <TextInput
                                     type="number"
                                     label="Offset X"
-                                    value={anchorRule.positionConfig?.boundingBox?.left ?? 0}
-                                    onChange={(e) => {
-                                        const left = Number(e.target.value);
+                                    value={String(anchorRule.positionConfig?.boundingBox?.left ?? 0)}
+                                    onChange={(value) => {
+                                        const left = Number(value);
                                         const currentBoundingBox = anchorRule.positionConfig?.boundingBox || { top: 0, left: 0, right: 0, bottom: 0 };
                                         const currentWidth = currentBoundingBox.right - currentBoundingBox.left;
                                         onUpdateField({
@@ -254,13 +254,12 @@ export const EditRule: React.FC<EditRuleProps> = ({
                                     inputProps={{ step: 1 }}
                                     sx={{ flex: 1 }}
                                 />
-                                <TextField
-                                    size="small"
+                                <TextInput
                                     type="number"
                                     label="Offset Y"
-                                    value={anchorRule.positionConfig?.boundingBox?.top ?? 0}
-                                    onChange={(e) => {
-                                        const top = Number(e.target.value);
+                                    value={String(anchorRule.positionConfig?.boundingBox?.top ?? 0)}
+                                    onChange={(value) => {
+                                        const top = Number(value);
                                         const currentBoundingBox = anchorRule.positionConfig?.boundingBox || { top: 0, left: 0, right: 0, bottom: 0 };
                                         const currentHeight = currentBoundingBox.bottom - currentBoundingBox.top;
                                         onUpdateField({
@@ -277,13 +276,12 @@ export const EditRule: React.FC<EditRuleProps> = ({
                                     inputProps={{ step: 1 }}
                                     sx={{ flex: 1 }}
                                 />
-                                <TextField
-                                    size="small"
+                                <TextInput
                                     type="number"
                                     label="Width"
-                                    value={Math.abs((anchorRule.positionConfig?.boundingBox?.right ?? 0) - (anchorRule.positionConfig?.boundingBox?.left ?? 0))}
-                                    onChange={(e) => {
-                                        const width = Number(e.target.value);
+                                    value={String(Math.abs((anchorRule.positionConfig?.boundingBox?.right ?? 0) - (anchorRule.positionConfig?.boundingBox?.left ?? 0)))}
+                                    onChange={(value) => {
+                                        const width = Number(value);
                                         const currentBoundingBox = anchorRule.positionConfig?.boundingBox || { top: 0, left: 0, right: 0, bottom: 0 };
                                         onUpdateField({
                                             positionConfig: {
@@ -298,13 +296,12 @@ export const EditRule: React.FC<EditRuleProps> = ({
                                     inputProps={{ step: 1, min: 0 }}
                                     sx={{ flex: 1 }}
                                 />
-                                <TextField
-                                    size="small"
+                                <TextInput
                                     type="number"
                                     label="Height"
-                                    value={Math.abs((anchorRule.positionConfig?.boundingBox?.bottom ?? 0) - (anchorRule.positionConfig?.boundingBox?.top ?? 0))}
-                                    onChange={(e) => {
-                                        const height = Number(e.target.value);
+                                    value={String(Math.abs((anchorRule.positionConfig?.boundingBox?.bottom ?? 0) - (anchorRule.positionConfig?.boundingBox?.top ?? 0)))}
+                                    onChange={(value) => {
+                                        const height = Number(value);
                                         const currentBoundingBox = anchorRule.positionConfig?.boundingBox || { top: 0, left: 0, right: 0, bottom: 0 };
                                         onUpdateField({
                                             positionConfig: {

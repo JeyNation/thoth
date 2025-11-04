@@ -38,8 +38,15 @@ export const TextInput: React.FC<TextInputProps> = ({
             disabled={disabled}
             value={value ?? ''}
             onChange={(e) => onChange(e.target.value)}
-            onKeyPress={onKeyPress}
-            inputProps={inputProps}
+            slotProps={{
+              inputLabel: {
+                shrink: true,
+              },
+              htmlInput: {
+                inputProps
+              },
+            }}
+            onKeyDown={onKeyPress}
             sx={sx}
         />
     );

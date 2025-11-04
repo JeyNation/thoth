@@ -1,11 +1,12 @@
 import React from 'react';
-import { Paper, Stack, Typography, TextField, Chip } from '@mui/material';
+import { Paper, Stack, Typography, Chip } from '@mui/material';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AddIcon from '@mui/icons-material/Add';
 import { RegexPatternsProps } from '../../types/rulesComponents';
 import { IconButton } from '../common/IconButton';
 import { TextButton } from '../common/TextButton';
+import { TextInput } from '../common/TextInput';
 
 export const RegexPatterns: React.FC<RegexPatternsProps> = ({
     patterns,
@@ -26,7 +27,7 @@ export const RegexPatterns: React.FC<RegexPatternsProps> = ({
     };
 
     return (
-        <Stack spacing={0.5}>
+        <Stack spacing={1}>
             {patterns.map((pattern, patternIndex) => (
                 <Paper 
                     key={patternIndex} 
@@ -79,12 +80,11 @@ export const RegexPatterns: React.FC<RegexPatternsProps> = ({
             ))}
 
             <Stack direction="row" spacing={1}>
-                <TextField
-                    size="small"
+                <TextInput
                     label="Regex Pattern"
                     fullWidth
                     value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
+                    onChange={setInputValue}
                     onKeyPress={(e) => {
                         if (e.key === 'Enter') {
                             handleAdd();

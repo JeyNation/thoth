@@ -173,6 +173,9 @@ const FieldInput: React.FC<FieldInputProps> = ({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       slotProps={{
+        inputLabel: {
+          shrink: true,
+        },
         input: {
           endAdornment: showClear ? <ClearAdornment onClear={onClear} /> : undefined,
           inputProps: {
