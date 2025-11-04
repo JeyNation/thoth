@@ -23,7 +23,9 @@ export function generatePseudoRule(rule: FieldRule): string[] {
         if (rule.anchorConfig.normalizeWhitespace !== undefined) {
             lines.push(`Normalize Whitespace: ${rule.anchorConfig.normalizeWhitespace}`);
         }
-        if (rule.positionConfig.direction) {
+        if ((rule.positionConfig as any).startingPosition) {
+            lines.push(`Starting Position: ${(rule.positionConfig as any).startingPosition}`);
+        } else if (rule.positionConfig.direction) {
             lines.push(`Direction: ${rule.positionConfig.direction}`);
         }
     }
@@ -68,8 +70,9 @@ export const createDefaultAnchorRule = (fieldId: string): AnchorRule => ({
     },
     positionConfig: {
         type: 'relative',
-        boundingBox: { top: 0, left: 0, right: 0, bottom: 0 },
-        direction: 'right'
+        point: { top: 0, left: 0, width: 0, height: 0 },
+        direction: 'right',
+        startingPosition: 'topRight'
     },
     parserConfig: {
         patterns: [],
@@ -96,8 +99,9 @@ export const createRuleByType = (ruleId: string, ruleType: RuleType): FieldRule 
             },
             positionConfig: {
                 type: 'relative',
-                boundingBox: { top: 0, left: 0, right: 0, bottom: 0 },
-                direction: 'right'
+                point: { top: 0, left: 0, width: 0, height: 0 },
+                direction: 'right',
+                startingPosition: 'topRight'
             },
             parserConfig: {
                 patterns: [],

@@ -5,6 +5,13 @@ export interface BoundingBox {
     bottom: number;
 }
 
+export interface PositionPoint {
+    width: number;
+    height: number;
+    top: number;
+    left: number;
+}
+
 // ============================================================================
 // Rule Configuration
 // ============================================================================
@@ -22,12 +29,17 @@ export interface AnchorConfig {
 
 export type Direction = 'top' | 'bottom' | 'left' | 'right';
 
+// UI hint for where X/Y offsets originate from relative to the anchor box
+export type StartingPositionCorner = 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight';
+
 export type PositionType = 'relative' | 'absolute';
 
 export interface PositionConfig {
     type: PositionType;
-    boundingBox: BoundingBox;
+    point: PositionPoint;
     direction?: Direction;
+    // When provided, overrides direction-based baseline to compute the search area
+    startingPosition?: StartingPositionCorner;
 }
 
 export interface ParserPattern {

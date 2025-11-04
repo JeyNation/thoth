@@ -13,7 +13,7 @@ import { RerunExtractionDialog } from './dialogs/RerunExtractionDialog';
 import { LoadingIndicator } from './common/LoadingIndicator';
 import { EmptyState } from './common/EmptyState';
 import { BASIC_INFO_FIELDS } from '../config/formFields';
-import { Field, AnchorRule, RegexMatchRule, AbsoluteRule, RuleType } from '../types/extractionRules';
+import { Field, AnchorRule, RegexMatchRule, AbsoluteRule, RuleType, PositionPoint } from '../types/extractionRules';
 import { RULES_ROOT_SX, RULES_CONTENT_SX } from '../styles/rulesStyles';
 import { useLayoutMap } from '../hooks/useLayoutMap';
 import { getExtractionFieldId } from '../utils/formUtils';
@@ -40,11 +40,11 @@ const DEFAULT_SEARCH_ZONE = {
     bottom: 1
 };
 
-const DEFAULT_BOUNDING_BOX = {
+const DEFAULT_POSITION_POINT: PositionPoint = {
     top: 0,
     left: 0,
-    right: 0,
-    bottom: 0
+    width: 0,
+    height: 0
 };
 
 const isAnchorRule = (rule: FieldRule): rule is AnchorRule => rule.ruleType === 'anchor';
@@ -92,8 +92,12 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
                         },
                         positionConfig: {
                             type: rule.positionConfig?.type || 'relative',
-                            boundingBox: rule.positionConfig?.boundingBox || DEFAULT_BOUNDING_BOX,
-                            direction: rule.positionConfig?.direction
+                            point: rule.positionConfig?.point || DEFAULT_POSITION_POINT,
+                            direction: rule.positionConfig?.direction,
+                            // Preserve startingPosition if present in stored layout
+                            ...(rule.positionConfig && 'startingPosition' in (rule.positionConfig as any)
+                                ? { startingPosition: (rule.positionConfig as any).startingPosition }
+                                : {})
                         },
                         parserConfig: {
                             patterns: rule.parserConfig?.patterns || [],
@@ -188,9 +192,6 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
         try {
             await saveLayoutMap(updatedLayoutMap);
             setHasUnsavedChanges(false);
-            if (vendorId && onRerunExtraction) {
-                setShowRerunDialog(true);
-            }
         } catch (error) {
             console.error('Failed to save layout map:', error);
         }

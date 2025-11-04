@@ -93,9 +93,10 @@ export const RegexPatterns: React.FC<RegexPatternsProps> = ({
                     placeholder="e.g. ^([A-Z0-9-]+)"
                 />
                 <TextButton
+                    size="medium"
                     onClick={handleAdd}
                     startIcon={<AddIcon fontSize="small" />}
-                    sx={{ minWidth: 80 }}
+                    sx={{ minWidth: 80}}
                 >
                     Add
                 </TextButton>

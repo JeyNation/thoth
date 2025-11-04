@@ -37,6 +37,7 @@ export interface SearchZoneProps {
     right?: string;
     bottom?: string;
     onChange: (field: string, value: string) => void;
+    disabled?: boolean;
 }
 
 export interface RegexPatternsProps {
@@ -50,6 +51,12 @@ export interface RegexPatternsProps {
 }
 
 export interface AnchorConfigProps {
+    // Full anchor rule to edit
+    rule: AnchorRule;
+    // Updater to bubble anchor-specific field updates
+    onUpdateField: (updates: Partial<AnchorRule>) => void;
+
+    // Aliases (anchor text) controls
     anchors: string[];
     onAdd: (anchor: string) => void;
     onDelete: (index: number) => void;

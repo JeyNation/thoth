@@ -1,8 +1,41 @@
 "use client";
 
 import { useCallback, useEffect, useState } from 'react';
-import type { LayoutMap } from '../types/extractionRules';
 import { readLayoutMapFromStorage, writeLayoutMapToStorage } from '../utils/layoutStorage';
+import type { AnchorRule, LayoutMap } from '../types/extractionRules';
+
+function migrateStartingPosition(map: LayoutMap): LayoutMap {
+  try {
+    const next: LayoutMap = { ...map, fields: map.fields?.map(f => ({
+      ...f,
+      rules: f.rules?.map((r: any) => {
+        if (r.ruleType !== 'anchor') return r;
+  let rule = r as AnchorRule;
+        const pos = rule.positionConfig || ({} as any);
+        if (!pos.startingPosition) {
+          const dir = (pos.direction || '').toLowerCase();
+          let startingPosition: any = 'bottomLeft';
+          if (dir === 'right') startingPosition = 'topRight';
+          else if (dir === 'bottom' || dir === 'below' || dir === '') startingPosition = 'bottomLeft';
+          else if (dir === 'left') startingPosition = 'topLeft';
+          else if (dir === 'top' || dir === 'above') startingPosition = 'topLeft';
+          rule = {
+            ...rule,
+            positionConfig: {
+              ...pos,
+              startingPosition
+            }
+          } as any;
+        }
+        return rule;
+      }) || []
+    })) || [] };
+    return next;
+  } catch (e) {
+    console.warn('migrateStartingPosition failed, returning original map', e);
+    return map;
+  }
+}
 
 export function useLayoutMap(vendorId?: string) {
   const [layoutMap, setLayoutMap] = useState<LayoutMap | null>(null);
@@ -14,13 +47,17 @@ export function useLayoutMap(vendorId?: string) {
     try {
       const stored = readLayoutMapFromStorage(vendorId);
       if (stored) {
-        setLayoutMap(stored);
+        const migrated = migrateStartingPosition(stored);
+        setLayoutMap(migrated);
+        // Persist migration
+        try { writeLayoutMapToStorage(vendorId, migrated); } catch {}
         return;
       }
       const res = await fetch(`/data/layout_maps/${vendorId}_rules.json?t=${Date.now()}`);
       if (res.ok) {
         const data: LayoutMap = await res.json();
-        setLayoutMap(data);
+        const migrated = migrateStartingPosition(data);
+        setLayoutMap(migrated);
       } else {
         setLayoutMap(null);
       }
@@ -38,7 +75,10 @@ export function useLayoutMap(vendorId?: string) {
 
   const saveLayoutMap = useCallback((next: LayoutMap) => {
     if (next.vendorId) {
-      writeLayoutMapToStorage(next.vendorId, next);
+      const migrated = migrateStartingPosition(next);
+      writeLayoutMapToStorage(next.vendorId, migrated);
+      setLayoutMap(migrated);
+      return;
     }
     setLayoutMap(next);
   }, []);

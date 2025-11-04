@@ -1,5 +1,5 @@
-import React from 'react';
-import { Stack, Chip, Box } from '@mui/material';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Stack, Chip, Box, FormControl, InputLabel, Select, MenuItem, FormControlLabel, Switch } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
@@ -8,8 +8,12 @@ import { AnchorConfigProps } from '../../types/rulesComponents';
 import { SubsectionLabel } from '../common/SubsectionLabel';
 import { TextInput } from '../common/TextInput';
 import { TextButton } from '../common/TextButton';
+import { SearchZone } from './SearchZone';
+import { RegexPatterns } from './RegexPatterns';
 
 export const AnchorConfig: React.FC<AnchorConfigProps> = ({
+    rule,
+    onUpdateField,
     anchors,
     onAdd,
     onDelete,
@@ -20,6 +24,84 @@ export const AnchorConfig: React.FC<AnchorConfigProps> = ({
     inputValue,
     onInputChange
 }) => {
+    const [draggedPatternIndex, setDraggedPatternIndex] = useState<number | null>(null);
+
+    // --- Search Zone preset state (fix: allow selecting Custom even if values match a preset) ---
+    const FRACTIONS: Array<{ label: '1/2' | '1/3' | '1/4'; value: number }> = [
+        { label: '1/2', value: 1 / 2 },
+        { label: '1/3', value: 1 / 3 },
+        { label: '1/4', value: 1 / 4 },
+    ];
+
+    const fractionLabelToValue = (label: '1/2' | '1/3' | '1/4'): number => {
+        return FRACTIONS.find(f => f.label === label)!.value;
+    };
+
+    const epsilon = 0.0001;
+    const approxEq = (a: number, b: number) => Math.abs(a - b) < epsilon;
+
+    const computePresetAndFraction = (sz: { top: number; bottom: number; left: number; right: number }) => {
+        const t = sz.top, b = sz.bottom, l = sz.left, r = sz.right;
+        // Entire page first
+        if (approxEq(t, 0) && approxEq(b, 1) && approxEq(l, 0) && approxEq(r, 1)) {
+            return { preset: 'entire' as const, fraction: null as null | '1/2' | '1/3' | '1/4' };
+        }
+        for (const f of FRACTIONS) {
+            if (approxEq(t, 0) && approxEq(b, f.value) && approxEq(l, 0) && approxEq(r, 1)) {
+                return { preset: 'top' as const, fraction: f.label };
+            }
+            if (approxEq(t, 1 - f.value) && approxEq(b, 1) && approxEq(l, 0) && approxEq(r, 1)) {
+                return { preset: 'bottom' as const, fraction: f.label };
+            }
+            if (approxEq(l, 0) && approxEq(r, f.value) && approxEq(t, 0) && approxEq(b, 1)) {
+                return { preset: 'left' as const, fraction: f.label };
+            }
+            if (approxEq(l, 1 - f.value) && approxEq(r, 1) && approxEq(t, 0) && approxEq(b, 1)) {
+                return { preset: 'right' as const, fraction: f.label };
+            }
+        }
+        return { preset: 'custom' as const, fraction: null as null | '1/2' | '1/3' | '1/4' };
+    };
+
+    const currentSZ = rule.anchorConfig?.searchZone || { top: 0, bottom: 1, left: 0, right: 1 };
+    const detected = computePresetAndFraction(currentSZ);
+    const [zonePreset, setZonePreset] = useState<'entire' | 'top' | 'bottom' | 'left' | 'right' | 'custom'>(
+        () => detected.preset
+    );
+    const [zoneFraction, setZoneFraction] = useState<'1/2' | '1/3' | '1/4'>(
+        () => detected.fraction || '1/2'
+    );
+
+    const applyPreset = (mode: 'top' | 'bottom' | 'left' | 'right', fractionLabel: '1/2' | '1/3' | '1/4') => {
+        const f = fractionLabelToValue(fractionLabel);
+        const presets: Record<'top' | 'bottom' | 'left' | 'right', { top: number; bottom: number; left: number; right: number }>
+            = {
+                top: { top: 0, bottom: f, left: 0, right: 1 },
+                bottom: { top: 1 - f, bottom: 1, left: 0, right: 1 },
+                left: { top: 0, bottom: 1, left: 0, right: f },
+                right: { top: 0, bottom: 1, left: 1 - f, right: 1 },
+            };
+        const p = presets[mode];
+        onUpdateField({
+            anchorConfig: {
+                ...rule.anchorConfig,
+                searchZone: { ...rule.anchorConfig?.searchZone, ...p }
+            }
+        });
+    };
+
+    // Keep preset in sync if values change externally; don't override if user forced custom
+    useEffect(() => {
+        const { preset, fraction } = computePresetAndFraction(currentSZ);
+        if (zonePreset !== 'custom' && preset !== zonePreset) {
+            setZonePreset(preset);
+        }
+        if (zonePreset !== 'custom' && fraction && fraction !== zoneFraction) {
+            setZoneFraction(fraction);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentSZ.top, currentSZ.bottom, currentSZ.left, currentSZ.right]);
+
     return (
         <Box>
             <SubsectionLabel>Anchor Text</SubsectionLabel>
@@ -36,8 +118,11 @@ export const AnchorConfig: React.FC<AnchorConfigProps> = ({
                     />
                 ))}
             </Stack>
+
+            
             <Stack direction="row" spacing={1}>
                 <TextInput
+                    label="Anchor Text"
                     fullWidth
                     value={inputValue}
                     onChange={onInputChange}
@@ -54,28 +139,346 @@ export const AnchorConfig: React.FC<AnchorConfigProps> = ({
                 {editingIndex !== null ? (
                     <>
                         <TextButton
+                            size="medium"
                             onClick={() => onUpdate(inputValue)}
                             startIcon={<CheckIcon fontSize="small" />}
+                            sx={{ px: 2.5, minWidth: 105 }}
                         >
                             Update
                         </TextButton>
                         <TextButton
+                            size="medium"
                             variant="outlined"
                             onClick={onCancel}
                             startIcon={<CloseIcon fontSize="small" />}
+                            sx={{ px: 2.5, minWidth: 105 }}
                         >
                             Cancel
                         </TextButton>
                     </>
                 ) : (
                     <TextButton
+                        size="medium"
                         onClick={() => onAdd(inputValue)}
                         startIcon={<AddIcon fontSize="small" />}
+                        sx={{ minWidth: 80 }}
                     >
                         Add
                     </TextButton>
                 )}
             </Stack>
+
+            {/* Match Mode */}
+            <FormControl fullWidth size="small" sx={{ mt: 1 }}>
+                <InputLabel>Match Mode</InputLabel>
+                <Select
+                    value={rule.anchorConfig?.matchMode || ''}
+                    label="Match Mode"
+                    onChange={(e) => onUpdateField({
+                        anchorConfig: {
+                            ...rule.anchorConfig,
+                            matchMode: e.target.value as any
+                        }
+                    })}
+                >
+                    <MenuItem value=""><em>Select match mode</em></MenuItem>
+                    <MenuItem value="exact">Exact Match</MenuItem>
+                    <MenuItem value="startsWith">Starts With</MenuItem>
+                    <MenuItem value="contains">Contains</MenuItem>
+                    <MenuItem value="endsWith">Ends With</MenuItem>
+                </Select>
+            </FormControl>
+            {/* Flags (placed after Match Mode within Anchor Text section) */}
+            <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={rule.anchorConfig?.ignoreCase ?? true}
+                            onChange={(e) => onUpdateField({
+                                anchorConfig: {
+                                    ...rule.anchorConfig,
+                                    ignoreCase: e.target.checked
+                                }
+                            })}
+                        />
+                    }
+                    label="Ignore Case"
+                />
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={rule.anchorConfig?.normalizeWhitespace ?? true}
+                            onChange={(e) => onUpdateField({
+                                anchorConfig: {
+                                    ...rule.anchorConfig,
+                                    normalizeWhitespace: e.target.checked
+                                }
+                            })}
+                        />
+                    }
+                    label="Normalize Whitespace"
+                />
+            </Stack>
+
+            {/* Search Zone */}
+            <Box sx={{ mt: 2 }}>
+                <SubsectionLabel>Search Zone</SubsectionLabel>
+
+                {/* Preset selector + Fraction selector */}
+                <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+                    <FormControl fullWidth size="small" sx={{ flex: 1 }}>
+                        <InputLabel>Zone Preset</InputLabel>
+                        <Select
+                            label="Zone Preset"
+                            value={zonePreset}
+                            onChange={(e) => {
+                                const mode = e.target.value as 'entire' | 'top' | 'bottom' | 'left' | 'right' | 'custom';
+                                setZonePreset(mode);
+                                if (mode === 'custom') return; // Don't override values; just enable editing
+                                if (mode === 'entire') {
+                                    onUpdateField({
+                                        anchorConfig: {
+                                            ...rule.anchorConfig,
+                                            searchZone: { top: 0, bottom: 1, left: 0, right: 1 }
+                                        }
+                                    });
+                                    return;
+                                }
+                                applyPreset(mode, zoneFraction);
+                            }}
+                        >
+                            <MenuItem value="entire">Entire Page</MenuItem>
+                            <MenuItem value="top">Top</MenuItem>
+                            <MenuItem value="bottom">Bottom</MenuItem>
+                            <MenuItem value="left">Left</MenuItem>
+                            <MenuItem value="right">Right</MenuItem>
+                            <MenuItem value="custom">Custom</MenuItem>
+                        </Select>
+                    </FormControl>
+                    <FormControl fullWidth size="small" sx={{ flex: 1 }}>
+                        <InputLabel>Split</InputLabel>
+                        <Select
+                            label="Split"
+                            value={zoneFraction}
+                            disabled={zonePreset === 'custom' || zonePreset === 'entire'}
+                            displayEmpty
+                            renderValue={(value) => (zonePreset === 'custom' || zonePreset === 'entire') ? 'N/A' : (value as string)}
+                            onChange={(e) => {
+                                const frac = e.target.value as '1/2' | '1/3' | '1/4';
+                                setZoneFraction(frac);
+                                if (zonePreset !== 'custom') {
+                                    // Re-apply current preset with the new fraction
+                                    if (zonePreset !== 'entire')
+                                        applyPreset(zonePreset as 'top' | 'bottom' | 'left' | 'right', frac);
+                                }
+                            }}
+                        >
+                            <MenuItem value="1/2">1/2</MenuItem>
+                            <MenuItem value="1/3">1/3</MenuItem>
+                            <MenuItem value="1/4">1/4</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Stack>
+
+                {/* Inputs (disabled when preset != custom) */}
+                {(() => {
+                    const sz = rule.anchorConfig?.searchZone || { top: 0, bottom: 1, left: 0, right: 1 };
+                    return (
+                        <SearchZone
+                            top={String(sz.top ?? 0)}
+                            left={String(sz.left ?? 0)}
+                            right={String(sz.right ?? 1)}
+                            bottom={String(sz.bottom ?? 1)}
+                            disabled={zonePreset !== 'custom'}
+                            onChange={(field: string, value: string) => {
+                                const fieldMap: Record<string, string> = {
+                                    'searchZoneTop': 'top',
+                                    'searchZoneLeft': 'left',
+                                    'searchZoneRight': 'right',
+                                    'searchZoneBottom': 'bottom'
+                                };
+                                const actualField = fieldMap[field] || field;
+                                const numValue = parseFloat(value);
+                                // As soon as user edits, ensure preset shows 'custom'
+                                if (zonePreset !== 'custom') setZonePreset('custom');
+                                onUpdateField({
+                                    anchorConfig: {
+                                        ...rule.anchorConfig,
+                                        searchZone: {
+                                            ...rule.anchorConfig?.searchZone,
+                                            [actualField]: isNaN(numValue) ? 0 : numValue
+                                        }
+                                    }
+                                });
+                            }}
+                        />
+                    );
+                })()}
+            </Box>
+
+            
+
+            {/* Position Configuration */}
+            <Box sx={{ mt: 2 }}>
+                <SubsectionLabel>Position</SubsectionLabel>
+                <FormControl fullWidth size="small" sx={{ mb: 1 }}>
+                    <InputLabel>Starting Position</InputLabel>
+                    <Select
+                        value={(() => {
+                            return (rule.positionConfig as any)?.startingPosition || ((): any => {
+                                // Back-compat mapping if not yet set
+                                const dir = rule.positionConfig?.direction || 'bottom';
+                                if (dir === 'right') return 'topRight';
+                                return 'bottomLeft';
+                            })();
+                        })()}
+                        label="Starting Position"
+                        onChange={(e) => onUpdateField({
+                            positionConfig: {
+                                ...rule.positionConfig,
+                                startingPosition: e.target.value as any
+                            }
+                        })}
+                    >
+                        <MenuItem value="topLeft">Top Left</MenuItem>
+                        <MenuItem value="topRight">Top Right</MenuItem>
+                        <MenuItem value="bottomLeft">Bottom Left</MenuItem>
+                        <MenuItem value="bottomRight">Bottom Right</MenuItem>
+                    </Select>
+                </FormControl>
+                <Stack direction="row" spacing={1}>
+                    <TextInput
+                        type="number"
+                        label="Offset X"
+                        value={String(rule.positionConfig?.point?.left ?? 0)}
+                        onChange={(value) => {
+                            const left = Number(value);
+                            const currentPoint = rule.positionConfig?.point || { top: 0, left: 0, width: 0, height: 0 };
+                            onUpdateField({
+                                positionConfig: {
+                                    ...rule.positionConfig,
+                                    point: {
+                                        ...currentPoint,
+                                        left
+                                    }
+                                }
+                            });
+                        }}
+                        inputProps={{ step: 1 }}
+                        sx={{ flex: 1 }}
+                    />
+                    <TextInput
+                        type="number"
+                        label="Offset Y"
+                        value={String(rule.positionConfig?.point?.top ?? 0)}
+                        onChange={(value) => {
+                            const top = Number(value);
+                            const currentPoint = rule.positionConfig?.point || { top: 0, left: 0, width: 0, height: 0 };
+                            onUpdateField({
+                                positionConfig: {
+                                    ...rule.positionConfig,
+                                    point: {
+                                        ...currentPoint,
+                                        top
+                                    }
+                                }
+                            });
+                        }}
+                        inputProps={{ step: 1 }}
+                        sx={{ flex: 1 }}
+                    />
+                    <TextInput
+                        type="number"
+                        label="Width"
+                        value={String(Math.abs((rule.positionConfig?.point?.width ?? 0)))}
+                        onChange={(value) => {
+                            const width = Number(value);
+                            const currentPoint = rule.positionConfig?.point || { top: 0, left: 0, width: 0, height: 0 };
+                            onUpdateField({
+                                positionConfig: {
+                                    ...rule.positionConfig,
+                                    point: {
+                                        ...currentPoint,
+                                        width
+                                    }
+                                }
+                            });
+                        }}
+                        inputProps={{ step: 1, min: 0 }}
+                        sx={{ flex: 1 }}
+                    />
+                    <TextInput
+                        type="number"
+                        label="Height"
+                        value={String(Math.abs((rule.positionConfig?.point?.height ?? 0)))}
+                        onChange={(value) => {
+                            const height = Number(value);
+                            const currentPoint = rule.positionConfig?.point || { top: 0, left: 0, width: 0, height: 0 };
+                            onUpdateField({
+                                positionConfig: {
+                                    ...rule.positionConfig,
+                                    point: {
+                                        ...currentPoint,
+                                        height
+                                    }
+                                }
+                            });
+                        }}
+                        inputProps={{ step: 1, min: 0 }}
+                        sx={{ flex: 1 }}
+                    />
+                </Stack>
+            </Box>
+
+            {/* Parser Configuration */}
+            <Box sx={{ mt: 2 }}>
+                <SubsectionLabel>Regex Patterns</SubsectionLabel>
+                <RegexPatterns
+                    patterns={rule.parserConfig?.patterns || []}
+                    onAdd={(pattern: string) => {
+                        const patterns = [...(rule.parserConfig?.patterns || []), {
+                            regex: pattern,
+                            priority: (rule.parserConfig?.patterns?.length || 0) + 1
+                        }];
+                        onUpdateField({
+                            parserConfig: {
+                                ...rule.parserConfig,
+                                patterns
+                            }
+                        });
+                    }}
+                    onDelete={(index: number) => {
+                        const patterns = rule.parserConfig?.patterns?.filter((_, i: number) => i !== index) || [];
+                        const reordered = patterns.map((p, idx) => ({ ...p, priority: idx + 1 }));
+                        onUpdateField({
+                            parserConfig: {
+                                ...rule.parserConfig,
+                                patterns: reordered
+                            }
+                        });
+                    }}
+                    onDragStart={(index: number) => setDraggedPatternIndex(index)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(dropIndex: number) => {
+                        if (draggedPatternIndex === null || draggedPatternIndex === dropIndex) {
+                            setDraggedPatternIndex(null);
+                            return;
+                        }
+                        const patterns = [...(rule.parserConfig?.patterns || [])];
+                        const [dragged] = patterns.splice(draggedPatternIndex, 1);
+                        patterns.splice(dropIndex, 0, dragged);
+                        const reordered = patterns.map((p, idx) => ({ ...p, priority: idx + 1 }));
+                        onUpdateField({
+                            parserConfig: {
+                                ...rule.parserConfig,
+                                patterns: reordered
+                            }
+                        });
+                        setDraggedPatternIndex(null);
+                    }}
+                    isDragged={(index: number) => draggedPatternIndex === index}
+                />
+            </Box>
         </Box>
     );
 };

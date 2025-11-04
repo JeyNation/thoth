@@ -97,6 +97,8 @@ export class ExtractionEngine {
     private executeAnchorRule(fieldId: string, rule: AnchorRule): FieldExtraction | null {
         const anchorResult = this.findAnchor(rule.anchorConfig);
         
+        console.log('Anchor result for field', fieldId, ':', anchorResult);
+
         if (!anchorResult) {
             return null;
         }
@@ -117,6 +119,8 @@ export class ExtractionEngine {
         // Fall back to looking for separate boxes in the relative position
         const extractionBoxes = this.findExtractionBox(anchorBox, rule.positionConfig, anchorBox.fieldId);
         
+        console.log('Extraction boxes for field', fieldId, ':', extractionBoxes);
+
         if (!extractionBoxes || extractionBoxes.length === 0) {
             return null;
         }
@@ -357,59 +361,53 @@ export class ExtractionEngine {
         
         let searchArea: { top: number; left: number; right: number; bottom: number };
 
+        console.log('bounds', config.point);
+
         if (config.type === 'relative') {
-            const direction = config.direction || 'bottom';
-            
-            switch (direction) {
-                case 'bottom':
-                    // Start from left-bottom corner of anchor
-                    searchArea = {
-                        top: anchorBounds.bottom + config.boundingBox.top,
-                        left: anchorBounds.left + config.boundingBox.left,
-                        right: anchorBounds.left + config.boundingBox.right,
-                        bottom: anchorBounds.bottom + config.boundingBox.bottom,
-                    };
-                    break;
-                case 'top':
-                    // Start from left-top corner of anchor
-                    searchArea = {
-                        top: anchorBounds.top + config.boundingBox.top,
-                        left: anchorBounds.left + config.boundingBox.left,
-                        right: anchorBounds.left + config.boundingBox.right,
-                        bottom: anchorBounds.top + config.boundingBox.bottom,
-                    };
-                    break;
-                case 'right':
-                    // Start from right-top corner of anchor
-                    searchArea = {
-                        top: anchorBounds.top + config.boundingBox.top,
-                        left: anchorBounds.right + config.boundingBox.left,
-                        right: anchorBounds.right + config.boundingBox.right,
-                        bottom: anchorBounds.top + config.boundingBox.bottom,
-                    };
-                    break;
-                case 'left':
-                    // Start from left-top corner of anchor
-                    searchArea = {
-                        top: anchorBounds.top + config.boundingBox.top,
-                        left: anchorBounds.left + config.boundingBox.left,
-                        right: anchorBounds.left + config.boundingBox.right,
-                        bottom: anchorBounds.top + config.boundingBox.bottom,
-                    };
-                    break;
-                default:
-                    // Default to bottom if direction is unknown
-                    searchArea = {
-                        top: anchorBounds.bottom + config.boundingBox.top,
-                        left: anchorBounds.left + config.boundingBox.left,
-                        right: anchorBounds.left + config.boundingBox.right,
-                        bottom: anchorBounds.bottom + config.boundingBox.bottom,
-                    };
-                    break;
+            if (config.startingPosition) {
+                // New: derive baseline from explicit starting corner
+                const baseTop = (config.startingPosition === 'topLeft' || config.startingPosition === 'topRight')
+                    ? anchorBounds.top
+                    : anchorBounds.bottom;
+                const baseLeft = (config.startingPosition === 'topLeft' || config.startingPosition === 'bottomLeft')
+                    ? anchorBounds.left
+                    : anchorBounds.right;
+
+                searchArea = {
+                    top: baseTop + config.point.top,
+                    left: baseLeft + config.point.left,
+                    right: baseLeft + config.point.left + config.point.width,
+                    bottom: baseTop + config.point.top + config.point.height,
+                };
+            } else {
+                const direction = config.direction || 'bottom';
+                switch (direction) {
+                    case 'right':
+                        // Start from right-top corner of anchor
+                        searchArea = {
+                            top: anchorBounds.top + config.point.top,
+                            left: anchorBounds.right + config.point.left,
+                            right: anchorBounds.right + config.point.left + config.point.width,
+                            bottom: anchorBounds.top + config.point.top + config.point.height,
+                        };
+                        break;
+                    case 'bottom':
+                    default:
+                        // Default to bottom if direction is unknown
+                        searchArea = {
+                            top: anchorBounds.bottom + config.point.top,
+                            left: anchorBounds.left + config.point.left,
+                            right: anchorBounds.left + config.point.left + config.point.width,
+                            bottom: anchorBounds.bottom + config.point.top + config.point.height,
+                        };
+                        break;
+                }
             }
         } else {
-            searchArea = config.boundingBox;
+            searchArea = anchorBounds;
         }
+
+        console.log('Searching extraction boxes in area:', searchArea);
 
         const candidateBoxes = this.boundingBoxes.filter(box => {
             // Exclude the anchor box itself

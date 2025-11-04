@@ -34,11 +34,12 @@
           "positionConfig": {
             "type": "relative",
             "direction": "right",
-            "boundingBox": {
+            "startingPosition": "topRight",
+            "point": {
               "top": 0,
               "left": 5,
-              "right": 200,
-              "bottom": 20
+              "width": 200,
+              "height": 20
             }
           },
           "parserConfig": {
@@ -82,11 +83,12 @@
           "positionConfig": {
             "type": "relative",
             "direction": "below",
-            "boundingBox": {
+            "startingPosition": "bottomLeft",
+            "point": {
               "top": 10,
               "left": 0,
-              "right": 200,
-              "bottom": 100
+              "width": 200,
+              "height": 100
             }
           },
           "parserConfig": {
@@ -121,11 +123,12 @@
           "positionConfig": {
             "type": "relative",
             "direction": "bottom",
-            "boundingBox": {
+            "startingPosition": "bottomLeft",
+            "point": {
               "top": 0,
               "left": 0,
-              "right": 200,
-              "bottom": 20
+              "width": 200,
+              "height": 20
             }
           },
           "parserConfig": {
