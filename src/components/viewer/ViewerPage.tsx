@@ -45,9 +45,10 @@ export const ViewerPage: React.FC<ViewerPageProps> = ({
     onFieldSelection
 }) => {
     return (
-        <Box key={pageIndex}>
+        <Box key={pageIndex} data-page-index={pageIndex}>
             <Box 
                 ref={isFirstPage ? svgRef : undefined}
+                data-svg-container
                 sx={{
                     ...VIEWER_SVG_HOST_SX(pageWidth * scale, pageHeight * scale),
                 }}
@@ -74,7 +75,7 @@ export const ViewerPage: React.FC<ViewerPageProps> = ({
                             />
                         );
                     })}
-                    {isFirstPage && selectionRectStyle && <Box style={selectionRectStyle} />}
+                    {selectionRectStyle && <Box style={selectionRectStyle} />}
                 </Box>
             </Box>
             {!isLastLoadedPage && (

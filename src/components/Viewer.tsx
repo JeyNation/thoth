@@ -352,8 +352,37 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       const ys = b.points.map(p => p.y);
       const minXb = Math.min(...xs);
       const maxXb = Math.max(...xs);
-      const minYb = Math.min(...ys);
-      const maxYb = Math.max(...ys);
+      let minYb = Math.min(...ys);
+      let maxYb = Math.max(...ys);
+      
+      // Adjust Y coordinates for page offset when dealing with multi-page selections
+      const pageIndex = (b.page || 1) - 1;
+      if (pageIndex > 0) {
+        // Calculate cumulative vertical offset for this bounding box's page (in unscaled coordinates)
+        let cumulativeOffset = 0;
+        for (let i = 0; i < pageIndex; i++) {
+          const prevParser = new DOMParser();
+          const prevDoc = prevParser.parseFromString(documentData?.svgImages[i] || '', 'image/svg+xml');
+          const prevSvgEl = prevDoc.querySelector('svg');
+          let prevPageHeight = baseSvgDims.height;
+          
+          if (prevSvgEl) {
+            if (prevSvgEl.viewBox && prevSvgEl.viewBox.baseVal && prevSvgEl.viewBox.baseVal.height) {
+              prevPageHeight = prevSvgEl.viewBox.baseVal.height;
+            } else if (prevSvgEl.getAttribute('height')) {
+              prevPageHeight = parseFloat(prevSvgEl.getAttribute('height')!);
+            }
+          }
+          
+          // Account for page height + divider spacing (33px total = 32px margin + 1px height)
+          cumulativeOffset += prevPageHeight + (33 / scale);
+        }
+        
+        // Add the page offset to Y coordinates
+        minYb += cumulativeOffset;
+        maxYb += cumulativeOffset;
+      }
+      
       const centerX = (minXb + maxXb) / 2;
       const centerY = (minYb + maxYb) / 2;
       return { fieldId: b.fieldId, boxId: b.id!, text: b.fieldText, centerX, left: minXb, right: maxXb, top: minYb, bottom: maxYb, centerY };
@@ -420,11 +449,84 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
         bottom: Math.max(selectionStart!.y, selectionEnd!.y)
       };
       const ids = new Set<string>();
+      
+      // Create a cache for page offsets to avoid recalculating
+      const pageOffsets = new Map<number, number>();
+      const containerEl = containerRef.current;
+      
+      // Try to get actual page elements for accurate spacing measurement
+      let useActualSpacing = false;
+      if (containerEl) {
+        const pageElements = containerEl.querySelectorAll('[data-page-index]');
+        const firstPageEl = pageElements[0] as HTMLElement;
+        
+        if (firstPageEl && pageElements.length > 1) {
+          const firstSvgContainer = firstPageEl.querySelector('[data-svg-container]') as HTMLElement;
+          
+          if (firstSvgContainer) {
+            const containerRect = containerEl.getBoundingClientRect();
+            const scrollTop = containerEl.scrollTop;
+            const firstSvgRect = firstSvgContainer.getBoundingClientRect();
+            const firstSvgTop = firstSvgRect.top - containerRect.top + scrollTop;
+            
+            pageOffsets.set(0, 0); // First page has no offset
+            
+            for (let i = 1; i < pageElements.length; i++) {
+              const pageEl = pageElements[i] as HTMLElement;
+              const svgContainer = pageEl.querySelector('[data-svg-container]') as HTMLElement;
+              if (svgContainer) {
+                const svgRect = svgContainer.getBoundingClientRect();
+                const svgTop = svgRect.top - containerRect.top + scrollTop;
+                pageOffsets.set(i, (svgTop - firstSvgTop) / scale);
+              }
+            }
+            useActualSpacing = pageOffsets.size > 1;
+          }
+        }
+      }
+      
+      // For multi-page documents, we need to check bounding boxes against their actual page positions
       boundingBoxes.forEach(b => {
-        const xs = b.points.map(p => p.x); const ys = b.points.map(p => p.y);
-        const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
-        if (!(maxX < selectionRect.left || minX > selectionRect.right || maxY < selectionRect.top || minY > selectionRect.bottom)) ids.add(b.fieldId);
+        const pageIndex = (b.page || 1) - 1;
+        let cumulativeOffset = 0;
+        
+        if (useActualSpacing && pageOffsets.has(pageIndex)) {
+          cumulativeOffset = pageOffsets.get(pageIndex)!;
+        } else {
+          // Fallback to calculated offset
+          for (let i = 0; i < pageIndex; i++) {
+            const prevParser = new DOMParser();
+            const prevDoc = prevParser.parseFromString(documentData?.svgImages[i] || '', 'image/svg+xml');
+            const prevSvgEl = prevDoc.querySelector('svg');
+            let prevPageHeight = baseSvgDims.height;
+            
+            if (prevSvgEl) {
+              if (prevSvgEl.viewBox && prevSvgEl.viewBox.baseVal && prevSvgEl.viewBox.baseVal.height) {
+                prevPageHeight = prevSvgEl.viewBox.baseVal.height;
+              } else if (prevSvgEl.getAttribute('height')) {
+                prevPageHeight = parseFloat(prevSvgEl.getAttribute('height')!);
+              }
+            }
+            
+            // Use measured spacing - divider has my: 2 (32px) + height: 1px = 33px total
+            cumulativeOffset += prevPageHeight + (33 / scale);
+          }
+        }
+        
+        // Adjust bounding box coordinates to global coordinate system
+        const xs = b.points.map(p => p.x);
+        const ys = b.points.map(p => p.y + cumulativeOffset);
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+        
+        // Check if bounding box intersects with selection rectangle
+        if (!(maxX < selectionRect.left || minX > selectionRect.right || maxY < selectionRect.top || minY > selectionRect.bottom)) {
+          ids.add(b.fieldId);
+        }
       });
+      
       setSelectedFields(ids);
       onBoundingBoxFocus?.(null);
       cancelSelection();
@@ -446,7 +548,95 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     }
   };
 
-  const selectionRectStyle: CSSProperties = getViewerSelectionRectStyle(getSelectionRectStyle());
+  // Calculate page-specific selection rectangle styles
+  const calculatePageSelectionStyle = (pageIndex: number, pageHeight: number): CSSProperties => {
+    if (!isAreaSelecting || !selectionStart || !selectionEnd) {
+      return { display: 'none' };
+    }
+
+    // Calculate cumulative vertical offset for this page
+    let cumulativeOffset = 0;
+    const containerEl = containerRef.current;
+    
+    // Try to get accurate page spacing by measuring DOM elements
+    if (containerEl && pageIndex > 0) {
+      const pageElements = containerEl.querySelectorAll('[data-page-index]');
+      
+      if (pageElements.length > pageIndex) {
+        const firstPageEl = pageElements[0] as HTMLElement;
+        const currentPageEl = pageElements[pageIndex] as HTMLElement;
+        
+        // Get the SVG elements within each page to measure their actual positions
+        const firstSvgContainer = firstPageEl.querySelector('[data-svg-container]') as HTMLElement;
+        const currentSvgContainer = currentPageEl.querySelector('[data-svg-container]') as HTMLElement;
+        
+        if (firstSvgContainer && currentSvgContainer) {
+          const containerRect = containerEl.getBoundingClientRect();
+          const scrollTop = containerEl.scrollTop;
+          
+          const firstSvgRect = firstSvgContainer.getBoundingClientRect();
+          const currentSvgRect = currentSvgContainer.getBoundingClientRect();
+          
+          const firstSvgTop = firstSvgRect.top - containerRect.top + scrollTop;
+          const currentSvgTop = currentSvgRect.top - containerRect.top + scrollTop;
+          
+          cumulativeOffset = (currentSvgTop - firstSvgTop) / scale;
+        } else {
+          // Fallback: calculate based on page heights and Material-UI spacing
+          for (let i = 0; i < pageIndex; i++) {
+            const prevParser = new DOMParser();
+            const prevDoc = prevParser.parseFromString(documentData?.svgImages[i] || '', 'image/svg+xml');
+            const prevSvgEl = prevDoc.querySelector('svg');
+            let prevPageHeight = baseSvgDims.height;
+            
+            if (prevSvgEl) {
+              if (prevSvgEl.viewBox && prevSvgEl.viewBox.baseVal && prevSvgEl.viewBox.baseVal.height) {
+                prevPageHeight = prevSvgEl.viewBox.baseVal.height;
+              } else if (prevSvgEl.getAttribute('height')) {
+                prevPageHeight = parseFloat(prevSvgEl.getAttribute('height')!);
+              }
+            }
+            
+            // Account for page height + divider spacing
+            // The divider has my: 2 (32px total) and height: 1px = 33px total
+            cumulativeOffset += prevPageHeight + (33 / scale);
+          }
+        }
+      }
+    }
+
+    // Calculate page bounds in global unscaled coordinates
+    const pageTop = cumulativeOffset;
+    const pageBottom = pageTop + pageHeight;
+
+    // Get selection bounds (already in unscaled coordinates)
+    const selectionTop = Math.min(selectionStart.y, selectionEnd.y);
+    const selectionBottom = Math.max(selectionStart.y, selectionEnd.y);
+    const selectionLeft = Math.min(selectionStart.x, selectionEnd.x);
+    const selectionRight = Math.max(selectionStart.x, selectionEnd.x);
+
+    // Check if selection intersects with this page
+    if (selectionBottom < pageTop || selectionTop > pageBottom) {
+      return { display: 'none' };
+    }
+
+    // Calculate intersection bounds relative to the page
+    const intersectionTop = Math.max(0, selectionTop - pageTop);
+    const intersectionBottom = Math.min(pageHeight, selectionBottom - pageTop);
+    const intersectionLeft = selectionLeft;
+    const intersectionRight = selectionRight;
+
+    if (intersectionTop >= intersectionBottom) {
+      return { display: 'none' };
+    }
+
+    return getViewerSelectionRectStyle({
+      left: `${intersectionLeft}px`,
+      top: `${intersectionTop}px`,
+      width: `${intersectionRight - intersectionLeft}px`,
+      height: `${intersectionBottom - intersectionTop}px`
+    });
+  };
 
   if (loading) {
     return <LoadingIndicator message="Loading document..." sx={{ p: 3, height: '100%' }} />;
@@ -493,6 +683,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
           }
           
           const pageBoxes = boundingBoxes.filter(box => box.page === pageIndex + 1);
+          const pageSelectionStyle = calculatePageSelectionStyle(pageIndex, pageHeight);
           
           return (
             <ViewerPage
@@ -506,7 +697,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
               showOverlays={showOverlays}
               pageBoxes={pageBoxes}
               focusedInputLinkedBoxIds={focusedInputLinkedBoxIds}
-              selectionRectStyle={selectionRectStyle}
+              selectionRectStyle={pageSelectionStyle}
               isFirstPage={pageIndex === 0}
               isLastLoadedPage={pageIndex === loadedPages - 1}
               svgRef={svgRef}
