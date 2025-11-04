@@ -16,6 +16,7 @@ export interface FieldInputProps {
   baseSx: Record<string, any>;
   isDragActive: boolean;
   ariaLabel?: string;
+  label: string;
 
   onChange: (value: string | number, opts?: { explicitClear?: boolean }) => void;
   onClear: () => void;
@@ -33,6 +34,7 @@ const FieldInput: React.FC<FieldInputProps> = ({
   baseSx,
   isDragActive,
   ariaLabel,
+  label,
   onChange,
   onClear,
   onFocus,
@@ -160,6 +162,7 @@ const FieldInput: React.FC<FieldInputProps> = ({
       value={isNumeric ? display : (typeof value === 'string' ? value : String(value))}
       type={type}
       aria-label={ariaLabel}
+      label={label}
       multiline={kind === 'textarea'}
       minRows={kind === 'textarea' ? 2 : undefined}
       sx={sx}

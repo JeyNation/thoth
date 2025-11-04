@@ -1,6 +1,6 @@
 import React from 'react';
 import { Stack, TextField } from '@mui/material';
-import { SearchZoneProps } from './types';
+import { SearchZoneProps } from '../../types/rulesComponents';
 
 export const SearchZone: React.FC<SearchZoneProps> = ({
     top,

@@ -31,11 +31,12 @@ export const LINE_ITEM_HEADER_STACK_PROPS: Record<string, any> = {
   spacing: 0,
   alignItems: 'flex-start',
   justifyContent: 'space-between',
+  mb: 1.5,
 };
 
 export const LINE_ITEM_ACTIONS_STACK_PROPS: Record<string, any> = {
   direction: 'row',
-  spacing: 1,
+  spacing: 0.5,
   alignItems: 'flex-start',
 };
 

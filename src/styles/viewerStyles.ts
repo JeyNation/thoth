@@ -2,14 +2,6 @@ import type { CSSProperties } from 'react';
 import type { SxProps } from '@mui/material';
 import type { Theme } from '@mui/material/styles';
 
-export const VIEWER_LOADING_BOX_SX: SxProps<Theme> = {
-  p: 3,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  height: '100%',
-};
-
 export const VIEWER_ROOT_SX: SxProps<Theme> = {
   display: 'flex',
   flexDirection: 'column',
@@ -62,7 +54,6 @@ export const getSelectionRectStyle = (base: CSSProperties): CSSProperties => {
 };
 
 const viewerStyles = {
-  VIEWER_LOADING_BOX_SX,
   VIEWER_ROOT_SX,
   VIEWER_CONTAINER_SX,
   VIEWER_SVG_HOST_SX,

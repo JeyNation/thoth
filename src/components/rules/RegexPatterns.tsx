@@ -1,9 +1,11 @@
 import React from 'react';
-import { Paper, Stack, Typography, IconButton, TextField, Button, Chip } from '@mui/material';
+import { Paper, Stack, Typography, TextField, Chip } from '@mui/material';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AddIcon from '@mui/icons-material/Add';
-import { RegexPatternsProps } from './types';
+import { RegexPatternsProps } from '../../types/rulesComponents';
+import { IconButton } from '../common/IconButton';
+import { TextButton } from '../common/TextButton';
 
 export const RegexPatterns: React.FC<RegexPatternsProps> = ({
     patterns,
@@ -68,12 +70,11 @@ export const RegexPatterns: React.FC<RegexPatternsProps> = ({
                         {pattern.regex}
                     </Typography>
                     <IconButton
-                        size="small"
+                        icon={DeleteOutlineIcon}
+                        tooltip="Delete pattern"
                         onClick={() => onDelete(patternIndex)}
-                        sx={{ color: 'error.main' }}
-                    >
-                        <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
+                        color="error"
+                    />
                 </Paper>
             ))}
 
@@ -91,15 +92,13 @@ export const RegexPatterns: React.FC<RegexPatternsProps> = ({
                     }}
                     placeholder="e.g. ^([A-Z0-9-]+)"
                 />
-                <Button
-                    variant="contained"
-                    size="small"
+                <TextButton
                     onClick={handleAdd}
                     startIcon={<AddIcon fontSize="small" />}
                     sx={{ minWidth: 80 }}
                 >
                     Add
-                </Button>
+                </TextButton>
             </Stack>
         </Stack>
     );

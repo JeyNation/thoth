@@ -8,11 +8,13 @@ import {
 } from '@mui/material';
 import { Divider } from '@mui/material';
 import { RulesActionBar } from './rules/RulesActionBar';
-import { LayoutMapInfo } from './rules/LayoutMapInfo';
 import { FieldRulesSection } from './rules/FieldRulesSection';
 import { RerunExtractionDialog } from './dialogs/RerunExtractionDialog';
+import { LoadingIndicator } from './common/LoadingIndicator';
+import { EmptyState } from './common/EmptyState';
 import { BASIC_INFO_FIELDS } from '../config/formFields';
 import { Field, AnchorRule, RegexMatchRule, AbsoluteRule, RuleType } from '../types/extractionRules';
+import { RULES_ROOT_SX, RULES_CONTENT_SX } from '../styles/rulesStyles';
 import { useLayoutMap } from '../hooks/useLayoutMap';
 import { getExtractionFieldId } from '../utils/formUtils';
 import {
@@ -198,50 +200,29 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
 
     if (!vendorId) {
         return (
-            <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 2 }}>
-                <Typography color="text.secondary">No document selected</Typography>
-                <Typography variant="caption" color="text.secondary">Please select a document to view and edit its rules</Typography>
-            </Box>
+            <EmptyState 
+                message="No document selected" 
+                description="Please select a document to view and edit its rules" 
+            />
         );
     }
 
     if (loading) {
-        return (
-            <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 2 }}>
-                <Typography>Loading rules for {vendorId}...</Typography>
-            </Box>
-        );
+        return <LoadingIndicator message={`Loading rules for ${vendorId}...`} sx={{ height: '100%', p: 2 }} />;
     }
 
     if (!layoutMap) {
         return (
-            <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 2 }}>
-                <Typography color="text.secondary">No layout map found for {vendorId}</Typography>
-                <Typography variant="caption" color="text.secondary">Create a layout map file for this vendor to enable rule editing</Typography>
-            </Box>
+            <EmptyState 
+                message={`No layout map found for ${vendorId}`}
+                description="Create a layout map file for this vendor to enable rule editing"
+            />
         );
     }
 
     return (
-        <Box sx={{ 
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-            overflow: 'hidden',
-            borderRadius: 2,
-            backgroundColor: 'background.paper',
-        }}>
-            <Box sx={{
-                flex: 1,
-                minHeight: 0,
-                overflow: 'auto',
-                p: 3,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 3,
-            }}>
-                {layoutMap && <LayoutMapInfo layoutMap={layoutMap} />}
-            
+        <Box sx={RULES_ROOT_SX}>
+            <Box sx={RULES_CONTENT_SX}>
                 <Stack spacing={2}>
                     {BASIC_INFO_FIELDS.map((field, fieldIndex) => {
                         const extractionFieldId = getExtractionFieldId(field.id);
@@ -249,7 +230,6 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
                             <React.Fragment key={field.id}>
                                 <FieldRulesSection
                                     fieldLabel={field.label}
-                                    extractionFieldId={extractionFieldId}
                                     rules={fieldRules[extractionFieldId] || []}
                                     editingRuleId={editingRuleId}
                                     draggedRuleIndex={draggedRuleIndex}

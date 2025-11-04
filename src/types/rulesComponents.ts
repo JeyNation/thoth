@@ -1,4 +1,4 @@
-import { AnchorMatchMode, AnchorRule, RegexMatchRule, AbsoluteRule, ExtractionRule } from '../../types/extractionRules';
+import { AnchorMatchMode, AnchorRule, RegexMatchRule, AbsoluteRule, ExtractionRule } from './extractionRules';
 
 export type FieldRule = AnchorRule | RegexMatchRule | AbsoluteRule;
 

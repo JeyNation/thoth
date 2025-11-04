@@ -13,8 +13,6 @@ import {
     DEBUGGER_LINKED_INPUTS_LETTER_SX,
     DEBUGGER_LINKED_ID_SX,
     DEBUGGER_PRE_SX,
-    DEBUGGER_INFO_LABEL_SX,
-    DEBUGGER_INFO_VALUE_SX,
 } from '../styles/debuggerStyles';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import type { BoundingBox } from '../types/mapping';
@@ -149,19 +147,3 @@ const Debugger: React.FC<DebuggerProps> = ({ boundingBoxes, focusedInputField, f
 };
 
 export default Debugger;
-
-interface DebuggerInfoProps {
-    label: string;
-    value: string | number;
-}
-
-const DebuggerInfo: React.FC<DebuggerInfoProps> = ({ label, value }) => (
-    <Box>
-        <Typography variant="caption" sx={DEBUGGER_INFO_LABEL_SX}>
-            {label}
-        </Typography>
-        <Typography variant="body2" sx={DEBUGGER_INFO_VALUE_SX}>
-            {value}
-        </Typography>
-    </Box>
-);

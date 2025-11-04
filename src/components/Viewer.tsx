@@ -2,27 +2,29 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { CSSProperties } from 'react';
-import { Box, Chip, IconButton, Stack, Tooltip, Typography } from '@mui/material';
-import ZoomInIcon from '@mui/icons-material/ZoomIn';
-import ZoomOutIcon from '@mui/icons-material/ZoomOut';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import { Box } from '@mui/material';
 import { useZoom } from '../hooks/useZoom';
 import { usePan } from '../hooks/usePan';
 import { useAreaSelection } from '../hooks/useAreaSelection';
 import { normalizeBoundingBoxes } from '../types/mapping';
 import { useMapping } from '../context/MappingContext';
+import { ViewerControls } from './viewer/ViewerControls';
+import { ViewerPage } from './viewer/ViewerPage';
+import { LoadingIndicator } from './common/LoadingIndicator';
 
 import type { BoundingBox } from '../types/mapping';
 import {
-  VIEWER_LOADING_BOX_SX,
   VIEWER_ROOT_SX,
   VIEWER_CONTAINER_SX,
-  VIEWER_SVG_HOST_SX,
-  VIEWER_SVG_TRANSFORM_SX,
   getSelectionRectStyle as getViewerSelectionRectStyle,
 } from '../styles/viewerStyles';
+
+const DEFAULT_AUTO_FIT_CONFIG = (svgContent: string, svgHostRef: React.RefObject<HTMLDivElement>) => ({
+  svgContent,
+  svgHostRef,
+  mode: 'width' as const,
+  retries: 4
+});
 
 interface ViewerProps {
   documentData: any;
@@ -52,13 +54,9 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const { fieldSources, reverseIndex } = useMapping();
-  const { scale, setScale, resetView } = useZoom({ containerRef,
-    autoFit: {
-      svgContent,
-      svgHostRef: svgRef,
-      mode: 'width',
-      retries: 4
-    }
+  const { scale, setScale, resetView } = useZoom({ 
+    containerRef,
+    autoFit: DEFAULT_AUTO_FIT_CONFIG(svgContent, svgRef)
   });
   const { isDragging, isKeyActive, position, beginPanAt, resetPan, setIsDragging } = usePan({ containerRef });
   const { isAreaSelecting, selectionStart, selectionEnd, beginSelection, updateSelection, cancelSelection, getSelectionRectStyle } = useAreaSelection();
@@ -98,12 +96,12 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       else { backgroundColor = 'rgba(33,150,243,0.4)'; borderColor = '#1976d2'; }
     }
 
-  let boxShadow = 'none';
+    let boxShadow = 'none';
     if (isSelected) boxShadow = `0 0 10px ${borderColor}66`;
     else if (isFocusedLinked) boxShadow = '0 0 8px rgba(46,125,50,0.45)';
     else if (isLinked) boxShadow = '0 0 5px rgba(76, 175, 80, 0.3)';
 
-  const style: CSSProperties = {
+    const style: CSSProperties = {
       position: 'absolute',
       left: boundingBox.minX,
       top: boundingBox.minY,
@@ -133,18 +131,8 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     if (documentData?.svgImages) {
       const images = documentData.svgImages as string[];
       setTotalPages(images.length);
-      
-      // Reset to first page when document changes
       setLoadedPages(1);
-      
-      // For single page, just use the SVG directly
-      if (images.length === 1) {
-        setSvgContent(images[0]);
-      } else {
-        // For multiple pages, we need to render them separately (will be handled in render)
-        setSvgContent(images[0]); // Start with first page
-      }
-      
+      setSvgContent(images[0]);
       setLoading((prev) => (prev ? false : prev));
     }
 
@@ -236,7 +224,6 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     return () => document.removeEventListener('mousedown', handleGlobalMouseDown);
   }, [selectedFields, onBoundingBoxFocus]);
 
-  // Lazy loading scroll listener
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -245,11 +232,10 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       if (isLoadingMore || loadedPages >= totalPages) return;
 
       const { scrollTop, scrollHeight, clientHeight } = container;
-      const scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 100; // 100px threshold
+      const scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 100;
 
       if (scrolledToBottom && loadedPages < totalPages) {
         setIsLoadingMore(true);
-        // Use setTimeout to defer the state update and allow render to complete
         setTimeout(() => {
           setLoadedPages(prev => Math.min(prev + 1, totalPages));
           setIsLoadingMore(false);
@@ -261,7 +247,6 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
     return () => container.removeEventListener('scroll', handleScroll);
   }, [loadedPages, totalPages, isLoadingMore]);
 
-  // Auto-load next page if no scrollbar (content fits in viewport)
   useEffect(() => {
     const container = containerRef.current;
     if (!container || isLoadingMore || loadedPages >= totalPages) return;
@@ -279,7 +264,6 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       }
     };
 
-    // Check after a short delay to ensure DOM has rendered
     const timeoutId = setTimeout(checkIfNeedsMorePages, 200);
     return () => clearTimeout(timeoutId);
   }, [loadedPages, totalPages, isLoadingMore, svgContent]);
@@ -464,88 +448,22 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
 
   const selectionRectStyle: CSSProperties = getViewerSelectionRectStyle(getSelectionRectStyle());
 
-  const scaledWidth = baseSvgDims.width ? baseSvgDims.width * scale : undefined;
-  const scaledHeight = baseSvgDims.height ? baseSvgDims.height * scale : undefined;
-
   if (loading) {
-    return (
-      <Box sx={VIEWER_LOADING_BOX_SX}>
-        <Typography variant="body1" color="text.secondary" fontStyle="italic">
-          Loading document...
-        </Typography>
-      </Box>
-    );
+    return <LoadingIndicator message="Loading document..." sx={{ p: 3, height: '100%' }} />;
   }
 
   return (
-  <Box sx={VIEWER_ROOT_SX}>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between">
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Chip size="small" variant="outlined" label={`${boundingBoxes.length} fields detected`} />
-          {totalPages > 1 && (
-            <Chip 
-              size="small" 
-              variant="outlined" 
-              label={`Page ${loadedPages} of ${totalPages} loaded`}
-              color={loadedPages < totalPages ? 'primary' : 'default'}
-            />
-          )}
-        </Stack>
-        <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
-          <Tooltip title="Zoom In">
-            <IconButton
-              color="primary"
-              size="small"
-              onMouseDown={(e) => { e.preventDefault(); }}
-              onClick={(e) => { e.preventDefault(); setScale(s => Math.min(5, s * 1.2)); }}
-              aria-label="Zoom In"
-            >
-              <ZoomInIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Zoom Out">
-            <IconButton
-              color="primary"
-              size="small"
-              onMouseDown={(e) => { e.preventDefault(); }}
-              onClick={(e) => { e.preventDefault(); setScale(s => Math.max(0.1, s / 1.2)); }}
-              aria-label="Zoom Out"
-            >
-              <ZoomOutIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Reset View">
-            <IconButton
-              color="primary"
-              size="small"
-              onMouseDown={(e) => { e.preventDefault(); }}
-              onClick={(e) => { e.preventDefault(); resetView(); resetPan(); }}
-              aria-label="Reset View"
-            >
-              <RestartAltIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title={showOverlays ? 'Hide Field Overlays' : 'Show Field Overlays'}>
-            <IconButton
-              size="small"
-              onMouseDown={(e) => { e.preventDefault(); }}
-              onClick={(e) => {
-                e.preventDefault();
-                // Toggle locally; Workspace will be notified by the effect after render
-                setShowOverlays(prev => !prev);
-              }}
-              aria-label={showOverlays ? 'Hide Field Overlays' : 'Show Field Overlays'}
-              color={showOverlays ? 'primary' : 'default'}
-            >
-              {showOverlays ? (
-                <VisibilityOffIcon fontSize="small" />
-              ) : (
-                <VisibilityIcon fontSize="small" />
-              )}
-            </IconButton>
-          </Tooltip>
-        </Stack>
-      </Stack>
+    <Box sx={VIEWER_ROOT_SX}>
+      <ViewerControls
+        boundingBoxCount={boundingBoxes.length}
+        loadedPages={loadedPages}
+        totalPages={totalPages}
+        showOverlays={showOverlays}
+        onZoomIn={() => setScale(s => Math.min(5, s * 1.2))}
+        onZoomOut={() => setScale(s => Math.max(0.1, s / 1.2))}
+        onResetView={() => { resetView(); resetPan(); }}
+        onToggleOverlays={() => setShowOverlays(prev => !prev)}
+      />
 
       <Box
         ref={containerRef}
@@ -558,7 +476,6 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
         onMouseLeave={handlePanelMouseLeave}
       >
         {documentData?.svgImages && (documentData.svgImages as string[]).slice(0, loadedPages).map((pageContent: string, pageIndex: number) => {
-          // Extract dimensions from each page's SVG
           const parser = new DOMParser();
           const doc = parser.parseFromString(pageContent, 'image/svg+xml');
           const svgEl = doc.querySelector('svg');
@@ -578,60 +495,28 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
           const pageBoxes = boundingBoxes.filter(box => box.page === pageIndex + 1);
           
           return (
-            <Box key={pageIndex}>
-              <Box 
-                ref={pageIndex === 0 ? svgRef : undefined}
-                sx={{
-                  ...VIEWER_SVG_HOST_SX(pageWidth * scale, pageHeight * scale),
-                }}
-              >
-                <Box sx={VIEWER_SVG_TRANSFORM_SX(pageWidth || 'auto', pageHeight || 'auto', scale, isDragging)}>
-                  <div dangerouslySetInnerHTML={{ __html: pageContent }} />
-                  {showOverlays && pageBoxes.map((boundingBox) => {
-                    const style = getBoundingBoxStyle(boundingBox);
-                    const isFocusedLinked = !!(boundingBox.id && focusedInputLinkedBoxIds.has(boundingBox.id));
-                  return (
-                    <Box
-                      key={boundingBox.fieldId}
-                      data-field-id={boundingBox.fieldId}
-                      data-box-id={boundingBox.id}
-                      data-focused-linked={isFocusedLinked ? 'true' : undefined}
-                      draggable
-                      onDragStart={(e) => handleFieldDragStart(e, boundingBox)}
-                      title={boundingBox.fieldText}
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                      }}
-                      onClick={(e) => handleFieldSelection(boundingBox.fieldId, e)}
-                      style={style}
-                    />
-                  );
-                })}
-                {pageIndex === 0 && <Box style={selectionRectStyle} />}
-              </Box>
-            </Box>
-            {pageIndex < loadedPages - 1 && (
-              <Box sx={{ 
-                width: '100%', 
-                height: '1px', 
-                backgroundColor: 'divider',
-                my: 2
-              }} />
-            )}
-          </Box>
+            <ViewerPage
+              key={pageIndex}
+              pageContent={pageContent}
+              pageIndex={pageIndex}
+              pageWidth={pageWidth}
+              pageHeight={pageHeight}
+              scale={scale}
+              isDragging={isDragging}
+              showOverlays={showOverlays}
+              pageBoxes={pageBoxes}
+              focusedInputLinkedBoxIds={focusedInputLinkedBoxIds}
+              selectionRectStyle={selectionRectStyle}
+              isFirstPage={pageIndex === 0}
+              isLastLoadedPage={pageIndex === loadedPages - 1}
+              svgRef={svgRef}
+              getBoundingBoxStyle={getBoundingBoxStyle}
+              onFieldDragStart={handleFieldDragStart}
+              onFieldSelection={handleFieldSelection}
+            />
           );
         })}
-        {isLoadingMore && (
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center', 
-            padding: 2,
-            color: 'text.secondary'
-          }}>
-            <Typography variant="body2" fontStyle="italic">Loading more pages...</Typography>
-          </Box>
-        )}
+        {isLoadingMore && <LoadingIndicator message="Loading more pages..." />}
       </Box>
     </Box>
   );

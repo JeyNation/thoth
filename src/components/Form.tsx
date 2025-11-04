@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Box, Button, Stack, Typography } from '@mui/material';
+import { Box, Button, Divider, Stack, Typography } from '@mui/material';
 import {
     FORM_ROOT_SX,
     FORM_SCROLL_AREA_SX,
@@ -27,6 +27,9 @@ import LineItemCard from './form/LineItemCard';
 import useFlashHighlight from '../hooks/useFlashHighlight';
 import { getTextFieldSxFor } from '../styles/fieldStyles';
 import { BASIC_INFO_FIELDS, type FormFieldConfig } from '../config/formFields';
+import { SectionLabel } from './common/SectionLabel';
+import { SubsectionLabel } from './common/SubsectionLabel';
+import { EmptyState } from './common/EmptyState';
 
 type BasicFieldKey = Exclude<keyof PurchaseOrder, 'lineItems'>;
 
@@ -205,7 +208,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         onFieldFocus && onFieldFocus(null);
     };
 
-    const handleBasicDrop = (e: React.DragEvent, targetField: string, fieldKind: 'text' | 'textarea' | 'date') => {
+    const handleBasicDrop = (e: React.DragEvent, targetField: string, fieldKind: 'text' | 'textarea' | 'date' | 'decimal' | 'integer') => {
         e.preventDefault();
         const data = e.dataTransfer.getData('application/json');
         if (!data) { 
@@ -611,9 +614,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
             <Box sx={FORM_SCROLL_AREA_SX} data-scroll-listener>
                 <Box sx={FORM_SECTION_CONTAINER_SX}>
                     <Box>
-                        <Typography variant="subtitle1" fontWeight={600} color="text.secondary" gutterBottom>
-                            General
-                        </Typography>
+                        <SectionLabel>General</SectionLabel>
                         <Stack spacing={2}>
                             {BASIC_INFO_FIELDS.map((config) => {
                                 const fieldId = config.id as BasicFieldKey;
@@ -622,12 +623,10 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                                 const isBasicDropActive = activeBasicDrop === fieldId;
                                 return (
                                     <Box key={fieldId}>
-                                        <Typography variant="caption" color="text.secondary" sx={FORM_CAPTION_UPPER_SX}>
-                                            {config.label}
-                                        </Typography>
                                         <FieldInput
                                             id={fieldId}
                                             kind={config.kind}
+                                            label={config.label}
                                             value={value}
                                             baseSx={baseSx}
                                             isDragActive={!!isBasicDropActive || globalDragActive}
@@ -659,10 +658,10 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                         </Stack>
                     </Box>
 
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <Typography variant="subtitle1" fontWeight={600} color="text.secondary">
-                            Line Items
-                        </Typography>
+                    <Divider sx={{ my: 1 }} />
+
+                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                        <SectionLabel>Line Items</SectionLabel>
 
                         {purchaseOrder.lineItems.length > 0 ? (
                             <>
@@ -677,9 +676,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                                 </Stack>
                             </>
                         ) : (
-                            <Typography variant="body2" color="text.secondary">
-                                No line items yet. Add one below or drop structured data to populate the table.
-                            </Typography>
+                            <EmptyState message="No line items yet. Add one below or drop structured data to populate the table." />
                         )}
                     </Box>
 

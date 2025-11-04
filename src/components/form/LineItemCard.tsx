@@ -1,7 +1,9 @@
 import React from 'react';
-import { Box, IconButton, Paper, Stack, Typography, Tooltip } from '@mui/material';
+import { Box, Paper, Stack, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { IconButton } from '../common/IconButton';
+import { SubsectionLabel } from '../common/SubsectionLabel';
 import { makeLineItemField } from '../../types/fieldIds';
 import { LINE_ITEM_COLUMNS, humanizeColumnKey, type LineItemColumnKey } from '../../types/lineItemColumns';
 import type { LineItem } from '../../types/PurchaseOrder';
@@ -69,6 +71,7 @@ const LineItemCard: React.FC<LineItemCardProps> = ({
         baseSx={baseSx}
         isDragActive={isDropActive || externallyActive}
         ariaLabel={aria}
+        label={humanizeColumnKey(field)}
         onChange={(val, opts) => handleLineItemChange(item.lineNumber, field, val, kind, opts)}
         onClear={() => clearLineItemField(item.lineNumber, field, kind)}
         onFocus={() => onFieldFocus(fieldId)}
@@ -106,36 +109,25 @@ const LineItemCard: React.FC<LineItemCardProps> = ({
               ${ (item.quantity * item.unitPrice).toFixed(2) }
             </Typography>
             <Stack {...LINE_ITEM_ACTIONS_STACK_PROPS}>
-              <Tooltip title={`Add line (hold Ctrl to insert above)`}>
-                <IconButton
-                  size="small"
-                  color="primary"
-                  onClick={(event) => onInsertRelative(!!event.ctrlKey)}
-                  sx={LINE_ITEM_ICON_BUTTON_SX}
-                  aria-label={`Insert line after ${item.lineNumber}`}
-                >
-                  <AddIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title={`Remove line ${item.lineNumber}`}>
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={onRemove}
-                  sx={LINE_ITEM_ICON_BUTTON_SX}
-                  aria-label={`Remove line ${item.lineNumber}`}
-                >
-                  <DeleteOutlineIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
+              <IconButton
+                icon={AddIcon}
+                tooltip="Add line (hold Ctrl to insert above)"
+                size="small"
+                color="primary"
+                onClick={(event: React.MouseEvent) => onInsertRelative(!!event.ctrlKey)}
+              />
+              <IconButton
+                icon={DeleteOutlineIcon}
+                tooltip={`Remove line ${item.lineNumber}`}
+                size="small"
+                color="error"
+                onClick={onRemove}
+              />
             </Stack>
           </Stack>
           <Stack {...LINE_ITEM_FIELDS_STACK_PROPS}>
             {LINE_ITEM_COLUMNS.map((col) => (
               <Box key={`${item.lineNumber}-${col}`}>
-                <Typography variant="caption" color="text.secondary" sx={LINE_ITEM_CAPTION_SX}>
-                  {humanizeColumnKey(col)}
-                </Typography>
                 {renderField(col)}
               </Box>
             ))}

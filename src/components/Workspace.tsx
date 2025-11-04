@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Box, Paper, IconButton, Tooltip, Menu, MenuItem, ListItemIcon, ListItemText, Tabs, Tab } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
+import { Box, Paper } from '@mui/material';
+import { WorkspaceTabs } from './workspace/WorkspaceTabs';
+import { WorkspaceMenu } from './workspace/WorkspaceMenu';
 import {
     WORKSPACE_ROOT_SX,
     WORKSPACE_INNER_SX,
@@ -56,8 +57,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
     const [debuggerHeight, setDebuggerHeight] = useState<number>(140);
     const [connections, setConnections] = useState<OverlayConnection[]>([]);
     const [overlaysVisible, setOverlaysVisible] = useState<boolean>(true);
-    const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
-    const menuOpen = Boolean(menuAnchorEl);
     const [activeTab, setActiveTab] = useState<number>(0);
     const [hasRunAutoExtraction, setHasRunAutoExtraction] = useState(false);
     const layoutMapCacheRef = useRef<{ vendorId: string; layoutMap: LayoutMap } | null>(null);
@@ -555,17 +554,8 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
         replaceAll({}); // Clear all field mappings
         updatePurchaseOrder({ documentNumber: '', customerNumber: '', documentDate: '', shipToAddress: '', lineItems: [] }); // Reset purchase order
         setDocumentData(null);
-        setMenuAnchorEl(null);
         layoutMapCacheRef.current = null; // Clear the cache
         onBackToList();
-    };
-
-    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-        setMenuAnchorEl(event.currentTarget);
-    };
-
-    const handleMenuClose = () => {
-        setMenuAnchorEl(null);
     };
 
     const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -575,39 +565,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
     return (
         <Box sx={WORKSPACE_ROOT_SX}>
             <Box sx={WORKSPACE_INNER_SX}>
-                <Box sx={{ position: 'absolute', top: 16, right: 16, zIndex: 1000 }}>
-                    <Tooltip title="Menu">
-                        <IconButton
-                            onClick={handleMenuOpen}
-                            size="small"
-                            sx={{
-                                color: 'white',
-                                '&:hover': {
-                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                                },
-                            }}
-                        >
-                            <MenuIcon />
-                        </IconButton>
-                    </Tooltip>
-                    <Menu
-                        anchorEl={menuAnchorEl}
-                        open={menuOpen}
-                        onClose={handleMenuClose}
-                        anchorOrigin={{
-                            vertical: 'bottom',
-                            horizontal: 'right',
-                        }}
-                        transformOrigin={{
-                            vertical: 'top',
-                            horizontal: 'right',
-                        }}
-                    >
-                        <MenuItem onClick={handleBackToListClick}>
-                            <ListItemText>Back to Documents</ListItemText>
-                        </MenuItem>
-                    </Menu>
-                </Box>
+                <WorkspaceMenu onBackToDocuments={handleBackToListClick} />
                 <Box sx={WORKSPACE_GRID_SX}>
                     {overlaysVisible && (
                         <ConnectionOverlay
@@ -630,27 +588,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
                     </Paper>
                     <Paper elevation={1} sx={WORKSPACE_PANEL_PAPER_SX}>
                         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                            <Tabs 
-                                value={activeTab} 
-                                onChange={handleTabChange}
-                                sx={{ 
-                                    borderBottom: 1, 
-                                    borderColor: 'divider',
-                                    minHeight: 48,
-                                    '& .MuiTab-root': {
-                                        minHeight: 48,
-                                        '&:focus': {
-                                            outline: 'none',
-                                        },
-                                        '&.Mui-focusVisible': {
-                                            backgroundColor: 'transparent',
-                                        },
-                                    }
-                                }}
-                            >
-                                <Tab label="Form" disableRipple />
-                                <Tab label="Rules" disableRipple />
-                            </Tabs>
+                            <WorkspaceTabs value={activeTab} onChange={handleTabChange} />
                             <Box sx={{ flex: 1, overflow: 'hidden' }} data-form-panel>
                                 {activeTab === 0 && (
                                     <Form

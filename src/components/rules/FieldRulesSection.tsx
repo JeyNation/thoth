@@ -1,13 +1,14 @@
 import React from 'react';
-import { Box, Stack, Typography, Tooltip, IconButton } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { FieldRulesList } from './FieldRulesList';
-import { FieldRule } from './types';
+import { FieldRule } from '../../types/rulesComponents';
 import { AnchorRule, RegexMatchRule, AbsoluteRule } from '../../types/extractionRules';
+import { IconButton } from '../common/IconButton';
+import { SectionLabel } from '../common/SectionLabel';
 
 interface FieldRulesSectionProps {
     fieldLabel: string;
-    extractionFieldId: string;
     rules: FieldRule[];
     editingRuleId: string | null;
     draggedRuleIndex: number | null;
@@ -23,7 +24,6 @@ interface FieldRulesSectionProps {
 
 export const FieldRulesSection: React.FC<FieldRulesSectionProps> = ({
     fieldLabel,
-    extractionFieldId,
     rules,
     editingRuleId,
     draggedRuleIndex,
@@ -39,44 +39,17 @@ export const FieldRulesSection: React.FC<FieldRulesSectionProps> = ({
     return (
         <Box>
             <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
-                <Typography 
-                    variant="caption" 
-                    color="text.secondary" 
-                    sx={{ 
-                        display: 'block',
-                        textTransform: 'uppercase',
-                        fontSize: '0.6875rem',
-                        fontWeight: 600,
-                        letterSpacing: '0.08em'
-                    }}
-                >
-                    {fieldLabel}
-                </Typography>
-                <Tooltip title="Add rule">
-                    <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={onAddRule}
-                        sx={{
-                            bgcolor: 'transparent',
-                            '&:hover': {
-                                bgcolor: 'action.hover',
-                            },
-                            transition: 'background-color 0.2s'
-                        }}
-                        aria-label={`Add rule for ${fieldLabel}`}
-                    >
-                        <AddIcon fontSize="small" />
-                    </IconButton>
-                </Tooltip>
+                <SectionLabel>{fieldLabel}</SectionLabel>
+                <IconButton
+                    icon={AddIcon}
+                    tooltip="Add rule"
+                    onClick={onAddRule}
+                />
             </Stack>
-            
-            {/* Display rules - mix of view and edit mode */}
             <FieldRulesList
                 rules={rules}
                 editingRuleId={editingRuleId}
                 draggedRuleIndex={draggedRuleIndex}
-                extractionFieldId={extractionFieldId}
                 onEditRule={onEditRule}
                 onDeleteRule={onDeleteRule}
                 onDoneEditing={onDoneEditing}

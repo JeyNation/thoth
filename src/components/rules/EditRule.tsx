@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Paper, Stack, Chip, Button, FormControl, InputLabel, Select, MenuItem, Box, Typography, Divider, FormControlLabel, Switch, TextField } from '@mui/material';
+import { Paper, Stack, Chip, FormControl, InputLabel, Select, MenuItem, Box, Divider, FormControlLabel, Switch, TextField } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
-import { EditRuleProps } from './types';
+import { EditRuleProps } from '../../types/rulesComponents';
 import { SearchZone } from './SearchZone';
 import { RegexPatterns } from './RegexPatterns';
 import { AnchorConfig } from './AnchorConfig';
 import { AnchorRule, RegexMatchRule, AbsoluteRule } from '../../types/extractionRules';
+import { SubsectionLabel } from '../common/SubsectionLabel';
+import { IconButton } from '../common/IconButton';
 
 export const EditRule: React.FC<EditRuleProps> = ({
     rule,
@@ -23,7 +25,6 @@ export const EditRule: React.FC<EditRuleProps> = ({
     return (
         <Paper variant="outlined" sx={{ p: 2 }}>
             <Stack spacing={2}>
-                {/* Rule Header */}
                 <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
                     <Stack direction="row" spacing={1} alignItems="center">
                         <Chip 
@@ -39,17 +40,14 @@ export const EditRule: React.FC<EditRuleProps> = ({
                             variant="outlined"
                         />
                     </Stack>
-                    <Button
-                        variant="contained"
-                        size="small"
+                    <IconButton
+                        icon={CheckIcon}
+                        tooltip="Done"
                         onClick={onDone}
-                        startIcon={<CheckIcon fontSize="small" />}
-                    >
-                        Done
-                    </Button>
+                        color="primary"
+                    />
                 </Stack>
 
-                {/* Rule Type Selector */}
                 <FormControl fullWidth size="small">
                     <InputLabel>Rule Type</InputLabel>
                     <Select
@@ -147,20 +145,7 @@ export const EditRule: React.FC<EditRuleProps> = ({
                 {/* Search Zone */}
                 {isAnchorRule && anchorRule && (
                     <Box>
-                        <Typography 
-                            variant="caption" 
-                            color="text.secondary"
-                            sx={{ 
-                                display: 'block',
-                                textTransform: 'uppercase',
-                                mb: 0.5,
-                                fontSize: '0.6875rem',
-                                fontWeight: 600,
-                                letterSpacing: '0.08em'
-                            }}
-                        >
-                            Search Zone
-                        </Typography>
+                        <SubsectionLabel>Search Zone</SubsectionLabel>
                         <SearchZone
                             top={String(anchorRule.anchorConfig?.searchZone?.top ?? 0)}
                             left={String(anchorRule.anchorConfig?.searchZone?.left ?? 0)}
@@ -190,10 +175,8 @@ export const EditRule: React.FC<EditRuleProps> = ({
                     </Box>
                 )}
 
-                {/* Configuration for anchor rules */}
                 {isAnchorRule && anchorRule && (
                     <>
-                        {/* Ignore Case & Normalize Whitespace */}
                         <Stack direction="row" spacing={2}>
                             <FormControlLabel
                                 control={
@@ -227,20 +210,7 @@ export const EditRule: React.FC<EditRuleProps> = ({
 
                         {/* Position Configuration */}
                         <Box>
-                            <Typography 
-                                variant="caption" 
-                                color="text.secondary"
-                                sx={{ 
-                                    display: 'block',
-                                    textTransform: 'uppercase',
-                                    mb: 0.5,
-                                    fontSize: '0.6875rem',
-                                    fontWeight: 600,
-                                    letterSpacing: '0.08em'
-                                }}
-                            >
-                                Position
-                            </Typography>
+                            <SubsectionLabel>Position</SubsectionLabel>
                             <FormControl fullWidth size="small" sx={{ mb: 1 }}>
                                 <InputLabel>Direction</InputLabel>
                                 <Select
@@ -261,7 +231,6 @@ export const EditRule: React.FC<EditRuleProps> = ({
                                 </Select>
                             </FormControl>
                             <Stack direction="row" spacing={1}>
-                                {/* Position inputs */}
                                 <TextField
                                     size="small"
                                     type="number"
@@ -355,20 +324,7 @@ export const EditRule: React.FC<EditRuleProps> = ({
 
                         {/* Parser Configuration */}
                         <Box>
-                            <Typography 
-                                variant="caption" 
-                                color="text.secondary"
-                                sx={{ 
-                                    display: 'block',
-                                    textTransform: 'uppercase',
-                                    mb: 0.5,
-                                    fontSize: '0.6875rem',
-                                    fontWeight: 600,
-                                    letterSpacing: '0.08em'
-                                }}
-                            >
-                                Regex Patterns
-                            </Typography>
+                            <SubsectionLabel>Regex Patterns</SubsectionLabel>
                             <RegexPatterns
                                 patterns={anchorRule.parserConfig?.patterns || []}
                                 onAdd={(pattern: string) => {

@@ -1,7 +1,7 @@
 export interface FormFieldConfig {
   id: string;
   label: string;
-  kind: 'text' | 'textarea' | 'date';
+  kind: 'text' | 'textarea' | 'date' | 'integer' | 'decimal';
   required?: boolean;
   multiline?: boolean;
   rows?: number;
@@ -30,6 +30,16 @@ export const BASIC_INFO_FIELDS: FormFieldConfig[] = [
     kind: 'textarea',
     multiline: true,
     rows: 3,
+  },
+  {
+    id: 'subtotal',
+    label: 'Subtotal',
+    kind: 'decimal',
+  },
+  {
+    id: 'total',
+    label: 'Total',
+    kind: 'decimal',
   },
 ];
 

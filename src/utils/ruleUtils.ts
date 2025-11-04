@@ -1,5 +1,6 @@
-import { FieldRule } from '../components/rules/types';
 import { AnchorRule, RegexMatchRule, AbsoluteRule, RuleType } from '../types/extractionRules';
+
+type FieldRule = AnchorRule | RegexMatchRule | AbsoluteRule;
 
 export function generatePseudoRule(rule: FieldRule): string[] {
     const lines: string[] = [];
