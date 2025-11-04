@@ -42,9 +42,7 @@ export const TextInput: React.FC<TextInputProps> = ({
               inputLabel: {
                 shrink: true,
               },
-              htmlInput: {
-                inputProps
-              },
+              htmlInput: inputProps,
             }}
             onKeyDown={onKeyPress}
             sx={sx}
