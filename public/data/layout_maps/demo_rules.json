@@ -13,12 +13,7 @@
           "ruleType": "anchor",
           "anchorConfig": {
             "aliases": [
-              "PO:",
-              "P.O.:",
-              "PO #:",
-              "PO#:",
-              "Purchase Order:",
-              "Order Number:"
+              "PO:"
             ],
             "searchZone": {
               "top": 0,
@@ -45,12 +40,8 @@
           "parserConfig": {
             "patterns": [
               {
-                "regex": "^([A-Z0-9-]+)(?:\\s+REF#|\\s+Ref|\\s|$)",
+                "regex": "(\\d+-\\d+)",
                 "priority": 1
-              },
-              {
-                "regex": "^([A-Z0-9-]+)",
-                "priority": 2
               }
             ],
             "fallbackToFullText": true

@@ -29,8 +29,6 @@ export class ExtractionEngine {
     constructor(boundingBoxes: BoundingBox[], layoutMap: LayoutMap) {
         this.boundingBoxes = boundingBoxes;
         this.layoutMap = layoutMap;
-        
-        // Calculate document dimensions from all bounding boxes
         this.documentBounds = this.calculateDocumentBounds();
     }
 
@@ -100,95 +98,68 @@ export class ExtractionEngine {
 
         const { box: anchorBox, matchedAlias } = anchorResult;
 
-        // Try to extract from the same box first (for cases like "PO: 123456" in one field)
-        const sameBoxExtraction = this.tryExtractFromAnchorBox(anchorBox, matchedAlias, rule);
-        if (sameBoxExtraction) {
-            return {
-                extractionFieldId: fieldId,
-                value: sameBoxExtraction.value,
-                segments: sameBoxExtraction.segments,
-                ruleId: rule.id
-            };
-        }
-
-        // Fall back to looking for separate boxes in the relative position
         const extractionBoxes = this.findExtractionBox(anchorBox, rule.positionConfig, anchorBox.fieldId);
         
         if (!extractionBoxes || extractionBoxes.length === 0) {
             return null;
         }
 
-        // Filter boxes and normalize text, but keep track of which boxes are valid
-        const validBoxes = extractionBoxes.filter(box => {
-            const text = box.fieldText.replace(/\s+/g, ' ').trim();
-            const parsed = this.parseText(text, rule.parserConfig);
-            return parsed !== null && text.length > 0;
-        });
+        // Normalize text for each box; track which boxes are usable (non-empty text)
+        const normalized = extractionBoxes
+            .map(box => ({ box, text: box.fieldText.replace(/\s+/g, ' ').trim() }))
+            .filter(item => item.text.length > 0);
 
-        if (validBoxes.length === 0) {
+        if (normalized.length === 0) {
             return null;
         }
 
-        // Build segments with source field IDs
+        // Build combined text and segments grouped by visual rows
         const segments: FieldExtractionSegment[] = [];
-        let extractedText: string;
-        
-        if (validBoxes.length === 1) {
-            const text = validBoxes[0].fieldText.replace(/\s+/g, ' ').trim();
-            extractedText = text;
-            segments.push({
-                text: text,
-                sourceFieldIds: [validBoxes[0].fieldId]
-            });
+        let combinedText: string;
+
+        if (normalized.length === 1) {
+            combinedText = normalized[0].text;
+            segments.push({ text: normalized[0].text, sourceFieldIds: [normalized[0].box.fieldId] });
         } else {
-            // Build the combined text by checking vertical positions
             const lines: Array<{ text: string; sourceFieldIds: string[] }> = [];
             let currentLine: { texts: string[]; sourceFieldIds: string[] } = {
-                texts: [validBoxes[0].fieldText.replace(/\s+/g, ' ').trim()],
-                sourceFieldIds: [validBoxes[0].fieldId]
+                texts: [normalized[0].text],
+                sourceFieldIds: [normalized[0].box.fieldId]
             };
-            
-            for (let i = 1; i < validBoxes.length; i++) {
-                const prevBounds = this.calculateBounds(validBoxes[i - 1].points);
-                const currBounds = this.calculateBounds(validBoxes[i].points);
-                const text = validBoxes[i].fieldText.replace(/\s+/g, ' ').trim();
-                
-                // Check if boxes are on roughly the same horizontal line
+
+            for (let i = 1; i < normalized.length; i++) {
+                const prevBounds = this.calculateBounds(normalized[i - 1].box.points);
+                const currBounds = this.calculateBounds(normalized[i].box.points);
+                const text = normalized[i].text;
+
                 const verticalOverlap = Math.min(prevBounds.bottom, currBounds.bottom) - Math.max(prevBounds.top, currBounds.top);
                 const avgHeight = ((prevBounds.bottom - prevBounds.top) + (currBounds.bottom - currBounds.top)) / 2;
-                
-                // If vertical overlap is significant (> 50% of average height), they're on same line
+
                 if (verticalOverlap > avgHeight * 0.5) {
                     currentLine.texts.push(text);
-                    currentLine.sourceFieldIds.push(validBoxes[i].fieldId);
+                    currentLine.sourceFieldIds.push(normalized[i].box.fieldId);
                 } else {
-                    // Different line - flush current line and start new one
-                    lines.push({
-                        text: currentLine.texts.join(' '),
-                        sourceFieldIds: currentLine.sourceFieldIds
-                    });
-                    currentLine = {
-                        texts: [text],
-                        sourceFieldIds: [validBoxes[i].fieldId]
-                    };
+                    lines.push({ text: currentLine.texts.join(' '), sourceFieldIds: currentLine.sourceFieldIds });
+                    currentLine = { texts: [text], sourceFieldIds: [normalized[i].box.fieldId] };
                 }
             }
-            
-            // Add the last line
+
             if (currentLine.texts.length > 0) {
-                lines.push({
-                    text: currentLine.texts.join(' '),
-                    sourceFieldIds: currentLine.sourceFieldIds
-                });
+                lines.push({ text: currentLine.texts.join(' '), sourceFieldIds: currentLine.sourceFieldIds });
             }
-            
-            extractedText = lines.map(l => l.text).join('\n');
+
+            combinedText = lines.map(l => l.text).join('\n');
             segments.push(...lines);
+        }
+
+        const parsed = this.parseText(combinedText, rule.parserConfig);
+        if (!parsed) {
+            return null;
         }
 
         return {
             extractionFieldId: fieldId,
-            value: extractedText,
+            value: parsed,
             segments,
             ruleId: rule.id
         };
@@ -265,7 +236,7 @@ export class ExtractionEngine {
 
                 if (isMatch) {
                     candidateBoxes.push({ box, matchedAlias: alias });
-                    break; // Stop checking other aliases for this box
+                    break;
                 }
             }
         }
@@ -279,95 +250,11 @@ export class ExtractionEngine {
         let instanceIndex = from === 'start'
             ? instance - 1
             : candidateBoxes.length - instance;
+            
         if (instanceIndex < 0 || instanceIndex >= candidateBoxes.length) {
             return null;
         }
         return candidateBoxes[instanceIndex] || null;
-    }
-
-    private tryExtractFromAnchorBox(
-        anchorBox: BoundingBox, 
-        matchedAlias: string, 
-        rule: AnchorRule
-    ): { value: string; segments: FieldExtractionSegment[] } | null {
-        // Only try to extract from the same box if we're looking to the right
-        // (This handles cases like "PO: 123456" in a single field)
-        // Use startingPosition instead of direction
-        if (rule.positionConfig.startingPosition !== 'topRight' && rule.positionConfig.startingPosition !== 'bottomRight') {
-            return null;
-        }
-
-        const fullText = anchorBox.fieldText;
-        const matchMode = rule.anchorConfig.matchMode || 'exact';
-        const ignoreCase = rule.anchorConfig.ignoreCase !== false;
-        const normalizeWhitespace = rule.anchorConfig.normalizeWhitespace !== false;
-
-        // Normalize the full text
-        let normalizedText = fullText;
-        if (normalizeWhitespace) {
-            normalizedText = normalizedText.replace(/\s+/g, ' ').trim();
-        }
-
-        // Find where the alias appears in the text
-        let aliasToFind = matchedAlias;
-        if (normalizeWhitespace) {
-            aliasToFind = aliasToFind.replace(/\s+/g, ' ').trim();
-        }
-
-        let searchText = normalizedText;
-        let searchAlias = aliasToFind;
-        
-        if (ignoreCase) {
-            searchText = searchText.toLowerCase();
-            searchAlias = searchAlias.toLowerCase();
-        }
-
-        let valueStartIndex = -1;
-
-        switch (matchMode) {
-            case 'exact':
-                // For exact match, the entire field is the anchor, no value to extract
-                return null;
-            case 'startsWith':
-                if (searchText.startsWith(searchAlias)) {
-                    valueStartIndex = aliasToFind.length;
-                }
-                break;
-            case 'contains':
-                const containsIndex = searchText.indexOf(searchAlias);
-                if (containsIndex !== -1) {
-                    valueStartIndex = containsIndex + aliasToFind.length;
-                }
-                break;
-            case 'endsWith':
-                // If it ends with the alias, there's no value after it
-                return null;
-        }
-
-        if (valueStartIndex === -1) {
-            return null;
-        }
-
-        // Extract the value part (everything after the alias)
-        const valuePart = normalizedText.substring(valueStartIndex).trim();
-        
-        if (!valuePart) {
-            return null;
-        }
-
-        // Parse using the same patterns - they work for both same-box and separate-box
-        const parsed = this.parseText(valuePart, rule.parserConfig);
-        if (!parsed) {
-            return null;
-        }
-
-        return {
-            value: parsed, // Use the parsed value, not the raw valuePart
-            segments: [{
-                text: parsed,
-                sourceFieldIds: [anchorBox.fieldId]
-            }]
-        };
     }
 
     private findExtractionBox(anchorBox: BoundingBox, config: AnchorRule['positionConfig'], excludeFieldId?: string): BoundingBox[] {
@@ -376,7 +263,6 @@ export class ExtractionEngine {
         let searchArea: { top: number; left: number; right: number; bottom: number };
 
         if (config.type === 'relative') {
-            // Always use startingPosition (required)
             const startingPosition = config.startingPosition || 'bottomLeft'; // Default fallback
             const baseTop = (startingPosition === 'topLeft' || startingPosition === 'topRight')
                 ? anchorBounds.top
@@ -396,12 +282,7 @@ export class ExtractionEngine {
         }
 
         const candidateBoxes = this.boundingBoxes.filter(box => {
-            // Only consider boxes on the same page as the anchor
             if (box.page !== anchorBox.page) return false;
-            // Exclude the anchor box itself
-            if (excludeFieldId && box.fieldId === excludeFieldId) {
-                return false;
-            }
 
             const boxBounds = this.calculateBounds(box.points);
             const isOverlap = this.isOverlapping(boxBounds, searchArea);
@@ -411,7 +292,17 @@ export class ExtractionEngine {
         candidateBoxes.sort((a, b) => {
             const aBounds = this.calculateBounds(a.points);
             const bBounds = this.calculateBounds(b.points);
-            return aBounds.top - bBounds.top;
+
+            const verticalOverlap = Math.min(aBounds.bottom, bBounds.bottom) - Math.max(aBounds.top, bBounds.top);
+            const avgHeight = ((aBounds.bottom - aBounds.top) + (bBounds.bottom - bBounds.top)) / 2;
+
+            if (verticalOverlap > avgHeight * 0.5) {
+                if (aBounds.left !== bBounds.left) return aBounds.left - bBounds.left;
+                return aBounds.top - bBounds.top;
+            }
+
+            if (aBounds.top !== bBounds.top) return aBounds.top - bBounds.top;
+            return aBounds.left - bBounds.left;
         });
 
         return candidateBoxes;
@@ -419,35 +310,26 @@ export class ExtractionEngine {
 
     private parseText(text: string, config: AnchorRule['parserConfig']): string | null {
         try {
-            // Default fallbackToFullText to true if not explicitly set
             const fallbackToFullText = config?.fallbackToFullText !== false;
             
-            // Determine which patterns to use
             let patternsToUse: Array<{ regex: string; priority: number }> = [];
 
             if (config.patterns && config.patterns.length > 0) {
                 patternsToUse = [...config.patterns];
-            } else if (config.regex) {
-                // Legacy support: convert single regex to pattern
-                patternsToUse = [{ regex: config.regex, priority: 1 }];
             }
 
             if (patternsToUse.length === 0) {
-                // No patterns defined, return the text as-is if fallback is enabled
                 return fallbackToFullText ? text : null;
             }
 
-            // Sort by priority (lower number = higher priority)
             patternsToUse.sort((a, b) => a.priority - b.priority);
 
-            // Try each pattern in order
             for (const pattern of patternsToUse) {
                 try {
                     const regex = new RegExp(pattern.regex);
                     const match = text.match(regex);
                     
                     if (match) {
-                        // Return first capture group if available, otherwise the whole match
                         const result = match[1] !== undefined ? match[1] : match[0];
                         if (result && result.trim().length > 0) {
                             return result.trim();
@@ -455,11 +337,10 @@ export class ExtractionEngine {
                     }
                 } catch (patternError) {
                     console.warn(`Pattern "${pattern.regex}" failed:`, patternError);
-                    continue; // Try next pattern
+                    continue;
                 }
             }
 
-            // All patterns failed
             if (fallbackToFullText) {
                 return text;
             }
@@ -467,14 +348,12 @@ export class ExtractionEngine {
             return null;
         } catch (error) {
             console.error('Regex parsing error:', error);
-            // Default fallbackToFullText to true if not explicitly set
             return config.fallbackToFullText !== false ? text : null;
         }
     }
 
     private calculateDocumentBounds(): { width: number; height: number } {
         if (this.boundingBoxes.length === 0) {
-            // Default to standard page size if no boxes
             return { width: 1700, height: 2200 };
         }
 
@@ -494,12 +373,10 @@ export class ExtractionEngine {
     }
 
     private normalizeSearchZone(searchZone: { top: number; left: number; right: number; bottom: number }): { top: number; left: number; right: number; bottom: number } {
-        // If values are already in absolute coordinates (> 1), return as-is for backwards compatibility
         if (searchZone.top > 1 || searchZone.left > 1 || searchZone.right > 1 || searchZone.bottom > 1) {
             return searchZone;
         }
 
-        // Convert normalized coordinates (0-1) to absolute pixel coordinates
         return {
             top: searchZone.top * this.documentBounds.height,
             left: searchZone.left * this.documentBounds.width,

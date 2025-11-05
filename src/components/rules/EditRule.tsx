@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
+import { useState, useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
 import { Paper, Stack, Chip, FormControl, InputLabel, Select, MenuItem, Divider } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import { EditRuleProps } from '../../types/rulesComponents';
 import { AnchorConfig, AnchorConfigRef } from './AnchorConfig';
-import { AnchorRule, RegexMatchRule, AbsoluteRule } from '../../types/extractionRules';
+import { AnchorRule } from '../../types/extractionRules';
 import { IconButton } from '../common/IconButton';
 
 export interface EditRuleRef {
@@ -71,7 +71,7 @@ export const EditRule = forwardRef<EditRuleRef, EditRuleProps>(({
             if (anchorChanges.pendingPattern) result.pendingPattern = anchorChanges.pendingPattern;
             return result;
         }
-    }), [anchorInputValue, isAnchorRule, anchorRule, onUpdateField]);
+    }), [anchorInputValue, isAnchorRule, anchorRule, onUpdateField, editingAnchorIndex]);
 
     // Handle auto-adding pending anchor text before closing
     useEffect(() => {
