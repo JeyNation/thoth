@@ -385,8 +385,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
                 return;
             }
             
-            console.log('Rerunning extraction with fresh rules:', layoutMap);
-            
             // Convert mapping BoundingBox to extraction BoundingBox format
             const extractionBoxes: ExtractionBoundingBox[] = boundingBoxes.map(box => ({
                 id: box.id,
@@ -447,8 +445,6 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
                 // No extractions, just update with cleared PO
                 updatePurchaseOrder(clearedPO);
             }
-            
-            console.log('Extraction rerun completed');
         } catch (error) {
             console.error('Rerun extraction failed:', error);
             alert(`Failed to rerun extraction: ${error instanceof Error ? error.message : 'Unknown error'}`);

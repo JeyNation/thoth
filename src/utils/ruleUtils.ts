@@ -168,7 +168,7 @@ export function generatePseudoRule(rule: FieldRule): string[] {
             if (label) {
                 lines.push(`<strong>Parser:</strong> extract <code>${label}</code>`);
             } else {
-                lines.push(`<strong>Parser:</strong> extract text matching <code>${pattern.regex}</code> pattern`);
+                lines.push(`<strong>Parser:</strong> extract text matching pattern <code>${pattern.regex}</code>`);
             }
         }
 

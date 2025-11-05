@@ -30,12 +30,9 @@ export const EditRule = forwardRef<EditRuleRef, EditRuleProps>(({
     // Expose method to apply pending changes
     useImperativeHandle(ref, () => ({
         applyPendingChanges: () => {
-            console.log('EditRule.applyPendingChanges called, anchorInputValue:', anchorInputValue);
-            
             // Apply pending anchor text
             const pendingAnchor = anchorInputValue.trim();
             if (pendingAnchor && isAnchorRule && anchorRule) {
-                console.log('Adding pending anchor text:', pendingAnchor);
                 const aliases = [...(anchorRule.anchorConfig?.aliases || []), pendingAnchor];
                 onUpdateField({
                     anchorConfig: {
@@ -43,11 +40,10 @@ export const EditRule = forwardRef<EditRuleRef, EditRuleProps>(({
                         aliases
                     }
                 });
-                setAnchorInputValue(''); // Clear the input after applying
+                setAnchorInputValue('');
             }
             
             // Apply pending regex patterns
-            console.log('Calling anchorConfigRef.current?.applyPendingChanges()');
             anchorConfigRef.current?.applyPendingChanges();
         },
         getPendingChanges: () => {
@@ -69,14 +65,11 @@ export const EditRule = forwardRef<EditRuleRef, EditRuleProps>(({
     }, [anchorRule?.anchorConfig?.aliases, pendingDone, onDone]);
 
     const handleDone = () => {
-        console.log('EditRule.handleDone called - applying all pending changes');
-        
         // Apply all pending changes first
         const pendingAnchor = anchorInputValue.trim();
         let hasPendingAnchor = false;
         
         if (pendingAnchor && isAnchorRule && anchorRule) {
-            console.log('Adding pending anchor text in handleDone:', pendingAnchor);
             // Add the pending anchor text
             const aliases = [...(anchorRule.anchorConfig?.aliases || []), pendingAnchor];
             onUpdateField({
@@ -90,7 +83,6 @@ export const EditRule = forwardRef<EditRuleRef, EditRuleProps>(({
         }
         
         // Apply pending regex patterns
-        console.log('Applying pending regex patterns in handleDone');
         anchorConfigRef.current?.applyPendingChanges();
         
         if (hasPendingAnchor) {

@@ -34,8 +34,6 @@ export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(({
     // Expose method to apply pending changes
     useImperativeHandle(ref, () => ({
         applyPendingChanges: () => {
-            console.log('AnchorConfig.applyPendingChanges called');
-            // Apply pending regex patterns
             regexPatternsRef.current?.applyPendingChanges();
         },
         getPendingChanges: () => {

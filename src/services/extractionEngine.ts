@@ -42,8 +42,6 @@ export class ExtractionEngine {
 
         for (const field of this.layoutMap.fields) {
 
-            console.log('Extracting field:', field.id);
-
             const fieldResult = this.extractField(field);
             
             if (fieldResult) {
@@ -83,7 +81,6 @@ export class ExtractionEngine {
                 }
 
                 if (result) {
-                    console.log('result', result);
                     return result;
                 }
             } catch (error) {
@@ -97,8 +94,6 @@ export class ExtractionEngine {
     private executeAnchorRule(fieldId: string, rule: AnchorRule): FieldExtraction | null {
         const anchorResult = this.findAnchor(rule.anchorConfig);
         
-        console.log('Anchor result for field', fieldId, ':', anchorResult);
-
         if (!anchorResult) {
             return null;
         }
@@ -119,8 +114,6 @@ export class ExtractionEngine {
         // Fall back to looking for separate boxes in the relative position
         const extractionBoxes = this.findExtractionBox(anchorBox, rule.positionConfig, anchorBox.fieldId);
         
-        console.log('Extraction boxes for field', fieldId, ':', extractionBoxes);
-
         if (!extractionBoxes || extractionBoxes.length === 0) {
             return null;
         }
@@ -369,8 +362,6 @@ export class ExtractionEngine {
         
         let searchArea: { top: number; left: number; right: number; bottom: number };
 
-        console.log('bounds', config.point);
-
         if (config.type === 'relative') {
             // Always use startingPosition (required)
             const startingPosition = config.startingPosition || 'bottomLeft'; // Default fallback
@@ -391,8 +382,6 @@ export class ExtractionEngine {
             searchArea = anchorBounds;
         }
 
-        console.log('Searching extraction boxes in area:', searchArea);
-
         const candidateBoxes = this.boundingBoxes.filter(box => {
             // Exclude the anchor box itself
             if (excludeFieldId && box.fieldId === excludeFieldId) {
@@ -401,11 +390,6 @@ export class ExtractionEngine {
 
             const boxBounds = this.calculateBounds(box.points);
             const isOverlap = this.isOverlapping(boxBounds, searchArea);
-            
-            if (isOverlap) {
-                console.log('Found overlapping box:', box.fieldText, boxBounds);
-            }
-            
             return isOverlap;
         });
 
