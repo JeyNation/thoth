@@ -41,8 +41,9 @@ export interface SearchZoneProps {
 }
 
 export interface RegexPatternsProps {
-    patterns: Array<{ regex: string; priority: number }>;
-    onAdd: (pattern: string) => void;
+    patterns: Array<{ regex: string; priority: number; label?: string }>;
+    onAdd: (pattern: string | { regex: string; label?: string }) => void;
+    onUpdate: (index: number, pattern: string | { regex: string; label?: string }) => void;
     onDelete: (index: number) => void;
     onDragStart: (index: number) => void;
     onDragOver: (e: React.DragEvent<HTMLDivElement>) => void;

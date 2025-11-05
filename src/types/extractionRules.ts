@@ -43,6 +43,7 @@ export interface PositionConfig {
 export interface ParserPattern {
     regex: string;
     priority: number; // Lower number = higher priority (try first)
+    label?: string;   // Optional human-readable label (e.g., preset name)
 }
 
 export interface ParserConfig {

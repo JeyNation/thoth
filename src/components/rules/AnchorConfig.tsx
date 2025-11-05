@@ -482,11 +482,40 @@ export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(({
                 <RegexPatterns
                     ref={regexPatternsRef}
                     patterns={rule.parserConfig?.patterns || []}
-                    onAdd={(pattern: string) => {
+                    onAdd={(pattern) => {
                         const patterns = [...(rule.parserConfig?.patterns || []), {
-                            regex: pattern,
+                            regex: typeof pattern === 'string' ? pattern : pattern.regex,
+                            label: typeof pattern === 'string' ? undefined : pattern.label,
                             priority: (rule.parserConfig?.patterns?.length || 0) + 1
                         }];
+                        onUpdateField({
+                            parserConfig: {
+                                ...rule.parserConfig,
+                                patterns
+                            }
+                        });
+                    }}
+                    onUpdate={(index, pattern) => {
+                        const patterns = [...(rule.parserConfig?.patterns || [])];
+                        const existing = patterns[index];
+                        if (!existing) return;
+
+                        const newRegex = typeof pattern === 'string' ? pattern : pattern.regex;
+                        let newLabel: string | undefined;
+
+                        if (typeof pattern === 'string') {
+                            // If user typed a change and existing had a label, remove it when regex actually changes
+                            if (existing.label && newRegex !== existing.regex) {
+                                newLabel = undefined;
+                            } else {
+                                newLabel = existing.label; // keep if unchanged
+                            }
+                        } else {
+                            // Chose a preset while editing -> adopt its label
+                            newLabel = pattern.label;
+                        }
+
+                        patterns[index] = { ...existing, regex: newRegex, label: newLabel };
                         onUpdateField({
                             parserConfig: {
                                 ...rule.parserConfig,

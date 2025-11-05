@@ -1,4 +1,5 @@
 import { AnchorRule, RegexMatchRule, AbsoluteRule, RuleType } from '../types/extractionRules';
+import { numberToWords } from './strings';
 
 type FieldRule = AnchorRule | RegexMatchRule | AbsoluteRule;
 
@@ -13,7 +14,8 @@ export function generatePseudoRule(rule: FieldRule): string[] {
     const formatPercentage = (value: number) => Math.round(value * 100);
 
     // Add rule type and ID as header
-    lines.push(`${rule.ruleType.toUpperCase()}`);
+    const englishPriority = numberToWords(rule.priority as number).toUpperCase();
+    lines.push(`TACTIC ${englishPriority} - ${rule.ruleType.toUpperCase()}`);
 
     if (rule.ruleType === 'anchor') {
         const anchorRule = rule as AnchorRule;
@@ -29,24 +31,24 @@ export function generatePseudoRule(rule: FieldRule): string[] {
             
             // Instance description
             if (instanceFrom === 'end') {
-                anchorDescription += instance === 1 ? 'the <code>last</code> ' : `the <code>${ordinal(instance)} last</code> `;
+                anchorDescription += instance === 1 ? '<code>last</code> ' : `<code>${ordinal(instance)} last</code> `;
             } else {
-                anchorDescription += instance === 1 ? 'the <code>first</code> ' : `the <code>${ordinal(instance)}</code> `;
+                anchorDescription += instance === 1 ? '<code>first</code> ' : `<code>${ordinal(instance)}</code> `;
             }
             
             // Match mode description
             switch (matchMode) {
                 case 'startsWith':
-                    anchorDescription += 'text <code>starting with</code> ';
+                    anchorDescription += 'field <code>starting with</code> ';
                     break;
                 case 'endsWith':
-                    anchorDescription += 'text <code>ending with</code> ';
+                    anchorDescription += 'field <code>ending with</code> ';
                     break;
                 case 'contains':
-                    anchorDescription += 'text <code>containing</code> ';
+                    anchorDescription += 'field <code>containing</code> ';
                     break;
                 default:
-                    anchorDescription += 'text <code>exactly matching</code> ';
+                    anchorDescription += 'field <code>exactly matching</code> ';
             }
             
             // Aliases
@@ -58,7 +60,7 @@ export function generatePseudoRule(rule: FieldRule): string[] {
                 // For more than 2 aliases, show only the first one and indicate there are more
                 anchorDescription += `<code>${aliases[0]}</code>`;
                 const additionalCount = aliases.length - 1;
-                anchorDescription += ` or ${additionalCount} more keyword${additionalCount > 1 ? 's' : ''}`;
+                anchorDescription += ` or <code>${additionalCount} other</code> keyword${additionalCount > 1 ? 's' : ''}`;
             }
             
             lines.push(anchorDescription);
@@ -115,16 +117,16 @@ export function generatePseudoRule(rule: FieldRule): string[] {
         // POSITION SECTION
         const position = anchorRule.positionConfig;
         if (position) {
-            let positionDescription = '<strong>Position:</strong> look for area with ';
+            let positionDescription = '<strong>Position:</strong> look for ';
             
             // Dimensions
             if (position.point.width > 0 || position.point.height > 0) {
                 const parts: string[] = [];
                 if (position.point.width > 0) {
-                    parts.push(`<code>${Math.round(position.point.width)}px</code> width`);
+                    parts.push(`<code>${Math.round(position.point.width)}px</code> wide`);
                 }
                 if (position.point.height > 0) {
-                    parts.push(`<code>${Math.round(position.point.height)}px</code> height`);
+                    parts.push(`<code>${Math.round(position.point.height)}px</code> tall`);
                 }
                 positionDescription += parts.join(' and ') + ' ';
             } else {
@@ -139,7 +141,7 @@ export function generatePseudoRule(rule: FieldRule): string[] {
                     'bottomLeft': 'bottom-left corner',
                     'bottomRight': 'bottom-right corner'
                 };
-                positionDescription += ` from <code>${cornerMap[position.startingPosition]}</code>`;
+                positionDescription += ` area from <code>${cornerMap[position.startingPosition]}</code>`;
             }
             
             // Offset
@@ -162,7 +164,12 @@ export function generatePseudoRule(rule: FieldRule): string[] {
         // PARSER SECTION (if patterns exist)
         if (anchorRule.parserConfig.patterns?.length) {
             const pattern = anchorRule.parserConfig.patterns[0]; // Show first/highest priority pattern
-            lines.push(`<strong>Parser:</strong> extract text using <code>${pattern.regex}</code>`);
+            const label = (pattern as any).label as string | undefined;
+            if (label) {
+                lines.push(`<strong>Parser:</strong> extract <code>${label}</code>`);
+            } else {
+                lines.push(`<strong>Parser:</strong> extract text matching <code>${pattern.regex}</code> pattern`);
+            }
         }
 
     } else if (rule.ruleType === 'regex_match') {
