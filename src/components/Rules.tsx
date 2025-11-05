@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import { 
     Box, 
     Stack, 
@@ -8,7 +9,7 @@ import {
 } from '@mui/material';
 import { Divider } from '@mui/material';
 import { RulesActionBar } from './rules/RulesActionBar';
-import { FieldRulesSection } from './rules/FieldRulesSection';
+import { FieldRulesSection, FieldRulesListRef } from './rules/FieldRulesSection';
 import { RerunExtractionDialog } from './dialogs/RerunExtractionDialog';
 import { LoadingIndicator } from './common/LoadingIndicator';
 import { EmptyState } from './common/EmptyState';
@@ -54,8 +55,37 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
     const [fieldRules, setFieldRules] = useState<Record<string, FieldRule[]>>({});
     const [draggedRuleIndex, setDraggedRuleIndex] = useState<number | null>(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [hasPendingChanges, setHasPendingChanges] = useState(false);
+
+    // Function to check if there are any pending changes in input fields
+    const checkForPendingChanges = (): boolean => {
+        let hasPendingChanges = false;
+        fieldRulesSectionRefs.current.forEach((ref) => {
+            const pendingChanges = ref.getAllPendingChanges();
+            if (Object.keys(pendingChanges).length > 0) {
+                hasPendingChanges = true;
+            }
+        });
+        return hasPendingChanges;
+    };
+
+    // Periodically check for pending changes
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const newHasPendingChanges = checkForPendingChanges();
+            setHasPendingChanges(newHasPendingChanges);
+        }, 300); // Check every 300ms
+
+        return () => clearInterval(interval);
+    }, []);
+
+    // Combined check for unsaved changes (both committed changes and pending input)
+    const hasAnyUnsavedChanges = hasUnsavedChanges || hasPendingChanges;
     const [showRerunDialog, setShowRerunDialog] = useState(false);
     const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
+    
+    // Refs to access FieldRulesList components
+    const fieldRulesSectionRefs = useRef<Map<string, FieldRulesListRef>>(new Map());
 
     const handleRerunClick = () => {
         if (!onRerunExtraction) return;
@@ -94,7 +124,6 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
                         positionConfig: {
                             type: rule.positionConfig?.type || 'relative',
                             point: rule.positionConfig?.point || DEFAULT_POSITION_POINT,
-                            direction: rule.positionConfig?.direction,
                             // Preserve startingPosition if present in stored layout
                             ...(rule.positionConfig && 'startingPosition' in (rule.positionConfig as any)
                                 ? { startingPosition: (rule.positionConfig as any).startingPosition }
@@ -158,7 +187,81 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
     const handleSave = async () => {
         if (!layoutMap) return;
 
-        const updatedFields: Field[] = Object.entries(fieldRules).map(([fieldId, rules]) => ({
+        console.log('Rules.handleSave called - collecting all pending changes');
+        console.log('Current fieldRules before applying changes:', fieldRules);
+        
+        // First, collect all pending changes without applying them via state
+        const allPendingChanges: Record<string, Record<string, { pendingAnchor?: string; pendingPattern?: string }>> = {};
+        fieldRulesSectionRefs.current.forEach((ref, fieldId) => {
+            console.log(`Collecting pending changes for field ${fieldId}`);
+            const fieldPending = ref.getAllPendingChanges();
+            if (Object.keys(fieldPending).length > 0) {
+                allPendingChanges[fieldId] = fieldPending;
+                console.log(`Found pending changes for field ${fieldId}:`, fieldPending);
+            }
+        });
+        
+        console.log('All pending changes collected:', allPendingChanges);
+        
+        // Create a modified copy of fieldRules with pending changes applied
+        let modifiedFieldRules = { ...fieldRules };
+        Object.entries(allPendingChanges).forEach(([fieldId, rulePendingChanges]) => {
+            Object.entries(rulePendingChanges).forEach(([ruleId, pending]) => {
+                const fieldRulesArray = [...(modifiedFieldRules[fieldId] || [])];
+                const ruleIndex = fieldRulesArray.findIndex(r => r.id === ruleId);
+                
+                if (ruleIndex !== -1) {
+                    const rule = fieldRulesArray[ruleIndex];
+                    if (rule.ruleType === 'anchor') {
+                        const anchorRule = rule as any;
+                        let updatedRule = { ...anchorRule };
+                        
+                        // Apply pending anchor text
+                        if (pending.pendingAnchor) {
+                            console.log(`Applying pending anchor text "${pending.pendingAnchor}" to rule ${ruleId}`);
+                            const aliases = [...(anchorRule.anchorConfig?.aliases || []), pending.pendingAnchor];
+                            updatedRule = {
+                                ...updatedRule,
+                                anchorConfig: {
+                                    ...anchorRule.anchorConfig,
+                                    aliases
+                                }
+                            };
+                        }
+                        
+                        // Apply pending regex pattern
+                        if (pending.pendingPattern) {
+                            console.log(`Applying pending regex pattern "${pending.pendingPattern}" to rule ${ruleId}`);
+                            const patterns = [...(anchorRule.parserConfig?.patterns || []), {
+                                regex: pending.pendingPattern,
+                                priority: (anchorRule.parserConfig?.patterns?.length || 0) + 1
+                            }];
+                            updatedRule = {
+                                ...updatedRule,
+                                parserConfig: {
+                                    ...anchorRule.parserConfig,
+                                    patterns
+                                }
+                            };
+                        }
+                        
+                        fieldRulesArray[ruleIndex] = updatedRule;
+                    }
+                }
+                
+                modifiedFieldRules[fieldId] = fieldRulesArray;
+            });
+        });
+        
+        console.log('Modified fieldRules with pending changes applied:', modifiedFieldRules);
+        
+        // Now clear the pending inputs by calling applyPendingChanges (which clears the inputs)
+        fieldRulesSectionRefs.current.forEach((ref, fieldId) => {
+            console.log(`Clearing pending changes for field ${fieldId}`);
+            ref.applyAllPendingChanges();
+        });
+
+        const updatedFields: Field[] = Object.entries(modifiedFieldRules).map(([fieldId, rules]) => ({
             id: fieldId,
             rules: rules.map((rule, index) => {
                 const baseRule = {
@@ -193,10 +296,12 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
         try {
             await saveLayoutMap(updatedLayoutMap);
             setHasUnsavedChanges(false);
+            setHasPendingChanges(false);
         } catch (error) {
             console.error('Failed to save layout map:', error);
         }
         setHasUnsavedChanges(false);
+        setHasPendingChanges(false);
         setEditingRuleId(null);
     };
 
@@ -231,6 +336,13 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
                         return (
                             <React.Fragment key={field.id}>
                                 <FieldRulesSection
+                                    ref={(fieldRulesSectionRef) => {
+                                        if (fieldRulesSectionRef) {
+                                            fieldRulesSectionRefs.current.set(extractionFieldId, fieldRulesSectionRef);
+                                        } else {
+                                            fieldRulesSectionRefs.current.delete(extractionFieldId);
+                                        }
+                                    }}
                                     fieldLabel={field.label}
                                     rules={fieldRules[extractionFieldId] || []}
                                     editingRuleId={editingRuleId}
@@ -255,7 +367,7 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
 
             {/* Sticky Button Bar */}
             <RulesActionBar
-                hasUnsavedChanges={hasUnsavedChanges}
+                hasUnsavedChanges={hasAnyUnsavedChanges}
                 onRerunExtraction={onRerunExtraction ? handleRerunClick : undefined}
                 onSave={handleSave}
             />
@@ -263,9 +375,9 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
             {/* Rerun Extraction Confirmation Dialog */}
             <RerunExtractionDialog
                 open={showRerunDialog}
-                hasUnsavedChanges={hasUnsavedChanges}
+                hasUnsavedChanges={hasAnyUnsavedChanges}
                 onConfirm={async () => { 
-                    if (hasUnsavedChanges) { 
+                    if (hasAnyUnsavedChanges) { 
                         await handleSave(); 
                     } 
                     handleRerunConfirm(); 

@@ -4,65 +4,174 @@ type FieldRule = AnchorRule | RegexMatchRule | AbsoluteRule;
 
 export function generatePseudoRule(rule: FieldRule): string[] {
     const lines: string[] = [];
+    
     const ordinal = (n: number) => {
         const s = ["th", "st", "nd", "rd"], v = n % 100;
         return n + (s[(v - 20) % 10] || s[v] || s[0]);
     };
-    
-    // Add rule ID and type
-    lines.push(`ID: ${rule.id}`);
-    lines.push(`Type: ${rule.ruleType}`);
 
-    // Add anchor-specific details
+    const formatPercentage = (value: number) => Math.round(value * 100);
+
+    // Add rule type and ID as header
+    lines.push(`${rule.ruleType.toUpperCase()}`);
+
     if (rule.ruleType === 'anchor') {
-        if (rule.anchorConfig.aliases?.length) {
-            lines.push(`Anchors: ${rule.anchorConfig.aliases.join(', ')}`);
-        }
-        if (rule.anchorConfig.matchMode) {
-            lines.push(`Match Mode: ${rule.anchorConfig.matchMode}`);
-        }
-        if (rule.anchorConfig.ignoreCase !== undefined) {
-            lines.push(`Ignore Case: ${rule.anchorConfig.ignoreCase}`);
-        }
-        if (rule.anchorConfig.normalizeWhitespace !== undefined) {
-            lines.push(`Normalize Whitespace: ${rule.anchorConfig.normalizeWhitespace}`);
-        }
-        // Occurrence details (nth from start/end)
-        if (rule.anchorConfig) {
-            const from = (rule.anchorConfig as any).instanceFrom as 'start' | 'end' | undefined;
-            const idx = rule.anchorConfig.instance ?? 1;
-            if (from) {
-                lines.push(`Occurrence: ${ordinal(idx)} from ${from === 'start' ? 'start' : 'end'}`);
-            } else if (idx) {
-                // Backward-compat: if only instance provided, assume from start
-                lines.push(`Occurrence: ${ordinal(idx)} from start`);
+        const anchorRule = rule as AnchorRule;
+        
+        // ANCHOR SECTION
+        if (anchorRule.anchorConfig.aliases?.length) {
+            const aliases = anchorRule.anchorConfig.aliases;
+            const matchMode = anchorRule.anchorConfig.matchMode || 'exact';
+            const instanceFrom = anchorRule.anchorConfig.instanceFrom || 'start';
+            const instance = anchorRule.anchorConfig.instance || 1;
+            
+            let anchorDescription = '<strong>Anchor Text:</strong> search for ';
+            
+            // Instance description
+            if (instanceFrom === 'end') {
+                anchorDescription += instance === 1 ? 'the <code>last</code> ' : `the <code>${ordinal(instance)} last</code> `;
+            } else {
+                anchorDescription += instance === 1 ? 'the <code>first</code> ' : `the <code>${ordinal(instance)}</code> `;
             }
+            
+            // Match mode description
+            switch (matchMode) {
+                case 'startsWith':
+                    anchorDescription += 'text <code>starting with</code> ';
+                    break;
+                case 'endsWith':
+                    anchorDescription += 'text <code>ending with</code> ';
+                    break;
+                case 'contains':
+                    anchorDescription += 'text <code>containing</code> ';
+                    break;
+                default:
+                    anchorDescription += 'text <code>exactly matching</code> ';
+            }
+            
+            // Aliases
+            if (aliases.length === 1) {
+                anchorDescription += `<code>${aliases[0]}</code>`;
+            } else if (aliases.length === 2) {
+                anchorDescription += `<code>${aliases[0]}</code> or <code>${aliases[1]}</code>`;
+            } else {
+                // For more than 2 aliases, show only the first one and indicate there are more
+                anchorDescription += `<code>${aliases[0]}</code>`;
+                const additionalCount = aliases.length - 1;
+                anchorDescription += ` or ${additionalCount} more keyword${additionalCount > 1 ? 's' : ''}`;
+            }
+            
+            lines.push(anchorDescription);
         }
-        if ((rule.positionConfig as any).startingPosition) {
-            lines.push(`Starting Position: ${(rule.positionConfig as any).startingPosition}`);
-        } else if (rule.positionConfig.direction) {
-            lines.push(`Direction: ${rule.positionConfig.direction}`);
-        }
-    }
 
-    // Add search zone if defined
-    if (rule.ruleType === 'anchor' || rule.ruleType === 'regex_match') {
-        const zone = rule.ruleType === 'anchor' ? rule.anchorConfig.searchZone : undefined;
-        if (zone) {
-            lines.push('Search Zone:');
-            if (zone.top) lines.push(`  Top: ${zone.top}`);
-            if (zone.left) lines.push(`  Left: ${zone.left}`);
-            if (zone.right) lines.push(`  Right: ${zone.right}`);
-            if (zone.bottom) lines.push(`  Bottom: ${zone.bottom}`);
+        // SEARCH ZONE SECTION
+        const zone = anchorRule.anchorConfig.searchZone;
+        if (zone && (zone.top !== 0 || zone.left !== 0 || zone.right !== 1 || zone.bottom !== 1)) {
+            let zoneDescription = '<strong>Search Zone:</strong> search ';
+            
+            // Determine zone description
+            const topPercent = formatPercentage(zone.top);
+            const bottomPercent = formatPercentage(zone.bottom);
+            const leftPercent = formatPercentage(zone.left);
+            const rightPercent = formatPercentage(zone.right);
+            
+            // Vertical zones
+            if (zone.top === 0 && zone.bottom === 0.5) {
+                zoneDescription += '<code>top half</code> ';
+            } else if (zone.top === 0.5 && zone.bottom === 1) {
+                zoneDescription += '<code>bottom half</code> ';
+            } else if (zone.top === 0 && zone.bottom < 1) {
+                zoneDescription += `<code>top ${bottomPercent}%</code> `;
+            } else if (zone.top > 0 && zone.bottom === 1) {
+                zoneDescription += `<code>bottom ${100 - topPercent}%</code> `;
+            } else if (zone.top > 0 || zone.bottom < 1) {
+                zoneDescription += `<code>middle section (${topPercent}%-${bottomPercent}%)</code> `;
+            } else {
+                zoneDescription += '<code>entire height</code> ';
+            }
+            
+            zoneDescription += 'of ';
+            
+            // Horizontal zones  
+            if (zone.left === 0 && zone.right === 0.5) {
+                zoneDescription += '<code>left half</code> ';
+            } else if (zone.left === 0.5 && zone.right === 1) {
+                zoneDescription += '<code>right half</code> ';
+            } else if (zone.left === 0 && zone.right < 1) {
+                zoneDescription += `<code>left ${rightPercent}%</code> `;
+            } else if (zone.left > 0 && zone.right === 1) {
+                zoneDescription += `<code>right ${100 - leftPercent}%</code> `;
+            } else if (zone.left > 0 || zone.right < 1) {
+                zoneDescription += `<code>middle section (${leftPercent}%-${rightPercent}%)</code> `;
+            } else {
+                zoneDescription += '<code>entire width</code> ';
+            }
+            
+            zoneDescription += 'of <code>first</code> page';
+            
+            lines.push(zoneDescription);
         }
-    }
 
-    // Add parser patterns if they exist
-    if (rule.ruleType === 'anchor' && rule.parserConfig.patterns?.length) {
-        lines.push('Regex Patterns:');
-        rule.parserConfig.patterns.forEach(pattern => {
-            lines.push(`  ${pattern.regex} (priority: ${pattern.priority})`);
-        });
+        // POSITION SECTION
+        const position = anchorRule.positionConfig;
+        if (position) {
+            let positionDescription = '<strong>Position:</strong> look for area with ';
+            
+            // Dimensions
+            if (position.point.width > 0 || position.point.height > 0) {
+                const parts: string[] = [];
+                if (position.point.width > 0) {
+                    parts.push(`<code>${Math.round(position.point.width)}px</code> width`);
+                }
+                if (position.point.height > 0) {
+                    parts.push(`<code>${Math.round(position.point.height)}px</code> height`);
+                }
+                positionDescription += parts.join(' and ') + ' ';
+            } else {
+                positionDescription += '<code>auto-sized area</code> ';
+            }
+            
+            // Starting position
+            if (position.startingPosition) {
+                const cornerMap = {
+                    'topLeft': 'top-left corner',
+                    'topRight': 'top-right corner', 
+                    'bottomLeft': 'bottom-left corner',
+                    'bottomRight': 'bottom-right corner'
+                };
+                positionDescription += ` from <code>${cornerMap[position.startingPosition]}</code>`;
+            }
+            
+            // Offset
+            if (position.point.top !== 0 || position.point.left !== 0) {
+                const offsetParts: string[] = [];
+                if (position.point.top !== 0) {
+                    offsetParts.push(`<code>${position.point.top > 0 ? '' : '-'}${Math.round(position.point.top)}px</code> vertical`);
+                }
+                if (position.point.left !== 0) {
+                    offsetParts.push(`<code>${position.point.left > 0 ? '' : '-'}${Math.round(position.point.left)}px</code> horizontal`);
+                }
+                if (offsetParts.length > 0) {
+                    positionDescription += ` with ${offsetParts.join(', ')} offset`;
+                }
+            }
+            
+            lines.push(positionDescription);
+        }
+
+        // PARSER SECTION (if patterns exist)
+        if (anchorRule.parserConfig.patterns?.length) {
+            const pattern = anchorRule.parserConfig.patterns[0]; // Show first/highest priority pattern
+            lines.push(`<strong>Parser:</strong> extract text using <code>${pattern.regex}</code>`);
+        }
+
+    } else if (rule.ruleType === 'regex_match') {
+        lines.push('Regex Match: extract text matching regular expression patterns');
+        lines.push('(Configuration pending)');
+        
+    } else if (rule.ruleType === 'absolute') {
+        lines.push('Absolute Position: extract text from fixed document coordinates');
+        lines.push('(Configuration pending)');
     }
 
     return lines;
@@ -87,7 +196,6 @@ export const createDefaultAnchorRule = (fieldId: string): AnchorRule => ({
     positionConfig: {
         type: 'relative',
         point: { top: 0, left: 0, width: 0, height: 0 },
-        direction: 'right',
         startingPosition: 'topRight'
     },
     parserConfig: {
@@ -117,7 +225,6 @@ export const createRuleByType = (ruleId: string, ruleType: RuleType): FieldRule 
             positionConfig: {
                 type: 'relative',
                 point: { top: 0, left: 0, width: 0, height: 0 },
-                direction: 'right',
                 startingPosition: 'topRight'
             },
             parserConfig: {

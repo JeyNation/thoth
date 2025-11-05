@@ -10,23 +10,31 @@ function migrateStartingPosition(map: LayoutMap): LayoutMap {
       ...f,
       rules: f.rules?.map((r: any) => {
         if (r.ruleType !== 'anchor') return r;
-  let rule = r as AnchorRule;
+        let rule = r as AnchorRule;
         const pos = rule.positionConfig || ({} as any);
-        if (!pos.startingPosition) {
-          const dir = (pos.direction || '').toLowerCase();
-          let startingPosition: any = 'bottomLeft';
+        
+        // Clean up: remove direction property if it exists and ensure startingPosition
+        let startingPosition = pos.startingPosition;
+        if (!startingPosition) {
+          // Use direction to set default startingPosition, then remove direction
+          const dir = ((pos as any).direction || '').toLowerCase();
           if (dir === 'right') startingPosition = 'topRight';
           else if (dir === 'bottom' || dir === 'below' || dir === '') startingPosition = 'bottomLeft';
           else if (dir === 'left') startingPosition = 'topLeft';
           else if (dir === 'top' || dir === 'above') startingPosition = 'topLeft';
-          rule = {
-            ...rule,
-            positionConfig: {
-              ...pos,
-              startingPosition
-            }
-          } as any;
+          else startingPosition = 'bottomLeft'; // fallback
         }
+        
+        // Create new position config without direction property
+        const { direction, ...cleanPos } = pos as any;
+        rule = {
+          ...rule,
+          positionConfig: {
+            ...cleanPos,
+            startingPosition
+          }
+        } as any;
+        
         return rule;
       }) || []
     })) || [] };

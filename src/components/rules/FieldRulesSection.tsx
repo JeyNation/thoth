@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { Box, Stack } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import { FieldRulesList } from './FieldRulesList';
+import { FieldRulesList, FieldRulesListRef } from './FieldRulesList';
 import { FieldRule } from '../../types/rulesComponents';
 import { AnchorRule, RegexMatchRule, AbsoluteRule } from '../../types/extractionRules';
 import { IconButton } from '../common/IconButton';
 import { SectionLabel } from '../common/SectionLabel';
+
+export type { FieldRulesListRef };
 
 interface FieldRulesSectionProps {
     fieldLabel: string;
@@ -22,7 +24,7 @@ interface FieldRulesSectionProps {
     onRuleDrop: (index: number) => void;
 }
 
-export const FieldRulesSection: React.FC<FieldRulesSectionProps> = ({
+export const FieldRulesSection = forwardRef<FieldRulesListRef, FieldRulesSectionProps>(({
     fieldLabel,
     rules,
     editingRuleId,
@@ -35,7 +37,7 @@ export const FieldRulesSection: React.FC<FieldRulesSectionProps> = ({
     onRuleDragStart,
     onRuleDragOver,
     onRuleDrop
-}) => {
+}, ref) => {
     return (
         <Box>
             <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
@@ -47,6 +49,7 @@ export const FieldRulesSection: React.FC<FieldRulesSectionProps> = ({
                 />
             </Stack>
             <FieldRulesList
+                ref={ref}
                 rules={rules}
                 editingRuleId={editingRuleId}
                 draggedRuleIndex={draggedRuleIndex}
@@ -60,4 +63,6 @@ export const FieldRulesSection: React.FC<FieldRulesSectionProps> = ({
             />
         </Box>
     );
-};
+});
+
+FieldRulesSection.displayName = 'FieldRulesSection';

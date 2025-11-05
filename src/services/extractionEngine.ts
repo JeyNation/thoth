@@ -286,7 +286,8 @@ export class ExtractionEngine {
     ): { value: string; segments: FieldExtractionSegment[] } | null {
         // Only try to extract from the same box if we're looking to the right
         // (This handles cases like "PO: 123456" in a single field)
-        if (rule.positionConfig.direction !== 'right') {
+        // Use startingPosition instead of direction
+        if (rule.positionConfig.startingPosition !== 'topRight' && rule.positionConfig.startingPosition !== 'bottomRight') {
             return null;
         }
 
@@ -371,45 +372,21 @@ export class ExtractionEngine {
         console.log('bounds', config.point);
 
         if (config.type === 'relative') {
-            if (config.startingPosition) {
-                // New: derive baseline from explicit starting corner
-                const baseTop = (config.startingPosition === 'topLeft' || config.startingPosition === 'topRight')
-                    ? anchorBounds.top
-                    : anchorBounds.bottom;
-                const baseLeft = (config.startingPosition === 'topLeft' || config.startingPosition === 'bottomLeft')
-                    ? anchorBounds.left
-                    : anchorBounds.right;
+            // Always use startingPosition (required)
+            const startingPosition = config.startingPosition || 'bottomLeft'; // Default fallback
+            const baseTop = (startingPosition === 'topLeft' || startingPosition === 'topRight')
+                ? anchorBounds.top
+                : anchorBounds.bottom;
+            const baseLeft = (startingPosition === 'topLeft' || startingPosition === 'bottomLeft')
+                ? anchorBounds.left
+                : anchorBounds.right;
 
-                searchArea = {
-                    top: baseTop + config.point.top,
-                    left: baseLeft + config.point.left,
-                    right: baseLeft + config.point.left + config.point.width,
-                    bottom: baseTop + config.point.top + config.point.height,
-                };
-            } else {
-                const direction = config.direction || 'bottom';
-                switch (direction) {
-                    case 'right':
-                        // Start from right-top corner of anchor
-                        searchArea = {
-                            top: anchorBounds.top + config.point.top,
-                            left: anchorBounds.right + config.point.left,
-                            right: anchorBounds.right + config.point.left + config.point.width,
-                            bottom: anchorBounds.top + config.point.top + config.point.height,
-                        };
-                        break;
-                    case 'bottom':
-                    default:
-                        // Default to bottom if direction is unknown
-                        searchArea = {
-                            top: anchorBounds.bottom + config.point.top,
-                            left: anchorBounds.left + config.point.left,
-                            right: anchorBounds.left + config.point.left + config.point.width,
-                            bottom: anchorBounds.bottom + config.point.top + config.point.height,
-                        };
-                        break;
-                }
-            }
+            searchArea = {
+                top: baseTop + config.point.top,
+                left: baseLeft + config.point.left,
+                right: baseLeft + config.point.left + config.point.width,
+                bottom: baseTop + config.point.top + config.point.height,
+            };
         } else {
             searchArea = anchorBounds;
         }

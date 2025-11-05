@@ -29,8 +29,6 @@ export interface AnchorConfig {
     normalizeWhitespace?: boolean; // Default: true
 }
 
-export type Direction = 'top' | 'bottom' | 'left' | 'right';
-
 // UI hint for where X/Y offsets originate from relative to the anchor box
 export type StartingPositionCorner = 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight';
 
@@ -39,8 +37,6 @@ export type PositionType = 'relative' | 'absolute';
 export interface PositionConfig {
     type: PositionType;
     point: PositionPoint;
-    direction?: Direction;
-    // When provided, overrides direction-based baseline to compute the search area
     startingPosition?: StartingPositionCorner;
 }
 

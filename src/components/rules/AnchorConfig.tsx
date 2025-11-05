@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useImperativeHandle, forwardRef, useRef } from 'react';
 import { Stack, Chip, Box, FormControl, InputLabel, Select, MenuItem, FormControlLabel, Switch } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CheckIcon from '@mui/icons-material/Check';
@@ -9,9 +9,14 @@ import { SubsectionLabel } from '../common/SubsectionLabel';
 import { TextInput } from '../common/TextInput';
 import { TextButton } from '../common/TextButton';
 import { SearchZone } from './SearchZone';
-import { RegexPatterns } from './RegexPatterns';
+import { RegexPatterns, RegexPatternsRef } from './RegexPatterns';
 
-export const AnchorConfig: React.FC<AnchorConfigProps> = ({
+export interface AnchorConfigRef {
+    applyPendingChanges: () => void;
+    getPendingChanges: () => { pendingPattern?: string };
+}
+
+export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(({
     rule,
     onUpdateField,
     anchors,
@@ -23,7 +28,20 @@ export const AnchorConfig: React.FC<AnchorConfigProps> = ({
     editingIndex,
     inputValue,
     onInputChange
-}) => {
+}, ref) => {
+    const regexPatternsRef = useRef<RegexPatternsRef>(null);
+
+    // Expose method to apply pending changes
+    useImperativeHandle(ref, () => ({
+        applyPendingChanges: () => {
+            console.log('AnchorConfig.applyPendingChanges called');
+            // Apply pending regex patterns
+            regexPatternsRef.current?.applyPendingChanges();
+        },
+        getPendingChanges: () => {
+            return regexPatternsRef.current?.getPendingChanges() || {};
+        }
+    }), []);
     const [draggedPatternIndex, setDraggedPatternIndex] = useState<number | null>(null);
 
     // --- Search Zone preset state (fix: allow selecting Custom even if values match a preset) ---
@@ -359,14 +377,7 @@ export const AnchorConfig: React.FC<AnchorConfigProps> = ({
                 <FormControl fullWidth size="small" sx={{ mb: 1 }}>
                     <InputLabel>Starting Position</InputLabel>
                     <Select
-                        value={(() => {
-                            return (rule.positionConfig as any)?.startingPosition || ((): any => {
-                                // Back-compat mapping if not yet set
-                                const dir = rule.positionConfig?.direction || 'bottom';
-                                if (dir === 'right') return 'topRight';
-                                return 'bottomLeft';
-                            })();
-                        })()}
+                        value={rule.positionConfig?.startingPosition || 'bottomLeft'}
                         label="Starting Position"
                         onChange={(e) => onUpdateField({
                             positionConfig: {
@@ -469,6 +480,7 @@ export const AnchorConfig: React.FC<AnchorConfigProps> = ({
             <Box sx={{ mt: 2 }}>
                 <SubsectionLabel>Regex Patterns</SubsectionLabel>
                 <RegexPatterns
+                    ref={regexPatternsRef}
                     patterns={rule.parserConfig?.patterns || []}
                     onAdd={(pattern: string) => {
                         const patterns = [...(rule.parserConfig?.patterns || []), {
@@ -516,4 +528,6 @@ export const AnchorConfig: React.FC<AnchorConfigProps> = ({
             </Box>
         </Box>
     );
-};
+});
+
+AnchorConfig.displayName = 'AnchorConfig';

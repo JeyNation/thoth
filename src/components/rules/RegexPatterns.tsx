@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useImperativeHandle, forwardRef } from 'react';
 import { Paper, Stack, Typography, Chip } from '@mui/material';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -8,7 +8,12 @@ import { IconButton } from '../common/IconButton';
 import { TextButton } from '../common/TextButton';
 import { TextInput } from '../common/TextInput';
 
-export const RegexPatterns: React.FC<RegexPatternsProps> = ({
+export interface RegexPatternsRef {
+    applyPendingChanges: () => void;
+    getPendingChanges: () => { pendingPattern?: string };
+}
+
+export const RegexPatterns = forwardRef<RegexPatternsRef, RegexPatternsProps>(({
     patterns,
     onAdd,
     onDelete,
@@ -16,8 +21,25 @@ export const RegexPatterns: React.FC<RegexPatternsProps> = ({
     onDragOver,
     onDrop,
     isDragged
-}) => {
+}, ref) => {
     const [inputValue, setInputValue] = React.useState('');
+
+    // Expose method to apply pending changes
+    useImperativeHandle(ref, () => ({
+        applyPendingChanges: () => {
+            const pendingPattern = inputValue.trim();
+            console.log('RegexPatterns.applyPendingChanges called, inputValue:', inputValue);
+            if (pendingPattern) {
+                console.log('Adding pending regex pattern:', pendingPattern);
+                onAdd(pendingPattern);
+                setInputValue(''); // Clear the input after applying
+            }
+        },
+        getPendingChanges: () => {
+            const pendingPattern = inputValue.trim();
+            return pendingPattern ? { pendingPattern } : {};
+        }
+    }), [inputValue, onAdd]);
 
     const handleAdd = () => {
         if (inputValue.trim()) {
@@ -103,4 +125,6 @@ export const RegexPatterns: React.FC<RegexPatternsProps> = ({
             </Stack>
         </Stack>
     );
-};
+});
+
+RegexPatterns.displayName = 'RegexPatterns';

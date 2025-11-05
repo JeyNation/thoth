@@ -19,11 +19,21 @@ export const RuleText: React.FC<RuleTextProps> = ({ lines }) => {
                             color: 'primary.main',
                             fontWeight: 600,
                             mr: 0.5
-                        } : undefined
+                        } : undefined,
+                        '& code': {
+                            backgroundColor: 'grey.100',
+                            border: '1px solid',
+                            borderColor: 'grey.300',
+                            borderRadius: '4px',
+                            padding: '2px 4px',
+                            fontSize: '0.875rem',
+                            fontFamily: 'monospace',
+                            color: 'text.primary',
+                            display: 'inline-block'
+                        }
                     }}
-                >
-                    {line}
-                </Typography>
+                    dangerouslySetInnerHTML={{ __html: line }}
+                />
             ))}
         </Box>
     );

@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useRef, useImperativeHandle, forwardRef } from 'react';
 import { Stack } from '@mui/material';
 import { ViewRule } from './ViewRule';
-import { EditRule } from './EditRule';
+import { EditRule, EditRuleRef } from './EditRule';
 import { FieldRule } from '../../types/rulesComponents';
 import { AnchorRule, RegexMatchRule, AbsoluteRule } from '../../types/extractionRules';
 import { EmptyState } from '../common/EmptyState';
+
+export interface FieldRulesListRef {
+    applyAllPendingChanges: () => void;
+    getAllPendingChanges: () => Record<string, { pendingAnchor?: string; pendingPattern?: string }>;
+}
 
 interface FieldRulesListProps {
     rules: FieldRule[];
@@ -19,7 +24,7 @@ interface FieldRulesListProps {
     onRuleDrop: (index: number) => void;
 }
 
-export const FieldRulesList: React.FC<FieldRulesListProps> = ({
+export const FieldRulesList = forwardRef<FieldRulesListRef, FieldRulesListProps>(({
     rules,
     editingRuleId,
     draggedRuleIndex,
@@ -30,7 +35,29 @@ export const FieldRulesList: React.FC<FieldRulesListProps> = ({
     onRuleDragStart,
     onRuleDragOver,
     onRuleDrop
-}) => {
+}, ref) => {
+    const editRuleRefs = useRef<Map<string, EditRuleRef>>(new Map());
+
+    // Expose method to apply all pending changes
+    useImperativeHandle(ref, () => ({
+        applyAllPendingChanges: () => {
+            console.log('FieldRulesList.applyAllPendingChanges called, refs count:', editRuleRefs.current.size);
+            editRuleRefs.current.forEach((editRuleRef, ruleId) => {
+                console.log(`Calling applyPendingChanges on EditRule ${ruleId}`);
+                editRuleRef.applyPendingChanges();
+            });
+        },
+        getAllPendingChanges: () => {
+            const allPending: Record<string, { pendingAnchor?: string; pendingPattern?: string }> = {};
+            editRuleRefs.current.forEach((editRuleRef, ruleId) => {
+                const pending = editRuleRef.getPendingChanges();
+                if (pending.pendingAnchor || pending.pendingPattern) {
+                    allPending[ruleId] = pending;
+                }
+            });
+            return allPending;
+        }
+    }), []);
     if (rules.length === 0) {
         return <EmptyState 
             sx={{ pb: 6 }}
@@ -59,6 +86,13 @@ export const FieldRulesList: React.FC<FieldRulesListProps> = ({
                         
                         {isEditingThisRule && (
                             <EditRule
+                                ref={(editRuleRef) => {
+                                    if (editRuleRef) {
+                                        editRuleRefs.current.set(rule.id, editRuleRef);
+                                    } else {
+                                        editRuleRefs.current.delete(rule.id);
+                                    }
+                                }}
                                 rule={rule}
                                 index={index}
                                 onDone={() => onDoneEditing(rule.id)}
@@ -70,4 +104,6 @@ export const FieldRulesList: React.FC<FieldRulesListProps> = ({
             })}
         </Stack>
     );
-};
+});
+
+FieldRulesList.displayName = 'FieldRulesList';
