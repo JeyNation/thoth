@@ -27,6 +27,8 @@ export interface AnchorConfig {
     matchMode?: AnchorMatchMode;  // Default: 'exact'
     ignoreCase?: boolean;          // Default: true
     normalizeWhitespace?: boolean; // Default: true
+    // Which pages to search for the anchor
+    pageScope?: 'first' | 'last' | 'any'; // Default: 'first'
 }
 
 // UI hint for where X/Y offsets originate from relative to the anchor box

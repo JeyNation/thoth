@@ -8,7 +8,12 @@ import { IconButton } from '../common/IconButton';
 
 export interface EditRuleRef {
     applyPendingChanges: () => void;
-    getPendingChanges: () => { pendingAnchor?: string; pendingPattern?: string };
+    getPendingChanges: () => {
+        pendingAnchor?: string;
+        pendingAnchorEdit?: { index: number; value: string };
+        pendingPattern?: string | { regex: string; label?: string };
+        pendingPatternEdit?: { index: number; pattern: string | { regex: string; label?: string } };
+    };
 }
 
 export const EditRule = forwardRef<EditRuleRef, EditRuleProps>(({
@@ -30,10 +35,15 @@ export const EditRule = forwardRef<EditRuleRef, EditRuleProps>(({
     // Expose method to apply pending changes
     useImperativeHandle(ref, () => ({
         applyPendingChanges: () => {
-            // Apply pending anchor text
+            // Apply pending anchor text (respect edit mode)
             const pendingAnchor = anchorInputValue.trim();
             if (pendingAnchor && isAnchorRule && anchorRule) {
-                const aliases = [...(anchorRule.anchorConfig?.aliases || []), pendingAnchor];
+                const aliases = [...(anchorRule.anchorConfig?.aliases || [])];
+                if (editingAnchorIndex !== null && editingAnchorIndex >= 0 && editingAnchorIndex < aliases.length) {
+                    aliases[editingAnchorIndex] = pendingAnchor;
+                } else {
+                    aliases.push(pendingAnchor);
+                }
                 onUpdateField({
                     anchorConfig: {
                         ...anchorRule.anchorConfig,
@@ -43,16 +53,23 @@ export const EditRule = forwardRef<EditRuleRef, EditRuleProps>(({
                 setAnchorInputValue('');
             }
             
-            // Apply pending regex patterns
+            // Apply pending regex patterns (RegexPatterns handles edit vs add internally)
             anchorConfigRef.current?.applyPendingChanges();
         },
         getPendingChanges: () => {
             const pendingAnchor = anchorInputValue.trim();
-            const anchorChanges = anchorConfigRef.current?.getPendingChanges() || {};
-            return {
-                ...(pendingAnchor ? { pendingAnchor } : {}),
-                ...(anchorChanges.pendingPattern ? { pendingPattern: anchorChanges.pendingPattern } : {})
-            };
+            const anchorChanges = anchorConfigRef.current?.getPendingChanges() || {} as any;
+            const result: any = {};
+            if (pendingAnchor) {
+                if (editingAnchorIndex !== null) {
+                    result.pendingAnchorEdit = { index: editingAnchorIndex, value: pendingAnchor };
+                } else {
+                    result.pendingAnchor = pendingAnchor;
+                }
+            }
+            if (anchorChanges.pendingPatternEdit) result.pendingPatternEdit = anchorChanges.pendingPatternEdit;
+            if (anchorChanges.pendingPattern) result.pendingPattern = anchorChanges.pendingPattern;
+            return result;
         }
     }), [anchorInputValue, isAnchorRule, anchorRule, onUpdateField]);
 

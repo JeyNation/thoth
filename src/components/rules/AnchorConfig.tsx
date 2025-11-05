@@ -13,7 +13,10 @@ import { RegexPatterns, RegexPatternsRef } from './RegexPatterns';
 
 export interface AnchorConfigRef {
     applyPendingChanges: () => void;
-    getPendingChanges: () => { pendingPattern?: string };
+    getPendingChanges: () => {
+        pendingPattern?: string | { regex: string; label?: string };
+        pendingPatternEdit?: { index: number; pattern: string | { regex: string; label?: string } };
+    };
 }
 
 export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(({
@@ -274,6 +277,25 @@ export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(({
             {/* Search Zone */}
             <Box sx={{ mt: 2 }}>
                 <SubsectionLabel>Search Zone</SubsectionLabel>
+
+                {/* Pages to search */}
+                <FormControl fullWidth size="small" sx={{ mb: 1 }}>
+                    <InputLabel>Pages</InputLabel>
+                    <Select
+                        label="Pages"
+                        value={(rule.anchorConfig as any)?.pageScope || 'first'}
+                        onChange={(e) => onUpdateField({
+                            anchorConfig: {
+                                ...rule.anchorConfig,
+                                pageScope: e.target.value as any
+                            }
+                        })}
+                    >
+                        <MenuItem value="first">First page</MenuItem>
+                        <MenuItem value="last">Last page</MenuItem>
+                        <MenuItem value="any">Any page</MenuItem>
+                    </Select>
+                </FormControl>
 
                 {/* Preset selector + Fraction selector */}
                 <Stack direction="row" spacing={1} sx={{ mb: 1 }}>

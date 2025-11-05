@@ -199,6 +199,15 @@ export class ExtractionEngine {
         const matchMode = config.matchMode || 'exact';
         const ignoreCase = config.ignoreCase !== false; // Default true
         const normalizeWhitespace = config.normalizeWhitespace !== false; // Default true
+        const pageScope = (config as any).pageScope || 'first';
+
+        // Determine eligible pages based on scope
+        let minPage = Infinity;
+        let maxPage = -Infinity;
+        for (const b of this.boundingBoxes) {
+            if (b.page < minPage) minPage = b.page;
+            if (b.page > maxPage) maxPage = b.page;
+        }
 
         // Normalize the search zone from 0-1 coordinates to absolute pixel coordinates
         const absoluteSearchZone = this.normalizeSearchZone(config.searchZone);
@@ -206,6 +215,10 @@ export class ExtractionEngine {
         const candidateBoxes: Array<{ box: BoundingBox; matchedAlias: string }> = [];
 
         for (const box of this.boundingBoxes) {
+            // Page filter
+            if (pageScope === 'first' && box.page !== minPage) continue;
+            if (pageScope === 'last' && box.page !== maxPage) continue;
+
             const boxBounds = this.calculateBounds(box.points);
             
             if (boxBounds.top < absoluteSearchZone.top) continue;
@@ -383,6 +396,8 @@ export class ExtractionEngine {
         }
 
         const candidateBoxes = this.boundingBoxes.filter(box => {
+            // Only consider boxes on the same page as the anchor
+            if (box.page !== anchorBox.page) return false;
             // Exclude the anchor box itself
             if (excludeFieldId && box.fieldId === excludeFieldId) {
                 return false;

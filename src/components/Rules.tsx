@@ -110,17 +110,19 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
         for (const field of layoutMap.fields) {
             convertedRules[field.id] = field.rules.map(rule => {
                 if (isAnchorRule(rule)) {
-                    return {
-                        ...rule,
-                        anchorConfig: {
-                            aliases: rule.anchorConfig?.aliases || [],
-                            searchZone: rule.anchorConfig?.searchZone || DEFAULT_SEARCH_ZONE,
-                            instance: rule.anchorConfig?.instance || 1,
-                            instanceFrom: (rule.anchorConfig as any)?.instanceFrom || 'start',
-                            matchMode: rule.anchorConfig?.matchMode || 'exact',
-                            ignoreCase: rule.anchorConfig?.ignoreCase ?? true,
-                            normalizeWhitespace: rule.anchorConfig?.normalizeWhitespace ?? true
-                        },
+                        return {
+                            ...rule,
+                            anchorConfig: {
+                                ...rule.anchorConfig,
+                                aliases: rule.anchorConfig?.aliases || [],
+                                searchZone: rule.anchorConfig?.searchZone || DEFAULT_SEARCH_ZONE,
+                                instance: rule.anchorConfig?.instance || 1,
+                                instanceFrom: (rule.anchorConfig as any)?.instanceFrom || 'start',
+                                matchMode: rule.anchorConfig?.matchMode || 'exact',
+                                ignoreCase: rule.anchorConfig?.ignoreCase ?? true,
+                                normalizeWhitespace: rule.anchorConfig?.normalizeWhitespace ?? true,
+                                pageScope: (rule.anchorConfig as any)?.pageScope || 'first'
+                            },
                         positionConfig: {
                             type: rule.positionConfig?.type || 'relative',
                             point: rule.positionConfig?.point || DEFAULT_POSITION_POINT,
@@ -191,7 +193,12 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
         console.log('Current fieldRules before applying changes:', fieldRules);
         
         // First, collect all pending changes without applying them via state
-        const allPendingChanges: Record<string, Record<string, { pendingAnchor?: string; pendingPattern?: string }>> = {};
+        const allPendingChanges: Record<string, Record<string, {
+            pendingAnchor?: string;
+            pendingAnchorEdit?: { index: number; value: string };
+            pendingPattern?: string | { regex: string; label?: string };
+            pendingPatternEdit?: { index: number; pattern: string | { regex: string; label?: string } };
+        }>> = {};
         fieldRulesSectionRefs.current.forEach((ref, fieldId) => {
             console.log(`Collecting pending changes for field ${fieldId}`);
             const fieldPending = ref.getAllPendingChanges();
@@ -216,32 +223,53 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
                         const anchorRule = rule as any;
                         let updatedRule = { ...anchorRule };
                         
-                        // Apply pending anchor text
-                        if (pending.pendingAnchor) {
-                            console.log(`Applying pending anchor text "${pending.pendingAnchor}" to rule ${ruleId}`);
+                        // Apply pending anchor add/edit
+                        if (pending.pendingAnchorEdit) {
+                            const aliases = [...(anchorRule.anchorConfig?.aliases || [])];
+                            const { index, value } = pending.pendingAnchorEdit;
+                            if (index >= 0 && index < aliases.length) aliases[index] = value;
+                            updatedRule = {
+                                ...updatedRule,
+                                anchorConfig: { ...anchorRule.anchorConfig, aliases }
+                            };
+                        } else if (pending.pendingAnchor) {
                             const aliases = [...(anchorRule.anchorConfig?.aliases || []), pending.pendingAnchor];
                             updatedRule = {
                                 ...updatedRule,
-                                anchorConfig: {
-                                    ...anchorRule.anchorConfig,
-                                    aliases
-                                }
+                                anchorConfig: { ...anchorRule.anchorConfig, aliases }
                             };
                         }
                         
-                        // Apply pending regex pattern
-                        if (pending.pendingPattern) {
-                            console.log(`Applying pending regex pattern "${pending.pendingPattern}" to rule ${ruleId}`);
-                            const patterns = [...(anchorRule.parserConfig?.patterns || []), {
-                                regex: pending.pendingPattern,
-                                priority: (anchorRule.parserConfig?.patterns?.length || 0) + 1
-                            }];
+                        // Apply pending regex add/edit
+                        if (pending.pendingPatternEdit) {
+                            const patterns = [...(anchorRule.parserConfig?.patterns || [])];
+                            const { index, pattern } = pending.pendingPatternEdit as any;
+                            if (index >= 0 && index < patterns.length) {
+                                const existing = patterns[index];
+                                const newRegex = typeof pattern === 'string' ? pattern : pattern.regex;
+                                let newLabel = existing.label;
+                                if (typeof pattern === 'string') {
+                                    if (existing.label && newRegex !== existing.regex) newLabel = undefined;
+                                } else {
+                                    newLabel = pattern.label;
+                                }
+                                patterns[index] = { ...existing, regex: newRegex, label: newLabel };
+                                updatedRule = {
+                                    ...updatedRule,
+                                    parserConfig: { ...anchorRule.parserConfig, patterns }
+                                };
+                            }
+                        } else if (pending.pendingPattern) {
+                            const pp: any = pending.pendingPattern;
+                            const next = [...(anchorRule.parserConfig?.patterns || [])];
+                            if (typeof pp === 'string') {
+                                next.push({ regex: pp, priority: next.length + 1 });
+                            } else {
+                                next.push({ regex: pp.regex, label: pp.label, priority: next.length + 1 });
+                            }
                             updatedRule = {
                                 ...updatedRule,
-                                parserConfig: {
-                                    ...anchorRule.parserConfig,
-                                    patterns
-                                }
+                                parserConfig: { ...anchorRule.parserConfig, patterns: next }
                             };
                         }
                         

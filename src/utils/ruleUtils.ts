@@ -109,7 +109,14 @@ export function generatePseudoRule(rule: FieldRule): string[] {
                 zoneDescription += '<code>entire width</code> ';
             }
             
-            zoneDescription += 'of <code>first</code> page';
+            const pageScope = anchorRule.anchorConfig.pageScope || 'first';
+            if (pageScope === 'any') {
+                zoneDescription += 'on <code>any</code> page';
+            } else if (pageScope === 'last') {
+                zoneDescription += 'on <code>last</code> page';
+            } else {
+                zoneDescription += 'on <code>first</code> page';
+            }
             
             lines.push(zoneDescription);
         }
@@ -198,7 +205,8 @@ export const createDefaultAnchorRule = (fieldId: string): AnchorRule => ({
         instanceFrom: 'start',
         matchMode: 'exact',
         ignoreCase: true,
-        normalizeWhitespace: true
+        normalizeWhitespace: true,
+        pageScope: 'first'
     },
     positionConfig: {
         type: 'relative',
@@ -227,7 +235,8 @@ export const createRuleByType = (ruleId: string, ruleType: RuleType): FieldRule 
                 instanceFrom: 'start',
                 matchMode: 'exact',
                 ignoreCase: true,
-                normalizeWhitespace: true
+                normalizeWhitespace: true,
+                pageScope: 'first'
             },
             positionConfig: {
                 type: 'relative',

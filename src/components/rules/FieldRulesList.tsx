@@ -8,7 +8,12 @@ import { EmptyState } from '../common/EmptyState';
 
 export interface FieldRulesListRef {
     applyAllPendingChanges: () => void;
-    getAllPendingChanges: () => Record<string, { pendingAnchor?: string; pendingPattern?: string }>;
+    getAllPendingChanges: () => Record<string, {
+        pendingAnchor?: string;
+        pendingAnchorEdit?: { index: number; value: string };
+        pendingPattern?: string | { regex: string; label?: string };
+        pendingPatternEdit?: { index: number; pattern: string | { regex: string; label?: string } };
+    }>;
 }
 
 interface FieldRulesListProps {
@@ -48,10 +53,15 @@ export const FieldRulesList = forwardRef<FieldRulesListRef, FieldRulesListProps>
             });
         },
         getAllPendingChanges: () => {
-            const allPending: Record<string, { pendingAnchor?: string; pendingPattern?: string }> = {};
+            const allPending: Record<string, {
+                pendingAnchor?: string;
+                pendingAnchorEdit?: { index: number; value: string };
+                pendingPattern?: string | { regex: string; label?: string };
+                pendingPatternEdit?: { index: number; pattern: string | { regex: string; label?: string } };
+            }> = {};
             editRuleRefs.current.forEach((editRuleRef, ruleId) => {
                 const pending = editRuleRef.getPendingChanges();
-                if (pending.pendingAnchor || pending.pendingPattern) {
+                if (pending.pendingAnchor || pending.pendingAnchorEdit || pending.pendingPattern || pending.pendingPatternEdit) {
                     allPending[ruleId] = pending;
                 }
             });

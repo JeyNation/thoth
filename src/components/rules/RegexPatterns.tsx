@@ -12,7 +12,10 @@ import { TextInput } from '../common/TextInput';
 
 export interface RegexPatternsRef {
     applyPendingChanges: () => void;
-    getPendingChanges: () => { pendingPattern?: string };
+    getPendingChanges: () => {
+        pendingPattern?: string | { regex: string; label?: string };
+        pendingPatternEdit?: { index: number; pattern: string | { regex: string; label?: string } };
+    };
 }
 
 export const RegexPatterns = forwardRef<RegexPatternsRef, RegexPatternsProps>(function RegexPatternsComp(props, ref) {
@@ -88,8 +91,12 @@ export const RegexPatterns = forwardRef<RegexPatternsRef, RegexPatternsProps>(fu
             setOpen(false);
         },
         getPendingChanges: () => {
-            const pendingPattern = inputValue.trim();
-            return pendingPattern ? { pendingPattern } : {};
+            const val = inputValue.trim();
+            if (!val) return {};
+            if (editingIndex !== null) {
+                return { pendingPatternEdit: { index: editingIndex, pattern: val } } as any;
+            }
+            return { pendingPattern: val } as any;
         }
     }), [inputValue, editingIndex, onAdd, onUpdate]);
 
