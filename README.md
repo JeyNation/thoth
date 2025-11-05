@@ -1,4 +1,4 @@
-# Thoth - Document Parser & Purchase Order Management System
+# Thoth - Document Processing Pipeline
 
 A Next.js TypeScript application for parsing documents and managing purchase orders with intelligent field mapping and extraction capabilities.
 
@@ -33,6 +33,11 @@ Before you begin, ensure you have the following installed:
    - Download from [git-scm.com](https://git-scm.com/)
    - Verify installation: `git --version`
 
+4. **Database (Neon PostgreSQL)**
+   - Create a free account at [neon.tech](https://neon.tech/)
+   - Create a new project and database
+   - Copy the connection string for environment setup
+
 ### Getting Started
 
 1. **Clone the Repository**
@@ -47,16 +52,44 @@ Before you begin, ensure you have the following installed:
    ```
    This will install all project dependencies as defined in `package.json` using the lockfile `pnpm-lock.yaml`.
 
-3. **Start Development Server**
+3. **Database Setup**
+   
+   **Create Environment File:**
+   ```bash
+   cp .env.example .env.local
+   ```
+   
+   **Configure Database Connection:**
+   Add your Neon database connection string to `.env.local`:
+   ```env
+   # Neon PostgreSQL Database
+   DATABASE_URL="postgresql://username:password@ep-cool-darkness-123456.us-east-2.aws.neon.tech/neondb?sslmode=require"
+   DIRECT_URL="postgresql://username:password@ep-cool-darkness-123456.us-east-2.aws.neon.tech/neondb?sslmode=require"
+   ```
+   
+   **Run Database Migrations:**
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   ```
+   
+   **Seed Database (Optional):**
+   ```bash
+   npx prisma db seed
+   ```
+
+4. **Start Development Server**
+4. **Start Development Server**
    ```bash
    pnpm dev
    ```
    The application will be available at [http://localhost:3000](http://localhost:3000)
 
-4. **Verify Setup**
+5. **Verify Setup**
    - Open your browser to `http://localhost:3000`
    - You should see the document parser interface
    - Try uploading a sample document from `public/data/documents/`
+   - Check that database connection is working (no connection errors in console)
 
 ### Available Scripts
 
@@ -66,22 +99,13 @@ Before you begin, ensure you have the following installed:
 - **`pnpm lint`** - Run ESLint to check code quality
 - **`pnpm test`** - Run tests once
 - **`pnpm test:watch`** - Run tests in watch mode
+- **`npx prisma studio`** - Open Prisma Studio for database management
+- **`npx prisma generate`** - Generate Prisma client after schema changes
+- **`npx prisma db push`** - Push database schema changes to Neon
 
-### Project Structure Overview
+### Project Architecture
 
-```
-src/
-├── app/                    # Next.js App Router pages
-├── components/             # Reusable React components
-├── context/               # React Context providers
-├── hooks/                 # Custom React hooks
-├── services/              # Business logic and API services
-├── types/                 # TypeScript type definitions
-├── utils/                 # Utility functions
-└── styles/                # CSS and styling files
-
-public/data/               # Sample documents and layout rules
-```
+This project follows **Domain-Driven Design (DDD)** principles. For detailed architectural guidelines, component patterns, and coding standards, see `.github/copilot-instructions.md`.
 
 ### Development Workflow
 
@@ -91,8 +115,8 @@ public/data/               # Sample documents and layout rules
    ```
 
 2. **Make Your Changes**
-   - Follow the existing code style and patterns
-   - Add tests for new functionality
+   - Follow architectural guidelines in `.github/copilot-instructions.md`
+   - Add tests for new functionality (colocated with source files)
    - Update documentation as needed
 
 3. **Test Your Changes**
@@ -120,6 +144,11 @@ public/data/               # Sample documents and layout rules
 - **Node version conflicts**: Use Node.js v18+ as specified in requirements
 - **pnpm not found**: Install pnpm globally with `npm install -g pnpm`
 - **Build failures**: Clear cache with `pnpm store prune` and reinstall
+- **Database connection errors**: 
+  - Verify your Neon connection string in `.env.local`
+  - Check that your Neon database is active (not sleeping)
+  - Run `npx prisma db push` to sync schema changes
+- **Prisma errors**: Run `npx prisma generate` after installing dependencies
 
 **Getting Help:**
 - Check existing issues in the GitHub repository
@@ -128,13 +157,13 @@ public/data/               # Sample documents and layout rules
 
 ## Technology Stack
 
-- **Frontend**: Next.js 15, React 18, TypeScript
-- **Styling**: Tailwind CSS, Material-UI (MUI)
-- **State Management**: React Context
-- **Testing**: Vitest with jsdom
-- **Linting**: ESLint with TypeScript support
+- **Framework**: Next.js 15 with TypeScript
+- **Database**: Neon (Serverless PostgreSQL) with Prisma ORM
+- **Styling**: Tailwind CSS + Material-UI
+- **Testing**: Vitest + Playwright
 - **Package Manager**: pnpm
-- **Build Tool**: Next.js built-in bundler
+
+> **For Developers:** Detailed tech stack, coding standards, and architectural patterns are documented in `.github/copilot-instructions.md`
 
 ## Key Components
 
@@ -191,21 +220,14 @@ public/data/               # Sample documents and layout rules
 
 We welcome contributions! Please follow these guidelines:
 
-1. **Code Style**: Follow the existing TypeScript and React patterns
-2. **Testing**: Add tests for new features using Vitest
-3. **Documentation**: Update relevant documentation and comments
-4. **Type Safety**: Maintain strict TypeScript compliance
-5. **Performance**: Consider performance implications of changes
+1. **Architecture**: Follow Domain-Driven Design principles outlined in `.github/copilot-instructions.md`
+2. **Code Quality**: Maintain TypeScript strict mode compliance
+3. **Testing**: Add colocated tests using React Testing Library patterns
+4. **Documentation**: Update relevant documentation and comments
 
-### Code Quality
+### Code Quality Checks
 
-The project uses several tools to maintain code quality:
-- **ESLint**: For code linting and consistency
-- **TypeScript**: For type safety and better developer experience
-- **Vitest**: For unit and integration testing
-- **Prettier**: For code formatting (if configured)
-
-Run quality checks before submitting:
+Run these commands before submitting:
 ```bash
 pnpm lint    # Check for linting issues
 pnpm test    # Run all tests
