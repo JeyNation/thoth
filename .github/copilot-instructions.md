@@ -1,504 +1,70 @@
 # Copilot Instructions for Thoth - Document Processing Pipeline
 
-> **📖 Documentation Guide:**
-> - **This File**: Comprehensive development guidelines for AI-assisted coding
-> - **README.md**: Project overview and setup guide for new contributors
+> **📖 This File**: Essential development guidelines for AI-assisted coding  
+> **README.md**: Project setup guide for contributors
 
 ## 1. Project Overview
-This is a React/Next.js/Node.js document processing pipeline focused on extracting data from PO/Invoice documents through configurable extraction rules.
+React/Next.js document processing pipeline for extracting data from PO/Invoice documents through configurable extraction rules.
 
-**Current State:** Legacy codebase under incremental refactoring. All touched files must be updated to current standards before adding new features.
+**Current State:** Legacy codebase under incremental refactoring. All touched files must be updated to current standards.
 
-**Project Goals:**
-- Create robust document processing rules
-- Maintain type safety and code quality
-- Follow domain-driven architecture
-- Ensure consistent UI/UX patterns
+**Core Principle:** **Domain-Driven Design (DDD)** - organize by business domains, not technical layers.
 
-**Core Architecture Principle:** This project follows **Domain-Driven Design (DDD)** where code is organized by business domains rather than technical layers. Every new feature must align with this principle.
+## 2. Tech Stack & Constraints
+| Technology | Notes |
+|------------|-------|
+| **Next.js 15** | App Router, Server Components by default |
+| **TypeScript** | Strict mode, no `any` types |
+| **Neon PostgreSQL** | With Prisma ORM |
+| **MUI + Tailwind** | Custom wrappers only, no `sx` prop |
+| **React Query + Zustand** | Server vs client state |
 
-## 2. Tech Stack
-| Category | Technology | Notes |
-|----------|------------|-------|
-| **Framework** | Next.js 15 (App Router) | Use App Router patterns, Server Components by default |
-| **Language** | TypeScript | Strict mode enabled, no `any` types |
-| **Database** | Neon (PostgreSQL) | Serverless PostgreSQL with Prisma ORM |
-| **ORM** | Prisma | Type-safe database client with migrations |
-| **UI Framework** | MUI (Material-UI) | Via custom wrappers only |
-| **Styling** | Tailwind CSS | Utility-first, no custom CSS files |
-| **State Management** | React Query + Zustand | Server state vs. client state |
-| **HTTP Client** | Axios wrapper | Located at `src/lib/api.ts` |
-| **Testing** | Jest + Playwright | Unit tests + E2E testing |
+**Key Constraints:**
+- API calls: Use `src/lib/api.ts` wrapper only
+- UI: Import from `/src/components/ui/` only
+- Styling: Tailwind classes only
+- Architecture: Domain-driven organization
 
-### Key Constraints
-- **API Calls:** Always use `src/lib/api.ts` wrapper, never raw `fetch()`
-- **UI Components:** Only import from `/src/components/ui/`, never directly from `@mui/material`
-- **Styling:** Tailwind classes only, no `sx` prop or styled-components
-- **Architecture:** All new code must follow domain-driven design principles - organize by business domain, not technical layer
-
-## 3. Code Style Guide
-
-### Component Development
-```typescript
-// ✅ Good - Custom UI component with Tailwind
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-
-export const UserForm = () => {
-  return (
-    <form className="space-y-4 p-6">
-      <Input label="Name" className="w-full" />
-      <Button variant="primary" className="mt-4">Submit</Button>
-    </form>
-  );
-};
-
-// ❌ Bad - Direct MUI import with sx prop
-import { Button } from '@mui/material';
-export const BadForm = () => (
-  <Button sx={{ margin: 2 }}>Submit</Button>
-);
-```
-
-### TypeScript Standards
-```typescript
-// ✅ Good - Proper typing
-interface UserProfile {
-  id: string;
-  name: string;
-  email: string;
-}
-
-const fetchUser = async (id: string): Promise<UserProfile> => {
-  try {
-    return await apiClient.get(`/users/${id}`);
-  } catch (error) {
-    throw new Error(`Failed to fetch user: ${error}`);
-  }
-};
-
-// ❌ Bad - Using any
-const fetchUser = async (id: any): Promise<any> => {
-  return await fetch(`/users/${id}`).then(r => r.json());
-};
-```
-
-## 4. Project Structure & Architecture
-This project follows **Domain-Driven Design (DDD)** principles where code is organized by business domains rather than technical layers. All new code must be organized this way.
-
-### **Domain-Driven Design Principles**
-- **Ubiquitous Language:** Use business terminology in code (e.g., "extraction rules," "document processing," "layout mapping")
-- **Bounded Contexts:** Clear boundaries between domains (document processing vs. rule extraction vs. workspace)
-- **Domain Services:** Business logic stays within domain folders, not in global utilities
-- **Aggregates:** Related entities are grouped together within their domain
-
-### **Current Structure (Target)**
+## 3. Project Structure (DDD)
 ```
 src/
-├── app/                    # Next.js App Router pages
-├── components/
-│   ├── ui/                 # Design System (✅ THE DEFINITIVE SOURCE)
-│   │   ├── Button.tsx      # MUI wrappers with Tailwind
-│   │   ├── Input.tsx       # All features MUST import from here
-│   │   ├── Card.tsx
-│   │   ├── Dialog.tsx
-│   │   └── index.ts        # Barrel exports for clean imports
-│   └── layout/             # App-level layout components
-│       ├── Header.tsx
-│       ├── Sidebar.tsx
-│       └── Navigation.tsx
-├── features/               # Business Domains (DDD Bounded Contexts)
+├── app/                    # Next.js App Router
+├── components/ui/          # Design System (import from here)
+├── features/               # Business Domains
 │   ├── document-processing/
-│   │   ├── components/     # DocumentList, DocumentViewer, DropZone
-│   │   ├── hooks/          # useDocumentUpload, useDocumentProcessing
-│   │   ├── api/            # documentApi.ts
-│   │   ├── types/          # document.ts (Domain entities)
-│   │   ├── services/       # Domain business logic
-│   │   ├── utils/          # Feature-level utilities (when shared by 2+ components)
-│   │   └── index.ts        # Feature barrel export
-│   ├── extraction-rules/
-│   │   ├── components/     # RulesEditor, RulesList, FieldMapping
-│   │   ├── hooks/          # useRuleValidation, useLayoutMap
-│   │   ├── api/            # rulesApi.ts
-│   │   ├── types/          # rules.ts (Domain entities)
-│   │   ├── services/       # Rule validation, transformation logic
-│   │   ├── utils/          # Feature-level utilities (when shared by 2+ components)
-│   │   └── index.ts
-│   └── workspace/
-│       ├── components/     # WorkspaceLayout, ConnectionOverlay
-│       ├── hooks/          # useWorkspace
-│       ├── services/       # Workspace state management
-│       ├── utils/          # Feature-level utilities (when shared by 2+ components)
-│       └── index.ts
-├── lib/                    # Global utilities (replaces utils/, services/)
-│   ├── api.ts              # Axios client (REQUIRED for all API calls)
-│   ├── utils.ts            # Global helpers
-│   ├── constants.ts        # App-wide constants
-│   ├── validations.ts      # Shared validation schemas
-│   └── hooks/              # Global hooks (useLocalStorage, useDebounce)
-├── providers/              # React Context providers (replaces context/)
-│   ├── ThemeProvider.tsx
-│   ├── QueryProvider.tsx
-│   └── index.ts
-├── types/                  # Global types only
-│   ├── api.ts              # API response types
-│   ├── common.ts           # Shared interfaces
-│   └── index.ts
-└── styles/                 # Global styles
-    └── globals.css
+│   │   ├── components/     # Domain components
+│   │   ├── hooks/          # Domain hooks
+│   │   ├── api/            # API services & schemas
+│   │   ├── types/          # Domain entities
+│   │   ├── services/       # Business logic
+│   │   └── utils/          # Domain utilities
+│   └── extraction-rules/   # Same structure
+├── lib/                    # Global utilities
+├── providers/              # React Context
+└── types/                  # Global types only
 ```
 
-### **Key Rules**
-- **Feature Isolation:** Each feature is self-contained with its own components, API, hooks, and types
-- **UI Components:** Always import from `/src/components/ui/` - never directly from `@mui/material`
-- **Global vs Feature:** Only truly global code goes in `/src/lib/` and `/src/types/`
-- **Barrel Exports:** Use `index.ts` files for clean imports: `import { DocumentList } from '@/features/document-processing'`
-- **Domain Logic:** Business logic stays within domain boundaries, avoid cross-domain dependencies
-- **Ubiquitous Language:** Use consistent business terminology across code, comments, and naming
-- **Services vs Utils:** Use `/services/` for business logic, `/utils/` for pure helper functions within features
+## 4. Component Organization Rules
 
-## 5. Domain Component Organization Best Practices
+### **Colocation Principle**
+Code that changes together should live together. Start private, promote when shared.
 
-### **The Golden Rule: Colocation**
-**Code that changes together should live together.** By default, keep everything private to your component. Only "promote" it to a shared location when it's actually reused.
+### **Location Hierarchy**
+1. **Component-private** → Component folder
+2. **Feature-level** → `/features/{domain}/`  
+3. **Global** → `/src/lib/` or `/src/types/`
 
-### **Two Component Strategies**
-
-#### **Strategy 1: Single-File Components** (UI Components)
-For primitive UI components (`/src/components/ui/`), use a single-file approach:
-
+### **File Patterns**
 ```typescript
-// src/components/ui/Button.tsx
-import React from 'react';
-import { Button as MuiButton, ButtonProps as MuiButtonProps } from '@mui/material';
+// Single-file components (UI)
+src/components/ui/Button.tsx
 
-// ✅ TYPES: Export props type from SAME file (public API)
-export type ButtonProps = MuiButtonProps;
-
-// ✅ UTILITIES: Small private helpers in SAME file
-const getAnalyticsId = (variant: string) => {
-  return `btn-variant-${variant || 'default'}`;
-};
-
-export const Button = (props: ButtonProps) => {
-  // ✅ FUNCTIONS: Private logic inside component
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    console.log('Button clicked');
-    if (props.onClick) props.onClick(e);
-  };
-
-  return (
-    <MuiButton
-      onClick={handleClick}
-      data-testid={getAnalyticsId(props.variant)}
-      {...props}
-    />
-  );
-};
-```
-
-#### **Strategy 2: Component Folders** (Feature Components)
-For complex feature components, use a folder structure:
-
-```
-/src/features/extraction-rules/components/
-└── RuleEditor/
-    ├── index.ts              # Public API (only exports RuleEditor)
-    ├── RuleEditor.tsx        # Main component
-    ├── RuleConfigPanel.tsx   # Private sub-component
-    ├── ValidationSummary.tsx # Private sub-component
-    ├── types.ts             # Private types for this component
-    └── helpers.ts           # Private utilities for this component
-```
-
-**Component Folder Files:**
-
-```typescript
-// index.ts - Public API
-export { RuleEditor } from './RuleEditor';
-// Note: Don't export private sub-components
-
-// RuleEditor.tsx - Main component
-import { RuleConfigPanel } from './RuleConfigPanel';    // Private import
-import { ValidationSummary } from './ValidationSummary'; // Private import
-import { formatRuleError } from './helpers';            // Private import
-import { RuleEditorProps } from './types';              // Private import
-
-export const RuleEditor = ({ rule }: RuleEditorProps) => {
-  // Component logic here
-  return (
-    <div>
-      <RuleConfigPanel rule={rule} />
-      <ValidationSummary errors={formatRuleError(rule.errors)} />
-    </div>
-  );
-};
-
-// types.ts - Private types
-export interface RuleEditorProps {
-  rule: ExtractionRule;
-  onSave: (rule: ExtractionRule) => void;
-}
-
-// helpers.ts - Private utilities
-export const formatRuleError = (errors: string[]): string => {
-  return errors.join(', ');
-};
-```
-
-### **The "Promotion" Strategy**
-
-#### **Rule 1: Feature-Level Promotion**
-If a helper/type is needed by **2+ components within the same feature**:
-
-```bash
-# Move from component-private:
-/src/features/extraction-rules/components/RuleEditor/helpers.ts
-
-# To feature-level:
-/src/features/extraction-rules/utils/ruleHelpers.ts
-```
-
-#### **Rule 2: Global Promotion**
-If a component/utility is needed by **2+ different features**:
-
-```bash
-# Move from feature-specific:
-/src/features/extraction-rules/components/ValidationSummary.tsx
-
-# To global:
-/src/components/ui/ValidationSummary.tsx
-```
-
-### **Types & Interfaces Strategy**
-
-**Location Hierarchy:**
-1. **Component-Private Types:** Keep in component folder when only used by that component
-2. **Feature-Level Types:** Move to `/features/{domain}/types/` when used by 2+ components in same feature
-3. **Global Types:** Only move to `/src/types/` when used across multiple features
-
-**Component-Private Types** (`/features/{domain}/components/{Component}/types.ts`)
-```typescript
-// src/features/extraction-rules/components/RuleEditor/types.ts
-export interface RuleEditorProps {
-  rule: ExtractionRule;
-  onSave: (rule: ExtractionRule) => Promise<void>;
-  onCancel: () => void;
-  isLoading?: boolean;
-}
-
-export interface ValidationState {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
-}
-```
-
-**Feature-Level Types** (`/features/{domain}/types/`)
-```typescript
-// src/features/extraction-rules/types/rule.ts - When used by 2+ components
-export interface ExtractionRule {
-  id: string;
-  name: string;
-  priority: number;
-  anchorConfig?: AnchorConfig;
-  validationRules: ValidationRule[];
-}
-
-// Domain value objects
-export type MatchMode = 'exact' | 'startsWith' | 'contains' | 'endsWith';
-export type RuleStatus = 'active' | 'draft' | 'disabled';
-```
-
-**Global Types** (`/src/types/`)
-```typescript
-// src/types/api.ts - Only truly cross-domain types
-export interface ApiResponse<T> {
-  data: T;
-  status: number;
-  message?: string;
-}
-```
-
-### **Functions & Utilities Organization**
-
-**Location Hierarchy:**
-1. **Component-Private:** Keep in component folder when only used by that component
-2. **Feature-Level Utils:** Move to `/features/{domain}/utils/` when used by 2+ components (pure helper functions)
-3. **Feature-Level Services:** Use `/features/{domain}/services/` for business logic
-4. **Global:** Only move to `/src/lib/` when used across multiple features
-
-**Component-Private Utilities** (`/features/{domain}/components/{Component}/helpers.ts`)
-```typescript
-// src/features/extraction-rules/components/RuleEditor/helpers.ts
-export const formatRuleError = (errors: string[]): string => {
-  return errors.join(', ');
-};
-
-export const calculateEstimatedTime = (rule: ExtractionRule): number => {
-  // Component-specific logic
-  return rule.validationRules.length * 2;
-};
-```
-
-**Feature-Level Utilities** (`/features/{domain}/utils/`)
-```typescript
-// src/features/extraction-rules/utils/ruleHelpers.ts - When used by 2+ components
-export const formatRuleDisplayName = (rule: ExtractionRule): string => {
-  return `${rule.name} (Priority: ${rule.priority})`;
-};
-
-export const isRuleActive = (rule: ExtractionRule): boolean => {
-  return rule.status === 'active' && rule.validationRules.length > 0;
-};
-```
-
-**Domain Services** (`/features/{domain}/services/`)
-```typescript
-// src/features/extraction-rules/services/ruleValidation.ts
-export const validateRule = (rule: ExtractionRule): ValidationResult => {
-  // Domain-specific business logic
-  const errors: string[] = [];
-  
-  if (!rule.anchorConfig?.anchorText) {
-    errors.push('Anchor text is required');
-  }
-  
-  return { isValid: errors.length === 0, errors };
-};
-```
-
-**Global Utilities** (`/src/lib/utils.ts`)
-```typescript
-// Only cross-domain utilities
-export const formatDate = (date: Date): string => {
-  return new Intl.DateTimeFormat('en-US').format(date);
-};
-
-export const debounce = <T extends (...args: any[]) => any>(
-  func: T,
-  delay: number
-): ((...args: Parameters<T>) => void) => {
-  let timeoutId: NodeJS.Timeout;
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func(...args), delay);
-  };
-};
-```
-
-### **Component Interface Patterns**
-
-**Feature Component Props**
-```typescript
-// Always use domain entities as props
-interface DocumentViewerProps {
-  document: ProcessedDocument;        // Domain entity
-  onDocumentUpdate: (doc: ProcessedDocument) => void;
-  extractionRules: ExtractionRule[];  // Domain entity
-  viewMode: ViewMode;                 // Domain value object
-}
-
-// Avoid technical props when possible
-interface BadDocumentViewerProps {
-  documentId: string;                 // ❌ Requires component to fetch
-  onUpdate: (data: any) => void;      // ❌ Unclear what data is
-  config: Record<string, unknown>;    // ❌ Not domain-specific
-}
-```
-
-**Service Function Signatures**
-```typescript
-// Domain services should work with domain entities
-export const processDocument = async (
-  document: RawDocument,
-  rules: ExtractionRule[]
-): Promise<ProcessedDocument> => {
-  // Business logic here
-};
-
-// Return domain-specific results
-export const validateExtractionRules = (
-  rules: ExtractionRule[]
-): RuleValidationResult => {
-  return {
-    validRules: rules.filter(isValidRule),
-    invalidRules: rules.filter(rule => !isValidRule(rule)),
-    warnings: generateWarnings(rules)
-  };
-};
-```
-
-### **Error Handling Strategy**
-
-**Domain Errors** (`/features/{domain}/types/errors.ts`)
-```typescript
-export class RuleValidationError extends Error {
-  constructor(
-    public rule: ExtractionRule,
-    public validationErrors: string[]
-  ) {
-    super(`Rule validation failed: ${validationErrors.join(', ')}`);
-    this.name = 'RuleValidationError';
-  }
-}
-
-export class DocumentProcessingError extends Error {
-  constructor(
-    public documentId: string,
-    public stage: ProcessingStage,
-    originalError: Error
-  ) {
-    super(`Document processing failed at ${stage}: ${originalError.message}`);
-    this.name = 'DocumentProcessingError';
-  }
-}
-```
-
-**Error Handling in Services**
-```typescript
-export const processDocumentWithRules = async (
-  document: RawDocument,
-  rules: ExtractionRule[]
-): Promise<ProcessedDocument> => {
-  try {
-    const validatedRules = validateExtractionRules(rules);
-    if (validatedRules.invalidRules.length > 0) {
-      throw new RuleValidationError(rules[0], validatedRules.invalidRules);
-    }
-    
-    return await applyRulesToDocument(document, validatedRules.validRules);
-  } catch (error) {
-    if (error instanceof RuleValidationError) {
-      throw error; // Re-throw domain errors
-    }
-    throw new DocumentProcessingError(document.id, 'rule-application', error);
-  }
-};
-```
-
-### **Barrel Export Strategy**
-
-**Feature Index** (`/features/{domain}/index.ts`)
-```typescript
-// Export main domain entities and services
-export type { ExtractionRule, AnchorConfig, ValidationResult } from './types';
-export { validateRule, calculateRulePriority } from './services/ruleValidation';
-export { RuleEditor, RulesList } from './components';
-export { useRuleValidation, useRuleManager } from './hooks';
-
-// Don't export internal utilities or implementation details
-```
-
-**Component Folder Index** (`/features/{domain}/components/index.ts`)
-```typescript
-export { RuleEditor } from './RuleEditor';
-export { RulesList } from './RulesList';
-export { FieldMapping } from './FieldMapping';
-
-// Export component prop types for testing
-export type { RuleEditorProps } from './RuleEditor';
-export type { RulesListProps } from './RulesList';
+// Complex components (features)  
+src/features/extraction-rules/components/RuleEditor/
+├── index.ts              # Public API
+├── RuleEditor.tsx        # Main component
+├── types.ts             # Private types
+└── helpers.ts           # Private utilities
 ```
 
 ## 5. Testing Strategy
@@ -568,7 +134,127 @@ test('user can upload document and create extraction rule', async ({ page }) => 
 });
 ```
 
-## 8. Back-End Strategy (API Routes & Server Logic)
+## 6. Back-End Strategy (API Routes & Server Logic)
+
+Our back-end uses Next.js API Routes with the **"Thin API"** pattern.
+
+### **A. Thin API Routes**
+API Route files in `src/app/api/**` **MUST** be "thin" entry points:
+
+```typescript
+// ✅ Good - Thin API route
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const validatedData = createRuleSchema.parse(body);
+    const rule = await createExtractionRule(validatedData);
+    return NextResponse.json(rule, { status: 201 });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to create rule' }, { status: 500 });
+  }
+}
+```
+
+### **B. Service Layer**
+All business logic **MUST** live in feature folders under `/api/`:
+
+```typescript
+// src/features/extraction-rules/api/ruleService.ts
+export const createExtractionRule = async (input: CreateRuleInput): Promise<ExtractionRule> => {
+  const validationResult = validateRuleConstraints(input);
+  if (!validationResult.isValid) {
+    throw new Error(`Invalid rule: ${validationResult.errors.join(', ')}`);
+  }
+
+  return await db.extractionRule.create({
+    data: { ...input, priority: input.priority || calculateDefaultPriority() },
+  });
+};
+```
+
+### **C. Database Access (Neon + Prisma)**
+```typescript
+// src/lib/db.ts
+export const db = globalForPrisma.prisma ?? new PrismaClient({
+  datasources: { db: { url: process.env.DATABASE_URL } },
+});
+
+// Environment setup
+DATABASE_URL="postgresql://user:pass@ep-xxx.us-east-2.aws.neon.tech/db?sslmode=require"
+DIRECT_URL="postgresql://user:pass@ep-xxx.us-east-2.aws.neon.tech/db?sslmode=require"
+```
+
+### **D. Data Validation**
+```typescript
+// src/features/extraction-rules/api/schemas.ts
+export const createRuleSchema = z.object({
+  name: z.string().min(1).max(100),
+  documentType: z.enum(['BC', 'MP', 'POS', 'DEMO']),
+  anchorText: z.string().optional(),
+  regexPattern: z.string().optional(),
+}).refine(data => data.anchorText || data.regexPattern);
+
+export type CreateRuleInput = z.infer<typeof createRuleSchema>;
+```
+
+## 7. Coding Standards
+- **TypeScript:** No `any` types. Use `unknown` for unsafe types.
+- **Error Handling:** All async functions must include `try/catch` or equivalent.
+- **Imports:** Use absolute paths (`@/components/ui/Button`) not relative (`../../`).
+- **Naming:** Components `PascalCase`, functions `camelCase`, types `PascalCase`.
+- **Components:** Default to Server Components. Use `"use client"` only when needed.
+
+## 8. Anti-Patterns to Avoid
+- ❌ Direct MUI imports: `import { Button } from '@mui/material'`
+- ❌ Using `sx` prop: `<Button sx={{ margin: 2 }}>`
+- ❌ Custom CSS files or styled-components
+- ❌ Relative imports: `../../../components/ui/Button`
+- ❌ Using `any` type in TypeScript
+- ❌ Raw `fetch()` calls instead of `src/lib/api.ts`
+- ❌ Feature code in global folders (`/src/lib/`, `/src/types/`)
+- ❌ Cross-domain dependencies
+- ❌ Testing implementation details instead of user behavior
+- ❌ Test files in separate `/tests/` folders instead of colocation
+
+## 9. Quick Reference
+
+### **Essential File Locations**
+- UI Components: `/src/components/ui/` (import from here only)
+- Feature Code: `/src/features/{domain}/` (components, hooks, api, types, services, utils)
+- Global Utils: `/src/lib/` (only cross-domain utilities)
+- Database: `/src/lib/db.ts` (shared Neon + Prisma client)
+- API Routes: `/src/app/api/` (thin wrappers only)
+
+### **Key Commands**
+```bash
+pnpm dev                    # Start development
+npx prisma studio          # Database management
+npx prisma generate         # Generate Prisma client
+npx prisma db push          # Push schema to Neon
+```
+
+### **Component Import Pattern**
+```typescript
+// ✅ Always use these imports
+import { Button, Input, Card } from '@/components/ui';
+import { ExtractionRule } from '@/features/extraction-rules/types';
+import { createRule } from '@/features/extraction-rules/api/ruleService';
+
+// ❌ Never use these
+import { Button } from '@mui/material';
+import { ExtractionRule } from '../../../types/rules';
+```
+
+### **Folder Promotion Rules**
+1. Start private in component folder
+2. Move to feature-level when used by 2+ components in same feature
+3. Move to global (`/src/lib/` or `/src/types/`) when used by 2+ features
+
+### **Testing Strategy**
+- **Colocation:** Tests live next to source files
+- **Focus:** User behavior over implementation details  
+- **Tools:** React Testing Library + Playwright for E2E
+- **Pattern:** Arrange, Act, Assert
 
 Our back-end uses Next.js API Routes with the **"Thin API"** or **"Service Layer"** pattern.
 
@@ -963,175 +649,3 @@ export async function POST(request: NextRequest) {
 - ❌ Generic naming that doesn't reflect domain concepts
 - ❌ Testing implementation details instead of user behavior
 - ❌ Test files in separate `/tests/` folders instead of colocation
-
-## 11. Common Tasks & Examples
-
-### Creating a New Component
-```typescript
-// src/features/user-profile/components/UserCard.tsx
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Avatar } from '@/components/ui/Avatar';
-
-interface UserCardProps {
-  user: User;
-  onEdit: () => void;
-}
-
-export const UserCard = ({ user, onEdit }: UserCardProps) => {
-  return (
-    <Card className="p-6 space-y-4">
-      <Avatar src={user.avatar} alt={user.name} />
-      <h3 className="text-lg font-semibold">{user.name}</h3>
-      <Button onClick={onEdit} variant="secondary">
-        Edit Profile
-      </Button>
-    </Card>
-  );
-};
-```
-
-### Making API Calls
-```typescript
-// src/features/user-profile/api/userApi.ts
-import { apiClient } from '@/lib/api';
-import { User } from '../types';
-
-export const getUserProfile = async (id: string): Promise<User> => {
-  try {
-    const response = await apiClient.get(`/users/${id}`);
-    return response.data;
-  } catch (error) {
-    throw new Error(`Failed to fetch user profile: ${error}`);
-  }
-};
-```
-
-### Neon Database Service Example
-```typescript
-// src/features/extraction-rules/api/ruleService.ts
-import { db } from '@/lib/db';
-import { ExtractionRule, CreateRuleInput } from '../types';
-
-export const createExtractionRule = async (
-  input: CreateRuleInput
-): Promise<ExtractionRule> => {
-  // Use Neon with Prisma for type-safe database operations
-  const rule = await db.extractionRule.create({
-    data: {
-      name: input.name,
-      documentType: input.documentType,
-      priority: input.priority || 0,
-      status: 'active',
-    },
-    include: {
-      validationRules: true, // Include related data
-    },
-  });
-
-  return rule;
-};
-
-// Leverage Neon's serverless features for optimized queries
-export const getActiveRulesByType = async (
-  documentType: string
-): Promise<ExtractionRule[]> => {
-  return await db.extractionRule.findMany({
-    where: {
-      documentType,
-      status: 'active',
-    },
-    orderBy: {
-      priority: 'asc',
-    },
-    include: {
-      validationRules: {
-        where: {
-          isEnabled: true,
-        },
-      },
-    },
-  });
-};
-```
-
-### Domain Service Example
-```typescript
-// src/features/extraction-rules/services/ruleValidationService.ts
-import { ExtractionRule, ValidationResult } from '../types';
-
-export const validateExtractionRule = (rule: ExtractionRule): ValidationResult => {
-  // Domain-specific validation logic
-  if (!rule.anchorText && !rule.regexPattern) {
-    return { isValid: false, errors: ['Rule must have anchor text or regex pattern'] };
-  }
-  
-  return { isValid: true, errors: [] };
-};
-
-export const calculateRulePriority = (rules: ExtractionRule[]): ExtractionRule[] => {
-  // Domain logic for rule prioritization
-  return rules.sort((a, b) => (a.priority || 0) - (b.priority || 0));
-};
-```
-
-## 12. Migration Guidelines
-When working with legacy code:
-1. **Before adding new features:** Refactor the touched files to meet current standards
-2. **Update imports:** Change direct MUI imports to our UI components
-3. **Remove `sx` props:** Replace with Tailwind classes
-4. **Add proper TypeScript:** Remove `any` types, add interfaces
-5. **Move to proper folders:** Relocate code following domain-driven structure
-6. **Apply Domain Language:** Use business terminology in variable/function names
-7. **Extract Domain Services:** Move business logic from components to domain services
-
-### **Step-by-Step Migration from Current Structure**
-
-**Phase 1: Create Design System (Priority 1)**
-```bash
-# Move common components to ui folder
-mkdir src/components/ui
-mv src/components/common/* src/components/ui/
-# Create barrel export
-echo "export * from './Button';" > src/components/ui/index.ts
-```
-
-**Phase 2: Feature Extraction (Priority 2)**
-```bash
-# Extract document processing features
-mkdir -p src/features/document-processing/{components,hooks,api,types,services,utils}
-mv src/components/DocumentList.tsx src/features/document-processing/components/
-mv src/components/DropZone.tsx src/features/document-processing/components/
-mv src/components/Viewer.tsx src/features/document-processing/components/
-
-# Extract rule extraction features  
-mkdir -p src/features/extraction-rules/{components,hooks,api,types,services,utils}
-mv src/components/Rules.tsx src/features/extraction-rules/components/
-mv src/components/rules/* src/features/extraction-rules/components/
-mv src/components/form/* src/features/extraction-rules/components/
-```
-
-**Phase 3: Consolidate Global Code (Priority 3)**
-```bash
-# Move legacy global utilities to lib (only shared across features)
-# Feature-specific utilities stay in feature folders
-mv src/utils/uniq.ts src/lib/  # Global utility
-mv src/utils/numbers.ts src/lib/  # Global utility
-# Keep feature-specific utils in their domains
-mv src/utils/formUtils.ts src/features/extraction-rules/utils/
-mv src/utils/ruleUtils.ts src/features/extraction-rules/utils/
-mv src/utils/mappingRemap.ts src/features/document-processing/utils/
-
-# Move services to appropriate domains
-mv src/services/extractionEngine.ts src/features/extraction-rules/services/
-mv src/context/* src/providers/
-rmdir src/context
-```
-
-**Phase 4: Type Organization (Priority 4)**
-```bash
-# Separate global vs feature types
-mv src/types/extractionRules.ts src/features/extraction-rules/types/
-mv src/types/PurchaseOrder.ts src/features/document-processing/types/
-# Keep only truly global types in src/types/
-```
