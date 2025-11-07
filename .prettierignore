@@ -1,0 +1,43 @@
+# Ignore node modules and dependency artifacts
+node_modules/
+.pnpm/
+
+# Next.js output
+.next/
+out/
+
+# Build and distribution folders
+dist/
+build/
+
+# Local editor and OS files
+.vscode/
+.idea/
+.DS_Store
+
+# Test coverage and reports
+coverage/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Minified / bundle / map files (no need to format)
+**/*.min.js
+**/*.bundle.js
+**/*.map
+
+# Binary assets
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.gif
+**/*.ico
+**/*.zip
+**/*.tar.gz
+
+# Optional: lockfiles (usually not formatted)
+# package-lock.json
+# pnpm-lock.yaml
+# yarn.lock
