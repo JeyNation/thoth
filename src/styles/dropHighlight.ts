@@ -6,7 +6,12 @@ export const DROP_ACTIVE_INSET = 'inset 0 0 0 1px rgba(25,118,210,0.35)';
 export const DROP_BORDER_RADIUS_PX = 12;
 
 // Shared style for dropzone active state — border-only dashed style (no background)
-export const DROP_ZONE_ACTIVE_STYLE: Record<string, unknown> = {
+export const DROP_ZONE_ACTIVE_STYLE: {
+  borderWidth: string;
+  borderStyle: string;
+  borderColor: string;
+  transition: string;
+} = {
   borderWidth: '2px',
   borderStyle: 'dashed',
   borderColor: DROP_ACTIVE_BORDER,
