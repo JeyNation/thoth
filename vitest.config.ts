@@ -6,7 +6,6 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    // Use a central test setup file in src/test/ (colocated tests can import their own setup as needed)
     setupFiles: ['./src/test/setup.ts'],
   },
   resolve: {
