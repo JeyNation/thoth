@@ -1,5 +1,8 @@
-import React, { useMemo } from 'react';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { Box, IconButton, Stack, Typography, Divider } from '@mui/material';
+import React, { useMemo } from 'react';
+
+import { useMapping } from '../context/MappingContext';
 import {
     DEBUGGER_CONTAINER_SX,
     DEBUGGER_HEADER_TITLE_SX,
@@ -14,9 +17,7 @@ import {
     DEBUGGER_LINKED_ID_SX,
     DEBUGGER_PRE_SX,
 } from '../styles/debuggerStyles';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import type { BoundingBox } from '../types/mapping';
-import { useMapping } from '../context/MappingContext';
 
 interface DebuggerProps {
     boundingBoxes: BoundingBox[];

@@ -1,23 +1,25 @@
 'use client';
 
+import { Box } from '@mui/material';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { CSSProperties } from 'react';
-import { Box } from '@mui/material';
-import { useZoom } from '../hooks/useZoom';
-import { usePan } from '../hooks/usePan';
-import { useAreaSelection } from '../hooks/useAreaSelection';
-import { normalizeBoundingBoxes } from '../types/mapping';
-import { useMapping } from '../context/MappingContext';
-import { ViewerControls } from './viewer/ViewerControls';
-import { ViewerPage } from './viewer/ViewerPage';
-import { LoadingIndicator } from './common/LoadingIndicator';
 
-import type { BoundingBox } from '../types/mapping';
+
+import { useMapping } from '../context/MappingContext';
+import { useAreaSelection } from '../hooks/useAreaSelection';
+import { usePan } from '../hooks/usePan';
+import { useZoom } from '../hooks/useZoom';
 import {
   VIEWER_ROOT_SX,
   VIEWER_CONTAINER_SX,
   getSelectionRectStyle as getViewerSelectionRectStyle,
 } from '../styles/viewerStyles';
+import type { BoundingBox as BaseBoundingBox } from '../types/boundingBox';
+import { normalizeBoundingBoxes } from '../types/mapping';
+import { LoadingIndicator } from './common/LoadingIndicator';
+import { ViewerControls } from './viewer/ViewerControls';
+import { ViewerPage } from './viewer/ViewerPage';
+import type { BoundingBox } from '../types/mapping';
 
 const DEFAULT_AUTO_FIT_CONFIG = (svgContent: string, svgHostRef: React.RefObject<HTMLDivElement>) => ({
   svgContent,
@@ -27,7 +29,8 @@ const DEFAULT_AUTO_FIT_CONFIG = (svgContent: string, svgHostRef: React.RefObject
 });
 
 interface ViewerProps {
-  documentData: any;
+  svgImages?: string[] | null;
+  boundingBoxes?: BaseBoundingBox[] | null;
   focusedInputField?: string | null;
   onBoundingBoxesUpdate?: (boxes: BoundingBox[]) => void;
   onViewerTransformChange?: (scale: number, position: { x: number; y: number }) => void;
@@ -35,7 +38,7 @@ interface ViewerProps {
   onOverlaysVisibilityChange?: (visible: boolean) => void;
 }
 
-const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onViewerTransformChange, onBoundingBoxFocus, onOverlaysVisibilityChange }: ViewerProps) => {
+const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputField, onBoundingBoxesUpdate, onViewerTransformChange, onBoundingBoxFocus, onOverlaysVisibilityChange }: ViewerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<HTMLDivElement>(null);
   const boxStyleCacheRef = useRef<Map<string, { key: string; style: CSSProperties }>>(new Map());
@@ -128,16 +131,16 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
   }, [selectedFields, allLinkedBoxIds, focusedInputLinkedBoxIds, draggedField]);
 
   useEffect(() => {
-    if (documentData?.svgImages) {
-      const images = documentData.svgImages as string[];
+    if (svgImages && svgImages.length > 0) {
+      const images = svgImages as string[];
       setTotalPages(images.length);
       setLoadedPages(1);
       setSvgContent(images[0]);
       setLoading((prev) => (prev ? false : prev));
     }
 
-    if (documentData?.boundingBoxes) {
-      const normalized = normalizeBoundingBoxes(documentData.boundingBoxes);
+    if (incomingBoundingBoxes && incomingBoundingBoxes.length > 0) {
+      const normalized = normalizeBoundingBoxes(incomingBoundingBoxes);
       const prev = lastBoxesRef.current;
       const sameLength = prev ? prev.length === normalized.length : false;
       let same = !!prev && sameLength;
@@ -157,7 +160,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
         lastBoxesRef.current = normalized;
       }
     }
-  }, [documentData, onBoundingBoxesUpdate]);
+  }, [svgImages, incomingBoundingBoxes, onBoundingBoxesUpdate]);
 
   useEffect(() => {
     if (!svgContent) return;
@@ -357,12 +360,12 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
       
       // Adjust Y coordinates for page offset when dealing with multi-page selections
       const pageIndex = (b.page || 1) - 1;
-      if (pageIndex > 0) {
+          if (pageIndex > 0) {
         // Calculate cumulative vertical offset for this bounding box's page (in unscaled coordinates)
         let cumulativeOffset = 0;
         for (let i = 0; i < pageIndex; i++) {
           const prevParser = new DOMParser();
-          const prevDoc = prevParser.parseFromString(documentData?.svgImages[i] || '', 'image/svg+xml');
+          	  const prevDoc = prevParser.parseFromString((svgImages?.[i]) || '', 'image/svg+xml');
           const prevSvgEl = prevDoc.querySelector('svg');
           let prevPageHeight = baseSvgDims.height;
           
@@ -496,7 +499,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
           // Fallback to calculated offset
           for (let i = 0; i < pageIndex; i++) {
             const prevParser = new DOMParser();
-            const prevDoc = prevParser.parseFromString(documentData?.svgImages[i] || '', 'image/svg+xml');
+            const prevDoc = prevParser.parseFromString((svgImages?.[i]) || '', 'image/svg+xml');
             const prevSvgEl = prevDoc.querySelector('svg');
             let prevPageHeight = baseSvgDims.height;
             
@@ -585,7 +588,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
           // Fallback: calculate based on page heights and Material-UI spacing
           for (let i = 0; i < pageIndex; i++) {
             const prevParser = new DOMParser();
-            const prevDoc = prevParser.parseFromString(documentData?.svgImages[i] || '', 'image/svg+xml');
+            const prevDoc = prevParser.parseFromString((svgImages?.[i]) || '', 'image/svg+xml');
             const prevSvgEl = prevDoc.querySelector('svg');
             let prevPageHeight = baseSvgDims.height;
             
@@ -665,7 +668,7 @@ const Viewer = ({ documentData, focusedInputField, onBoundingBoxesUpdate, onView
         onMouseUp={handlePanelMouseUp}
         onMouseLeave={handlePanelMouseLeave}
       >
-        {documentData?.svgImages && (documentData.svgImages as string[]).slice(0, loadedPages).map((pageContent: string, pageIndex: number) => {
+  {(svgImages ?? []).slice(0, loadedPages).map((pageContent: string, pageIndex: number) => {
           const parser = new DOMParser();
           const doc = parser.parseFromString(pageContent, 'image/svg+xml');
           const svgEl = doc.querySelector('svg');

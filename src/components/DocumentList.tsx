@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import DescriptionIcon from '@mui/icons-material/Description';
 import {
   Box,
   Paper,
@@ -11,7 +11,7 @@ import {
   ListItemText,
   Alert,
 } from '@mui/material';
-import DescriptionIcon from '@mui/icons-material/Description';
+import React, { useState, useEffect } from 'react';
 
 export interface DocumentMetadata {
   id: string;

@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
+
+import { NextResponse } from 'next/server';
 
 export interface DocumentMetadata {
   id: string;
@@ -23,7 +24,7 @@ export async function GET() {
     
     // Read each document to get page count
     const documentsWithPageCount = await Promise.all(
-      metadata.documents.map(async (doc: any) => {
+      metadata.documents.map(async (doc: DocumentMetadata) => {
         try {
           const docPath = path.join(process.cwd(), 'public', 'data', 'documents', doc.fileName);
           const docContent = await fs.readFile(docPath, 'utf-8');

@@ -1,14 +1,10 @@
-import React from 'react';
-import { Box, Paper, Stack, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { IconButton } from '../common/IconButton';
-import { SubsectionLabel } from '../common/SubsectionLabel';
-import { makeLineItemField } from '../../types/fieldIds';
-import { LINE_ITEM_COLUMNS, humanizeColumnKey, type LineItemColumnKey } from '../../types/lineItemColumns';
-import type { LineItem } from '../../types/PurchaseOrder';
-import RowDropZone from './RowDropZone';
+import { Box, Paper, Stack, Typography } from '@mui/material';
+import React from 'react';
+
 import FieldInput from './FieldInput';
+import RowDropZone from './RowDropZone';
 import {
   LINE_ITEM_PAPER_SX,
   LINE_ITEM_STACK_SX,
@@ -22,6 +18,11 @@ import {
   LINE_ITEM_ACTIONS_STACK_PROPS,
   LINE_ITEM_FIELDS_STACK_PROPS,
 } from '../../styles/lineItemCardStyles';
+import { makeLineItemField } from '../../types/fieldIds';
+import { LINE_ITEM_COLUMNS, humanizeColumnKey, type LineItemColumnKey } from '../../types/lineItemColumns';
+import type { LineItem } from '../../types/PurchaseOrder';
+import { IconButton } from '../common/IconButton';
+import { SubsectionLabel } from '../common/SubsectionLabel';
 
 export interface LineItemCardProps {
   item: LineItem;
@@ -29,7 +30,7 @@ export interface LineItemCardProps {
   onRowDrop: (e: React.DragEvent) => void;
   onInsertRelative: (before: boolean) => void;
   onRemove: () => void;
-  getTextFieldSx: (fieldId: string) => Record<string, any>;
+  getTextFieldSx: (fieldId: string) => Record<string, unknown>;
   activeColumnDrop: { lineNumber: number; field: LineItemColumnKey } | null;
   setActiveColumnDrop: React.Dispatch<React.SetStateAction<{ lineNumber: number; field: LineItemColumnKey } | null>>;
   onFieldFocus: (fieldId: string) => void;

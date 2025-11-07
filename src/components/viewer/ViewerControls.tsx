@@ -1,10 +1,11 @@
-import React from 'react';
-import { Stack, Chip } from '@mui/material';
-import ZoomInIcon from '@mui/icons-material/ZoomIn';
-import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ZoomOutIcon from '@mui/icons-material/ZoomOut';
+import { Stack, Chip } from '@mui/material';
+import React from 'react';
+
 import { IconButton } from '../common/IconButton';
 
 interface ViewerControlsProps {

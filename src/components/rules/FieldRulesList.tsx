@@ -1,9 +1,10 @@
-import React, { useRef, useImperativeHandle, forwardRef } from 'react';
 import { Stack } from '@mui/material';
-import { ViewRule } from './ViewRule';
+import React, { useRef, useImperativeHandle, forwardRef } from 'react';
+
 import { EditRule, EditRuleRef } from './EditRule';
-import { FieldRule } from '../../types/rulesComponents';
+import { ViewRule } from './ViewRule';
 import { AnchorRule, RegexMatchRule, AbsoluteRule } from '../../types/extractionRules';
+import { FieldRule } from '../../types/rulesComponents';
 import { EmptyState } from '../common/EmptyState';
 
 export interface FieldRulesListRef {
@@ -46,9 +47,7 @@ export const FieldRulesList = forwardRef<FieldRulesListRef, FieldRulesListProps>
     // Expose method to apply all pending changes
     useImperativeHandle(ref, () => ({
         applyAllPendingChanges: () => {
-            console.log('FieldRulesList.applyAllPendingChanges called, refs count:', editRuleRefs.current.size);
             editRuleRefs.current.forEach((editRuleRef, ruleId) => {
-                console.log(`Calling applyPendingChanges on EditRule ${ruleId}`);
                 editRuleRef.applyPendingChanges();
             });
         },

@@ -1,6 +1,5 @@
 'use client';
 
-import React, { useMemo } from 'react';
 import {
   Button,
   Dialog,
@@ -21,9 +20,11 @@ import {
   Typography,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material/Select';
+import React, { useMemo } from 'react';
+
 import { humanizeColumnKey } from '../../types/lineItemColumns';
-import type { MultiFieldPair } from '../../types/mapping';
 import type { LineItemColumnKey } from '../../types/lineItemColumns';
+import type { MultiFieldPair } from '../../types/mapping';
 
 export interface RowMappingDialogProps {
   column: LineItemColumnKey;

@@ -1,6 +1,6 @@
-import type { CSSProperties } from 'react';
 import type { SxProps } from '@mui/material';
 import type { Theme } from '@mui/material/styles';
+import type { CSSProperties } from 'react';
 
 export const VIEWER_ROOT_SX: SxProps<Theme> = {
   display: 'flex',

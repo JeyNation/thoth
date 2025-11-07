@@ -1,9 +1,10 @@
-import { useState, useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
-import { Paper, Stack, Chip, FormControl, InputLabel, Select, MenuItem, Divider } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
-import { EditRuleProps } from '../../types/rulesComponents';
+import { Paper, Stack, Chip, FormControl, InputLabel, Select, MenuItem, Divider } from '@mui/material';
+import { useState, useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
+
 import { AnchorConfig, AnchorConfigRef } from './AnchorConfig';
 import { AnchorRule } from '../../types/extractionRules';
+import { EditRuleProps } from '../../types/rulesComponents';
 import { IconButton } from '../common/IconButton';
 
 export interface EditRuleRef {
@@ -58,8 +59,12 @@ export const EditRule = forwardRef<EditRuleRef, EditRuleProps>(({
         },
         getPendingChanges: () => {
             const pendingAnchor = anchorInputValue.trim();
-            const anchorChanges = anchorConfigRef.current?.getPendingChanges() || {} as any;
-            const result: any = {};
+                type PendingChanges = {
+                    pendingPattern?: string | { regex: string; label?: string };
+                    pendingPatternEdit?: { index: number; pattern: string | { regex: string; label?: string } };
+                };
+                const anchorChanges = (anchorConfigRef.current?.getPendingChanges() || {}) as PendingChanges;
+                const result: Partial<PendingChanges & { pendingAnchor?: string; pendingAnchorEdit?: { index: number; value: string } }> = {};
             if (pendingAnchor) {
                 if (editingAnchorIndex !== null) {
                     result.pendingAnchorEdit = { index: editingAnchorIndex, value: pendingAnchor };

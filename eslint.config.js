@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
 import { FlatCompat } from '@eslint/eslintrc';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -31,7 +32,25 @@ export default [
   },
   {
     rules: {
-      // place custom project rules here
+      // TypeScript/React rules we enforce project-wide
+      '@typescript-eslint/no-explicit-any': 'error',
+      'react-hooks/exhaustive-deps': 'error',
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'import/order': [
+        'warn',
+        {
+          'groups': ['builtin', 'external', 'internal', ['parent', 'sibling', 'index']],
+          'pathGroups': [
+            {
+              pattern: '@/**',
+              group: 'internal'
+            }
+          ],
+          'pathGroupsExcludedImportTypes': ['builtin'],
+          'newlines-between': 'always',
+          'alphabetize': { order: 'asc', caseInsensitive: true }
+        }
+      ],
     },
   },
 ];

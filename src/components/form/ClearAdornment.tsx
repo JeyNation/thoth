@@ -1,6 +1,7 @@
-import React from 'react';
-import InputAdornment from '@mui/material/InputAdornment';
 import CloseIcon from '@mui/icons-material/Close';
+import InputAdornment from '@mui/material/InputAdornment';
+import React from 'react';
+
 import { IconButton } from '../common/IconButton';
 
 interface ClearAdornmentProps {

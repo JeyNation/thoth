@@ -54,7 +54,7 @@ export interface MultiFieldDragPayload {
 
 export const isMultiFieldDragPayload = (val: unknown): val is MultiFieldDragPayload => {
   if (!val || typeof val !== 'object') return false;
-  const v = val as any;
+  const v = val as Record<string, unknown>;
   if (v.pairs && !Array.isArray(v.pairs)) return false;
   if (v.boundingBoxIds && !Array.isArray(v.boundingBoxIds)) return false;
   return true;

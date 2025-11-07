@@ -1,8 +1,9 @@
-import type { Metadata } from 'next';
-import '../styles/globals.css';
-import ThemeRegistry from '../components/ThemeRegistry';
-import { AppHeader } from '../components/AppHeader';
 import { Box, Container } from '@mui/material';
+import type { Metadata } from 'next';
+
+import '../styles/globals.css';
+import { AppHeader } from '../components/AppHeader';
+import ThemeRegistry from '../components/ThemeRegistry';
 
 export const metadata: Metadata = {
   title: 'Purchase Order Management System',

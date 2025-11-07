@@ -1,10 +1,11 @@
 'use client';
 
 import React, { createContext, useContext, useMemo, useCallback, useReducer } from 'react';
-import { checkPurchaseOrderInvariants } from '../utils/purchaseOrderMutations';
+
 import { parseLineItemField } from '../types/fieldIds';
 import type { FieldSources, ReverseFieldSourceIndex, BoundingBox, FieldSourceGeom } from '../types/mapping';
 import type { PurchaseOrder } from '../types/PurchaseOrder';
+import { checkPurchaseOrderInvariants } from '../utils/purchaseOrderMutations';
 
 // ------------------------------
 // State / Reducer for Undo/Redo

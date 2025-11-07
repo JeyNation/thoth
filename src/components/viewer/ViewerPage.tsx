@@ -1,11 +1,12 @@
+import { Box } from '@mui/material';
 import React from 'react';
 import type { CSSProperties } from 'react';
-import { Box } from '@mui/material';
-import type { BoundingBox } from '../../types/mapping';
+
 import {
   VIEWER_SVG_HOST_SX,
   VIEWER_SVG_TRANSFORM_SX,
 } from '../../styles/viewerStyles';
+import type { BoundingBox } from '../../types/mapping';
 
 interface ViewerPageProps {
     pageContent: string;

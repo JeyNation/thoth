@@ -1,22 +1,21 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
-import { flushSync } from 'react-dom';
 import { 
     Box, 
-    Stack, 
-    Typography
+    Stack
 } from '@mui/material';
 import { Divider } from '@mui/material';
-import { RulesActionBar } from './rules/RulesActionBar';
-import { FieldRulesSection, FieldRulesListRef } from './rules/FieldRulesSection';
-import { RerunExtractionDialog } from './dialogs/RerunExtractionDialog';
-import { LoadingIndicator } from './common/LoadingIndicator';
+import React, { useEffect, useState, useRef } from 'react';
+
 import { EmptyState } from './common/EmptyState';
+import { LoadingIndicator } from './common/LoadingIndicator';
+import { RerunExtractionDialog } from './dialogs/RerunExtractionDialog';
+import { FieldRulesSection, FieldRulesListRef } from './rules/FieldRulesSection';
+import { RulesActionBar } from './rules/RulesActionBar';
 import { BASIC_INFO_FIELDS } from '../config/formFields';
-import { Field, AnchorRule, RegexMatchRule, AbsoluteRule, RuleType, PositionPoint } from '../types/extractionRules';
-import { RULES_ROOT_SX, RULES_CONTENT_SX } from '../styles/rulesStyles';
 import { useLayoutMap } from '../hooks/useLayoutMap';
+import { RULES_ROOT_SX, RULES_CONTENT_SX } from '../styles/rulesStyles';
+import { Field, AnchorRule, RegexMatchRule, AbsoluteRule, RuleType, PositionPoint } from '../types/extractionRules';
 import { getExtractionFieldId } from '../utils/formUtils';
 import {
     createDefaultAnchorRule,
@@ -117,16 +116,16 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
                                 aliases: rule.anchorConfig?.aliases || [],
                                 searchZone: rule.anchorConfig?.searchZone || DEFAULT_SEARCH_ZONE,
                                 instance: rule.anchorConfig?.instance || 1,
-                                instanceFrom: (rule.anchorConfig as any)?.instanceFrom || 'start',
+                                instanceFrom: rule.anchorConfig?.instanceFrom || 'start',
                                 matchMode: rule.anchorConfig?.matchMode || 'exact',
                                 ignoreCase: rule.anchorConfig?.ignoreCase ?? true,
                                 normalizeWhitespace: rule.anchorConfig?.normalizeWhitespace ?? true,
-                                pageScope: (rule.anchorConfig as any)?.pageScope || 'first'
+                                pageScope: rule.anchorConfig?.pageScope || 'first'
                             },
                         positionConfig: {
                             point: rule.positionConfig?.point || DEFAULT_POSITION_POINT,
-                            ...(rule.positionConfig && 'startingPosition' in (rule.positionConfig as any)
-                                ? { startingPosition: (rule.positionConfig as any).startingPosition }
+                            ...(rule.positionConfig && rule.positionConfig.startingPosition
+                                ? { startingPosition: rule.positionConfig.startingPosition }
                                 : {})
                         },
                         parserConfig: {
@@ -187,9 +186,6 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
     const handleSave = async () => {
         if (!layoutMap) return;
 
-        console.log('Rules.handleSave called - collecting all pending changes');
-        console.log('Current fieldRules before applying changes:', fieldRules);
-        
         // First, collect all pending changes without applying them via state
         const allPendingChanges: Record<string, Record<string, {
             pendingAnchor?: string;
@@ -198,15 +194,11 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
             pendingPatternEdit?: { index: number; pattern: string | { regex: string; label?: string } };
         }>> = {};
         fieldRulesSectionRefs.current.forEach((ref, fieldId) => {
-            console.log(`Collecting pending changes for field ${fieldId}`);
             const fieldPending = ref.getAllPendingChanges();
             if (Object.keys(fieldPending).length > 0) {
                 allPendingChanges[fieldId] = fieldPending;
-                console.log(`Found pending changes for field ${fieldId}:`, fieldPending);
             }
         });
-        
-        console.log('All pending changes collected:', allPendingChanges);
         
         // Create a modified copy of fieldRules with pending changes applied
         let modifiedFieldRules = { ...fieldRules };
@@ -218,7 +210,7 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
                 if (ruleIndex !== -1) {
                     const rule = fieldRulesArray[ruleIndex];
                     if (rule.ruleType === 'anchor') {
-                        const anchorRule = rule as any;
+                        const anchorRule = rule as AnchorRule;
                         let updatedRule = { ...anchorRule };
                         
                         // Apply pending anchor add/edit
@@ -241,7 +233,7 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
                         // Apply pending regex add/edit
                         if (pending.pendingPatternEdit) {
                             const patterns = [...(anchorRule.parserConfig?.patterns || [])];
-                            const { index, pattern } = pending.pendingPatternEdit as any;
+                            const { index, pattern } = pending.pendingPatternEdit;
                             if (index >= 0 && index < patterns.length) {
                                 const existing = patterns[index];
                                 const newRegex = typeof pattern === 'string' ? pattern : pattern.regex;
@@ -258,7 +250,7 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
                                 };
                             }
                         } else if (pending.pendingPattern) {
-                            const pp: any = pending.pendingPattern;
+                            const pp = pending.pendingPattern;
                             const next = [...(anchorRule.parserConfig?.patterns || [])];
                             if (typeof pp === 'string') {
                                 next.push({ regex: pp, priority: next.length + 1 });
@@ -279,11 +271,8 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
             });
         });
         
-        console.log('Modified fieldRules with pending changes applied:', modifiedFieldRules);
-        
         // Now clear the pending inputs by calling applyPendingChanges (which clears the inputs)
         fieldRulesSectionRefs.current.forEach((ref, fieldId) => {
-            console.log(`Clearing pending changes for field ${fieldId}`);
             ref.applyAllPendingChanges();
         });
 

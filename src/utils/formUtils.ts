@@ -1,10 +1,10 @@
-import type { LineItem, PurchaseOrder } from '../types/PurchaseOrder';
+import { parseIntegerSafe, parseDecimalSafe } from './numbers';
+import { uniq } from './uniq';
+import { EXTRACTION_FIELD_MAPPING } from '../config/formFields';
+import { makeLineItemField, parseLineItemField } from '../types/fieldIds';
 import { LINE_ITEM_COLUMNS, type LineItemColumnKey } from '../types/lineItemColumns';
 import type { MultiFieldPair, SourceWithGeometry } from '../types/mapping';
-import { makeLineItemField, parseLineItemField } from '../types/fieldIds';
-import { uniq } from './uniq';
-import { parseIntegerSafe, parseDecimalSafe } from './numbers';
-import { EXTRACTION_FIELD_MAPPING } from '../config/formFields';
+import type { LineItem, PurchaseOrder } from '../types/PurchaseOrder';
 
 /**
  * Converts a form field ID to its corresponding extraction field ID.

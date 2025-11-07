@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import Workspace from '../components/Workspace';
+
 import DocumentList from '../components/DocumentList';
+import Workspace from '../components/Workspace';
 
 export default function Home() {
   const [selectedDocumentPath, setSelectedDocumentPath] = useState<string | null>(null);

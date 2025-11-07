@@ -1,7 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Box, Button, Divider, Stack, Typography } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+
+import { BASIC_INFO_FIELDS, type FormFieldConfig } from '../config/formFields';
+import { useMapping } from '../context/MappingContext';
+import useFlashHighlight from '../hooks/useFlashHighlight';
+import { getTextFieldSxFor } from '../styles/fieldStyles';
 import {
     FORM_ROOT_SX,
     FORM_SCROLL_AREA_SX,
@@ -11,25 +17,21 @@ import {
     FORM_ADD_BUTTON_BASE_SX,
     FORM_ADD_BUTTON_ACTIVE_SX,
 } from '../styles/formStyles';
-import type { PurchaseOrder, LineItem } from '../types/PurchaseOrder';
 import { makeLineItemField } from '../types/fieldIds';
-import { addBlankLineItem as poAddBlankLineItem, removeLineItem, computeNextLineNumber, ensureLineNumberExists, insertBlankLineItem } from '../utils/purchaseOrderMutations';
-import { remapFieldSourcesForInsertion } from '../utils/mappingRemap';
+import { LINE_ITEM_COLUMNS, humanizeColumnKey, type LineItemColumnKey } from '../types/lineItemColumns';
 import type { MultiFieldPair } from '../types/mapping';
-import { useMapping } from '../context/MappingContext';
+import type { PurchaseOrder, LineItem } from '../types/PurchaseOrder';
+import { remapFieldSourcesForInsertion } from '../utils/mappingRemap';
+import { addBlankLineItem as poAddBlankLineItem, removeLineItem, computeNextLineNumber, ensureLineNumberExists, insertBlankLineItem } from '../utils/purchaseOrderMutations';
+import { EmptyState } from './common/EmptyState';
+import { SectionLabel } from './common/SectionLabel';
+import { SubsectionLabel } from './common/SubsectionLabel';
 import ColumnMappingDialog from './dialogs/ColumnMappingDialog';
 import RowMappingDialog from './dialogs/RowMappingDialog';
-import { LINE_ITEM_COLUMNS, humanizeColumnKey, type LineItemColumnKey } from '../types/lineItemColumns';
 import { predictRow, sanitizeText, commitMapping, predictColumn, commitColumnAssignments } from '../utils/formUtils';
 import ColumnDropZone from './form/ColumnDropZone';
 import FieldInput from './form/FieldInput';
 import LineItemCard from './form/LineItemCard';
-import useFlashHighlight from '../hooks/useFlashHighlight';
-import { getTextFieldSxFor } from '../styles/fieldStyles';
-import { BASIC_INFO_FIELDS, type FormFieldConfig } from '../config/formFields';
-import { SectionLabel } from './common/SectionLabel';
-import { SubsectionLabel } from './common/SubsectionLabel';
-import { EmptyState } from './common/EmptyState';
 
 type BasicFieldKey = Exclude<keyof PurchaseOrder, 'lineItems'>;
 
@@ -95,7 +97,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
     const getTextFieldSx = (fieldId: string) => {
         const highlight = isFieldHighlighted(fieldId);
         const stage = getStage(fieldId);
-        return (getTextFieldSxFor(highlight, stage as any) as unknown) as Record<string, any>;
+        return (getTextFieldSxFor(highlight, stage) as unknown) as Record<string, unknown>;
     };
 
     useEffect(() => {
@@ -110,7 +112,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
     }, [purchaseOrder, onUpdate]);
 
     const handleBasicInfoChange = (field: string, value: string | number, kind: string = 'text', opts?: { explicitClear?: boolean }) => {
-        let nextVal: any = value;
+        let nextVal: string | number = value;
         if (opts?.explicitClear) {
             nextVal = (kind === 'integer' || kind === 'decimal') ? 0 : '';
         }
@@ -125,13 +127,13 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
     };
 
     const handleLineItemChange = (lineNumber: number, field: string, value: string | number, kind: string = 'text', opts?: { explicitClear?: boolean }) => {
-        let nextVal: any = value;
+        let nextVal: string | number = value;
         if (opts?.explicitClear) {
             nextVal = (kind === 'integer' || kind === 'decimal') ? 0 : '';
         }
         const updatedItems = purchaseOrder.lineItems.map(item => item.lineNumber === lineNumber ? { ...item, [field]: nextVal } : item);
         const updated = { ...purchaseOrder, lineItems: updatedItems } as PurchaseOrder;
-        const fid = makeLineItemField(lineNumber, field as any);
+        const fid = makeLineItemField(lineNumber, field as LineItemColumnKey);
         const mappingUpdates: { fieldId: string; sourceIds: string[] }[] = [];
         const stringy = typeof nextVal === 'string' ? nextVal.trim() : null;
         const shouldClearSources = (opts?.explicitClear && (nextVal === '' || nextVal === 0)) || (typeof nextVal === 'string' && stringy === '');
@@ -214,7 +216,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         if (!data) { 
             console.warn('No drag data found'); return; 
         }
-        let dragData: any;
+        let dragData: unknown;
         try { 
             dragData = JSON.parse(data); 
         } 
@@ -222,13 +224,17 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
             return;
         }
 
+        if (!dragData || typeof dragData !== 'object') return;
+        const parsed = dragData as { boundingBoxIds?: unknown; text?: unknown };
+
         const additive = e.ctrlKey || e.shiftKey;
-        const droppedIds: string[] = Array.isArray(dragData.boundingBoxIds) ? dragData.boundingBoxIds : [];
+        const droppedIds: string[] = Array.isArray(parsed.boundingBoxIds) ? (parsed.boundingBoxIds as string[]) : [];
         const currentIds: string[] = fieldSources?.[targetField]?.ids || [];
         const nextIds = additive ? Array.from(new Set([...(currentIds || []), ...droppedIds])) : droppedIds;
         const mappingUpdates = droppedIds.length ? [{ fieldId: targetField, sourceIds: nextIds }] : [];
-        const processedText = sanitizeText(dragData.text, fieldKind);
-        const currentValue: string = (purchaseOrder[targetField as keyof PurchaseOrder] as any as string) || '';
+        const processedText = sanitizeText(String(parsed.text ?? ''), fieldKind);
+        const rawCurrent = purchaseOrder[targetField as keyof PurchaseOrder];
+        const currentValue: string = typeof rawCurrent === 'string' ? rawCurrent : '';
         const nextValue = additive
             ? (currentValue ? (fieldKind === 'textarea' ? `${currentValue}\n${processedText}` : `${currentValue} ${processedText}`) : processedText)
             : processedText;
@@ -246,25 +252,29 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         e.preventDefault();
         const data = e.dataTransfer.getData('application/json');
         if (!data) { console.warn('No drag data found'); return; }
-        let dragData: any; try { dragData = JSON.parse(data); } catch { return; }
+        let dragData: unknown; try { dragData = JSON.parse(data); } catch { return; }
         const additive = e.ctrlKey || e.shiftKey;
-        const fid = makeLineItemField(lineNumber, targetField as any);
-        const droppedIds: string[] = Array.isArray(dragData.boundingBoxIds) ? dragData.boundingBoxIds : [];
+        const key = targetField as LineItemColumnKey;
+        const fid = makeLineItemField(lineNumber, key);
+        const parsed = (dragData && typeof dragData === 'object') ? (dragData as { boundingBoxIds?: unknown; text?: unknown }) : null;
+        const droppedIds: string[] = parsed && Array.isArray(parsed.boundingBoxIds) ? (parsed.boundingBoxIds as string[]) : [];
         const currentIds: string[] = fieldSources?.[fid]?.ids || [];
         const nextIds = additive ? Array.from(new Set([...(currentIds || []), ...droppedIds])) : droppedIds;
         const mappingUpdates = droppedIds.length ? [{ fieldId: fid, sourceIds: nextIds }] : [];
-        const processedText = sanitizeText(dragData.text, fieldKind);
+        const processedText = sanitizeText(parsed ? String(parsed.text ?? '') : '', fieldKind);
         const updatedItems = purchaseOrder.lineItems.map(item => {
             if (item.lineNumber !== lineNumber) return item;
             
             if (fieldKind === 'text' || fieldKind === 'textarea') {
-                const currentVal = (item as any)[targetField] as string;
+                const currentVal = item[key] as unknown as string;
                 const nextVal = additive
                     ? (currentVal ? (fieldKind === 'textarea' ? `${currentVal}\n${processedText}` : `${currentVal} ${processedText}`) : processedText)
                     : processedText;
-                return { ...item, [targetField]: nextVal } as any;
+                return { ...(item as LineItem), [key]: nextVal } as LineItem;
             }
-            return { ...item, [targetField]: processedText } as any;
+            // numeric fields: convert processedText into a number
+            const numericVal = fieldKind === 'integer' ? (parseInt(processedText, 10) || 0) : (parseFloat(processedText) || 0);
+            return { ...(item as LineItem), [key]: numericVal } as LineItem;
         });
         const updated = { ...purchaseOrder, lineItems: updatedItems };
         applyTransaction({ mappingUpdates, purchaseOrder: updated }); // single history entry
@@ -275,12 +285,15 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         e.preventDefault();
 
         const data = e.dataTransfer.getData('application/json');
-        if (data)
-        {
-            const dragData: MultiFieldDragPayload = JSON.parse(data);
-            if (Array.isArray(dragData.pairs) && dragData.pairs.length > 0) {
-                openColumnDropDialog(column, dragData);
-                return;
+        if (data) {
+            let dragData: unknown;
+            try { dragData = JSON.parse(data); } catch { dragData = null; }
+            if (dragData && typeof dragData === 'object') {
+                const parsed = dragData as MultiFieldDragPayload;
+                if (Array.isArray(parsed.pairs) && parsed.pairs.length > 0) {
+                    openColumnDropDialog(column, parsed);
+                    return;
+                }
             }
         }
         console.warn('No drag data found');
@@ -290,12 +303,15 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         e.preventDefault();
 
         const data = e.dataTransfer.getData('application/json');
-        if (data)
-        {
-            const dragData: MultiFieldDragPayload = JSON.parse(data);
-            if (Array.isArray(dragData.pairs) && dragData.pairs.length > 0) {
-                openRowDropDialog(lineNumber, dragData);
-                return;
+        if (data) {
+            let dragData: unknown;
+            try { dragData = JSON.parse(data); } catch { dragData = null; }
+            if (dragData && typeof dragData === 'object') {
+                const parsed = dragData as MultiFieldDragPayload;
+                if (Array.isArray(parsed.pairs) && parsed.pairs.length > 0) {
+                    openRowDropDialog(lineNumber, parsed);
+                    return;
+                }
             }
         }
         console.warn('No drag data found');
@@ -423,8 +439,8 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         // - If a pair is BELOW all mapped rows, suggest new increasing rows beyond current max (e.g., 10, 11, 12 ...)
         // - If a pair is ABOVE all mapped rows, default to the next assigned row (keeps ordering intuitive)
         // Build quick lookup for pair midpoint Y from prediction result
-        const yByFieldId: Record<string, number | null> = {};
-        result.rowPairOverlaps.forEach(rpo => { yByFieldId[rpo.pair.fieldId] = (rpo as any).midpointY ?? null; });
+    const yByFieldId: Record<string, number | null> = {};
+    result.rowPairOverlaps.forEach(rpo => { yByFieldId[rpo.pair.fieldId] = rpo.midpointY ?? null; });
         // Stable order by geometry (fallback to original order if Y is missing)
         const ordered = [...pairs].sort((a, b) => {
             const ya = yByFieldId[a.fieldId] ?? Infinity;
@@ -436,9 +452,9 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
         // plus any rows already proposed in this dialog. This ensures we start at 1 when the
         // column is empty, and continue from max used when the column already has data.
         const colIsEmpty = (li: LineItem): boolean => {
-            const colVal: any = (li as any)[column];
-            if (column === 'quantity' || column === 'unitPrice') return colVal === 0;
-            return typeof colVal === 'string' ? colVal.trim() === '' : false;
+            const colVal = li[column] as unknown;
+            if (column === 'quantity' || column === 'unitPrice') return (colVal as number) === 0;
+            return typeof colVal === 'string' ? (colVal as string).trim() === '' : false;
         };
         const used = new Set<number>();
         purchaseOrder.lineItems.forEach(li => { if (!colIsEmpty(li)) used.add(li.lineNumber); });
@@ -514,9 +530,9 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
 
                 // Determine conflicts: if any compressed target row already exists and has a non-empty value for the column
                 const columnIsEmpty = (li: LineItem): boolean => {
-                    const colVal: any = (li as any)[column];
-                    if (column === 'quantity' || column === 'unitPrice') return colVal === 0;
-                    return typeof colVal === 'string' ? colVal.trim() === '' : false;
+                    const colVal = li[column] as unknown;
+                    if (column === 'quantity' || column === 'unitPrice') return (colVal as number) === 0;
+                    return typeof colVal === 'string' ? (colVal as string).trim() === '' : false;
                 };
                 let hasConflict = false;
                 for (const a of assignments) {
@@ -699,7 +715,7 @@ const Form: React.FC<FormProps> = ({ onUpdate, onFieldFocus, clearPersistentFocu
                             setAddButtonDragActive(false);
                             handleAddLineItemDrop(e);
                         }}
-                        sx={([FORM_ADD_BUTTON_BASE_SX, addButtonDragActive ? FORM_ADD_BUTTON_ACTIVE_SX : undefined] as unknown) as any}
+                        sx={([FORM_ADD_BUTTON_BASE_SX, addButtonDragActive ? FORM_ADD_BUTTON_ACTIVE_SX : undefined] as unknown) as SxProps<Theme>}
                     >
                         Add Line Item
                     </Button>

@@ -1,9 +1,10 @@
-import React, { forwardRef } from 'react';
-import { Box, Stack } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import { Box, Stack } from '@mui/material';
+import React, { forwardRef } from 'react';
+
 import { FieldRulesList, FieldRulesListRef } from './FieldRulesList';
-import { FieldRule } from '../../types/rulesComponents';
 import { AnchorRule, RegexMatchRule, AbsoluteRule } from '../../types/extractionRules';
+import { FieldRule } from '../../types/rulesComponents';
 import { IconButton } from '../common/IconButton';
 import { SectionLabel } from '../common/SectionLabel';
 

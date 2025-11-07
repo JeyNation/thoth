@@ -1,5 +1,5 @@
-import type { LayoutMap, Field, AnchorRule, RegexMatchRule, AbsoluteRule } from '@/types/extractionRules';
 import type { BoundingBox } from '@/types/boundingBox';
+import type { LayoutMap, Field, AnchorRule, RegexMatchRule, AbsoluteRule } from '@/types/extractionRules';
 
 export interface FieldExtractionSegment {
     text: string;
@@ -170,7 +170,7 @@ export class ExtractionEngine {
         const matchMode = config.matchMode || 'exact';
         const ignoreCase = config.ignoreCase !== false; // Default true
         const normalizeWhitespace = config.normalizeWhitespace !== false; // Default true
-        const pageScope = (config as any).pageScope || 'first';
+    const pageScope = config.pageScope || 'first';
 
         // Determine eligible pages based on scope
         let minPage = Infinity;
@@ -245,7 +245,7 @@ export class ExtractionEngine {
             return null;
         }
 
-        const from = (config as any).instanceFrom === 'end' ? 'end' : 'start';
+    const from = config.instanceFrom === 'end' ? 'end' : 'start';
         const instance = Math.max(1, config.instance || 1);
         let instanceIndex = from === 'start'
             ? instance - 1

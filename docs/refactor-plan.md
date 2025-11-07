@@ -220,7 +220,7 @@ TDD & incremental refactor
 ---
 
 ## 9) Tests
-- Scope: `src/__tests__`, feature test files
+- Scope: `src/test` (or colocated tests next to components), feature test files
 - Tasks:
   - Move or create tests as part of each component migration step (TDD-first).
   - Maintain a test-per-move rule: every file moved or refactored must have tests added/updated in the new location and pass before the commit.

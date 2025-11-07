@@ -1,5 +1,6 @@
-import type { CSSProperties } from 'react';
 import type { SxProps, Theme } from '@mui/material';
+import type { CSSProperties } from 'react';
+
 import { DROP_ZONE_ACTIVE_STYLE } from './dropHighlight';
 
 export const ROW_DROP_BASE_STYLE: CSSProperties = {

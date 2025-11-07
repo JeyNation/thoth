@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import type { LayoutMap } from '@/types/extractionRules';
+
 import { ExtractionEngine, type FieldExtraction } from '@/services/extractionEngine';
 import type { BoundingBox } from '@/types/boundingBox';
+import type { LayoutMap } from '@/types/extractionRules';
 
 export interface ExtractionRequest {
     boundingBoxes: BoundingBox[];

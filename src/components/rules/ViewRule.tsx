@@ -1,12 +1,13 @@
-import React from 'react';
-import { Paper, Stack } from '@mui/material';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import EditIcon from '@mui/icons-material/Edit';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { Paper, Stack } from '@mui/material';
+import React from 'react';
+
+import { RuleText } from './RuleText';
 import { ViewRuleProps } from '../../types/rulesComponents';
 import { generatePseudoRule } from '../../utils/ruleUtils';
 import { IconButton } from '../common/IconButton';
-import { RuleText } from './RuleText';
 
 export const ViewRule: React.FC<ViewRuleProps> = ({
     rule,

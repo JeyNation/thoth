@@ -1,5 +1,5 @@
-import { AnchorRule, RegexMatchRule, AbsoluteRule, RuleType } from '../types/extractionRules';
 import { numberToWords } from './strings';
+import { AnchorRule, RegexMatchRule, AbsoluteRule, RuleType, ParserPattern } from '../types/extractionRules';
 
 type FieldRule = AnchorRule | RegexMatchRule | AbsoluteRule;
 
@@ -163,13 +163,13 @@ export function generatePseudoRule(rule: FieldRule): string[] {
 
         // PARSER SECTION (if patterns exist)
         if (anchorRule.parserConfig.patterns?.length) {
-            const pattern = anchorRule.parserConfig.patterns[0]; // Show first/highest priority pattern
-            const label = (pattern as any).label as string | undefined;
-            if (label) {
-                lines.push(`<strong>Parser:</strong> extract <code>${label}</code>`);
-            } else {
-                lines.push(`<strong>Parser:</strong> extract text matching pattern <code>${pattern.regex}</code>`);
-            }
+                    const pattern = anchorRule.parserConfig.patterns[0] as ParserPattern | undefined; // Show first/highest priority pattern
+                    const label = pattern?.label;
+                    if (label) {
+                        lines.push(`<strong>Parser:</strong> extract <code>${label}</code>`);
+                    } else if (pattern) {
+                        lines.push(`<strong>Parser:</strong> extract text matching pattern <code>${pattern.regex}</code>`);
+                    }
         }
 
     } else if (rule.ruleType === 'regex_match') {
@@ -317,16 +317,20 @@ export const updateRule = (
     const currentRule = updatedRules[ruleIndex];
     
     // Deep merge for nested config objects
-    const mergeConfigs = (current: any, update: any) => {
+    const mergeConfigs = (current: unknown, update: unknown): unknown => {
         if (!update) return current;
-        if (!current) return update;
-        
-        const merged = { ...current };
-        for (const key in update) {
-            if (update[key] && typeof update[key] === 'object' && !Array.isArray(update[key])) {
-                merged[key] = mergeConfigs(current[key], update[key]);
+        if (typeof update !== 'object' || update === null) return update;
+        if (typeof current !== 'object' || current === null) return update;
+
+        const merged: Record<string, unknown> = { ...(current as Record<string, unknown>) };
+        const upd = update as Record<string, unknown>;
+        for (const key in upd) {
+            const uVal = upd[key];
+            const cVal = (merged as Record<string, unknown>)[key];
+            if (uVal && typeof uVal === 'object' && !Array.isArray(uVal) && cVal && typeof cVal === 'object' && !Array.isArray(cVal)) {
+                merged[key] = mergeConfigs(cVal, uVal) as unknown;
             } else {
-                merged[key] = update[key];
+                merged[key] = uVal;
             }
         }
         return merged;

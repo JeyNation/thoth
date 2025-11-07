@@ -1,9 +1,18 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, Paper } from '@mui/material';
-import { WorkspaceTabs } from './workspace/WorkspaceTabs';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+
+import ConnectionOverlay, { type OverlayConnection } from './ConnectionOverlay';
+import Debugger from './Debugger';
+import Form from './Form';
+import { Rules } from './Rules';
+import Viewer from './Viewer';
 import { WorkspaceMenu } from './workspace/WorkspaceMenu';
+import { WorkspaceTabs } from './workspace/WorkspaceTabs';
+import { EXTRACTION_FIELD_MAPPING } from '../config/formFields';
+import { useMapping, MappingProvider } from '../context/MappingContext';
+import { ExtractionEngine } from '../services/extractionEngine';
 import {
     WORKSPACE_ROOT_SX,
     WORKSPACE_INNER_SX,
@@ -14,23 +23,17 @@ import {
     WORKSPACE_DEBUG_RESIZER_SX,
     WORKSPACE_DEBUG_CONTAINER_SX,
 } from '../styles/workspaceStyles';
-import type { PurchaseOrder } from '../types/PurchaseOrder';
-import type { BoundingBox } from '../types/mapping';
 import type { BoundingBox as ExtractionBoundingBox } from '../types/boundingBox';
 import type { LayoutMap } from '../types/extractionRules';
-import { ExtractionEngine } from '../services/extractionEngine';
-import { EXTRACTION_FIELD_MAPPING } from '../config/formFields';
-import { useMapping, MappingProvider } from '../context/MappingContext';
-import Form from './Form';
-import Viewer from './Viewer';
-import Debugger from './Debugger';
-import ConnectionOverlay, { type OverlayConnection } from './ConnectionOverlay';
-import { Rules } from './Rules';
+import type { BoundingBox } from '../types/mapping';
+import type { PurchaseOrder } from '../types/PurchaseOrder';
 
 interface WorkspaceProps {
     documentPath: string;
     onBackToList: () => void;
 }
+
+type DocumentData = Record<string, unknown> & { vendorId?: string };
 
 const STORAGE_KEY_PREFIX = 'thoth:layoutMap:';
 
@@ -49,7 +52,7 @@ const readLayoutMapFromStorage = (vendorId: string): LayoutMap | null => {
 };
 
 const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => {
-    const [documentData, setDocumentData] = useState<any>(null);
+    const [documentData, setDocumentData] = useState<DocumentData | null>(null);
     const [focusedInputField, setFocusedInputField] = useState<string | null>(null);
     const [focusedBoundingBoxId, setFocusedBoundingBoxId] = useState<string | null>(null);
     const [boundingBoxes, setBoundingBoxes] = useState<BoundingBox[]>([]);
@@ -115,7 +118,8 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
     useEffect(() => { reverseIndexRef.current = reverseIndex; }, [reverseIndex]);
     useEffect(() => {
         const cssEscape = (value: string) => {
-            if (typeof CSS !== 'undefined' && typeof (CSS as any).escape === 'function') return (CSS as any).escape(value);
+            const cssAny = (CSS as unknown as { escape?: (s: string) => string });
+            if (typeof cssAny?.escape === 'function') return cssAny.escape(value);
             return value.replace(/[^a-zA-Z0-9_\-]/g, (ch) => `\\${ch}`);
         };
         const ensureInDom = (el?: HTMLElement | null) => !!(el && document.contains(el));
@@ -235,23 +239,24 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
     const recompute = () => { if (pending) return; pending = true; raf = requestAnimationFrame(() => { pending = false; recomputeNow(); }); };
     
     recomputeRef.current = recompute;
-        recompute(); requestAnimationFrame(recompute);
-        const onResize = () => recompute();
-        const onScroll = () => recompute();
-        window.addEventListener('resize', onResize);
-        window.addEventListener('scroll', onScroll as any, { passive: true, capture: true } as any);
-        document.addEventListener('scroll', onScroll as any, { passive: true, capture: true } as any);
+    recompute(); requestAnimationFrame(recompute);
+    const onResize = () => recompute();
+    const onScroll = (_e?: Event) => recompute();
+    const scrollOpts: AddEventListenerOptions = { passive: true, capture: true };
+    window.addEventListener('resize', onResize);
+    window.addEventListener('scroll', onScroll, scrollOpts);
+    document.addEventListener('scroll', onScroll, scrollOpts);
         const ro = new ResizeObserver(() => recompute());
         document.querySelectorAll('[data-view-panel], [data-form-panel]').forEach((el) => ro.observe(el));
         if (scrollersRef.current.length === 0) {
             scrollersRef.current = Array.from(document.querySelectorAll('[data-scroll-listener]')) as HTMLElement[];
-            scrollersRef.current.forEach((el) => el.addEventListener('scroll', onScroll, { passive: true } as any));
+            scrollersRef.current.forEach((el) => el.addEventListener('scroll', onScroll, { passive: true }));
         }
         return () => {
             window.removeEventListener('resize', onResize);
-            window.removeEventListener('scroll', onScroll as any, true);
-            document.removeEventListener('scroll', onScroll as any, true);
-            scrollersRef.current.forEach((el) => el.removeEventListener('scroll', onScroll as any));
+            window.removeEventListener('scroll', onScroll as EventListener, true);
+            document.removeEventListener('scroll', onScroll as EventListener, true);
+            scrollersRef.current.forEach((el) => el.removeEventListener('scroll', onScroll));
             ro.disconnect();
             if (raf) cancelAnimationFrame(raf);
             recomputeRef.current = null;
@@ -266,7 +271,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
         
         fetch(documentPath)
             .then(r => { if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-            .then(setDocumentData)
+            .then((d) => setDocumentData(d as DocumentData))
             .catch(err => console.error('Failed loading document data', err));
     }, [documentPath]);
 
@@ -276,9 +281,9 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
 
         const runAutoExtraction = async () => {
             try {
-                const layoutMap = await getLayoutMapForVendor(documentData.vendorId);
+                const vendorId = documentData.vendorId as string;
+                const layoutMap = await getLayoutMapForVendor(vendorId);
                 if (!layoutMap) {
-                    console.log(`No layout rules found for vendor: ${documentData.vendorId}`);
                     return;
                 }
                 
@@ -319,7 +324,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
                         });
 
                         // Update the purchase order value
-                        (updatedPO as any)[poFieldId] = extraction.value;
+                        (updatedPO as Record<string, unknown>)[poFieldId] = extraction.value;
                     });
 
                     // Apply both mapping and purchase order updates in a single transaction
@@ -373,14 +378,13 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
     
     const handleRerunExtraction = async () => {
         if (!documentData || !documentData.vendorId || boundingBoxes.length === 0) {
-            console.log('Cannot rerun extraction: missing document data or bounding boxes');
             return;
         }
 
         try {
-            const layoutMap = await getLayoutMapForVendor(documentData.vendorId);
+                const vendorId = documentData.vendorId as string;
+                const layoutMap = await getLayoutMapForVendor(vendorId);
             if (!layoutMap) {
-                console.log(`No layout rules found for vendor: ${documentData.vendorId}`);
                 alert('No layout rules found for this vendor');
                 return;
             }
@@ -432,7 +436,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
                     });
 
                     // Update the purchase order value
-                    (updatedPO as any)[poFieldId] = extraction.value;
+                    (updatedPO as Record<string, unknown>)[poFieldId] = extraction.value;
                 });
 
                 // Apply both mapping and purchase order updates in a single transaction
@@ -469,9 +473,9 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
         isResizingRef.current = true;
         startYRef.current = e.clientY;
         startHeightRef.current = debuggerHeight;
-        document.body.style.cursor = 'row-resize';
-        (document.body.style as any).userSelect = 'none';
-        (document.body.style as any).webkitUserSelect = 'none';
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
+    (document.body.style as unknown as { webkitUserSelect?: string }).webkitUserSelect = 'none';
     };
 
     useEffect(() => {
@@ -489,8 +493,8 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
             isResizingRef.current = false;
             e.preventDefault();
             document.body.style.cursor = '';
-            (document.body.style as any).userSelect = '';
-            (document.body.style as any).webkitUserSelect = '';
+            document.body.style.userSelect = '';
+            (document.body.style as unknown as { webkitUserSelect?: string }).webkitUserSelect = '';
         };
         const onTouchMove = (e: TouchEvent) => {
             if (!isResizingRef.current) return;
@@ -507,17 +511,17 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
             if (!isResizingRef.current) return;
             isResizingRef.current = false;
             document.body.style.cursor = '';
-            (document.body.style as any).userSelect = '';
-            (document.body.style as any).webkitUserSelect = '';
+            document.body.style.userSelect = '';
+            (document.body.style as unknown as { webkitUserSelect?: string }).webkitUserSelect = '';
         };
         window.addEventListener('mousemove', onMouseMove);
         window.addEventListener('mouseup', onMouseUp);
-        window.addEventListener('touchmove', onTouchMove, { passive: false } as any);
+        window.addEventListener('touchmove', onTouchMove, { passive: false });
         window.addEventListener('touchend', onTouchEnd);
         return () => {
             window.removeEventListener('mousemove', onMouseMove);
             window.removeEventListener('mouseup', onMouseUp);
-            window.removeEventListener('touchmove', onTouchMove as any, true as any);
+            window.removeEventListener('touchmove', onTouchMove as EventListener, true);
             window.removeEventListener('touchend', onTouchEnd);
         };
     }, []);
@@ -573,7 +577,8 @@ const Workspace: React.FC<WorkspaceProps> = ({ documentPath, onBackToList }) => 
                     <Paper elevation={1} sx={WORKSPACE_PANEL_PAPER_SX}>
                         <Box sx={WORKSPACE_PANEL_BOX_SX} data-view-panel>
                             <Viewer
-                                documentData={documentData}
+                                svgImages={documentData?.svgImages as string[] | undefined}
+                                boundingBoxes={documentData?.boundingBoxes as BoundingBox[] | undefined}
                                 focusedInputField={focusedInputField}
                                 onBoundingBoxesUpdate={handleBoundingBoxesUpdate}
                                 onViewerTransformChange={handleViewerTransformChange}

@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
 import { TextField } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+
 import ClearAdornment from './ClearAdornment';
 import { applyDropHighlightSx } from '../../styles/dropHighlight';
 
@@ -13,7 +14,7 @@ export interface FieldInputProps {
   kind: FieldKind;
   value: string | number;
 
-  baseSx: Record<string, any>;
+  baseSx: Record<string, unknown>;
   isDragActive: boolean;
   ariaLabel?: string;
   label: string;

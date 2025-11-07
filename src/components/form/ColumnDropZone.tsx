@@ -1,12 +1,13 @@
-import React from 'react';
 import { Box, Typography } from '@mui/material';
-import DropZone from '../DropZone';
+import React from 'react';
+
 import { 
   COLUMN_DROP_BASE_STYLE,
   COLUMN_DROP_ACTIVE_STYLE,
   COLUMN_DROP_CONTAINER_SX, 
   COLUMN_DROP_LABEL_SX 
 } from '../../styles/columnDropStyles';
+import DropZone from '../DropZone';
 
 interface ColumnDropZoneProps<T extends string> {
   columns: readonly T[];

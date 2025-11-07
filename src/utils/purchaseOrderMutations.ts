@@ -1,5 +1,5 @@
-import type { PurchaseOrder, LineItem } from '../types/PurchaseOrder';
 import { makeLineItemField, parseLineItemField } from '../types/fieldIds';
+import type { PurchaseOrder, LineItem } from '../types/PurchaseOrder';
 
 export interface RemoveLineItemResult {
   purchaseOrder: PurchaseOrder;
@@ -18,9 +18,9 @@ export const removeLineItem = (po: PurchaseOrder, lineNumber: number): RemoveLin
   if (!po.lineItems.some(li => li.lineNumber === lineNumber)) {
     return { purchaseOrder: po, removedFieldIds: [], remappedFieldIds: [] };
   }
-  const removedFieldIds: string[] = ['sku','description','quantity','unitPrice'].map(col => makeLineItemField(lineNumber, col as any));
-  const remappedFieldIds: { oldId: string; newId: string }[] = [];
   const columns = ['sku','description','quantity','unitPrice'] as const;
+  const removedFieldIds: string[] = columns.map(col => makeLineItemField(lineNumber, col));
+  const remappedFieldIds: { oldId: string; newId: string }[] = [];
   const nextItems: LineItem[] = po.lineItems
     .filter(li => li.lineNumber !== lineNumber)
     .map(li => {
@@ -28,7 +28,7 @@ export const removeLineItem = (po: PurchaseOrder, lineNumber: number): RemoveLin
         const oldLine = li.lineNumber;
         const updated: LineItem = { ...li, lineNumber: oldLine - 1 };
         columns.forEach(col => {
-          remappedFieldIds.push({ oldId: makeLineItemField(oldLine, col as any), newId: makeLineItemField(oldLine - 1, col as any) });
+          remappedFieldIds.push({ oldId: makeLineItemField(oldLine, col), newId: makeLineItemField(oldLine - 1, col) });
         });
         return updated;
       }
@@ -69,7 +69,7 @@ export const insertBlankLineItem = (po: PurchaseOrder, afterLineNumber: number):
       const oldLine = li.lineNumber;
       const updated: LineItem = { ...li, lineNumber: oldLine + 1 };
       columns.forEach(col => {
-        remappedFieldIds.push({ oldId: makeLineItemField(oldLine, col as any), newId: makeLineItemField(oldLine + 1, col as any) });
+        remappedFieldIds.push({ oldId: makeLineItemField(oldLine, col), newId: makeLineItemField(oldLine + 1, col) });
       });
       return updated;
     }

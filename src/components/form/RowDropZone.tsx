@@ -1,12 +1,13 @@
-import React from 'react';
 import { Box, Typography } from '@mui/material';
-import DropZone from '../DropZone';
+import React from 'react';
+
 import { 
   ROW_DROP_BASE_STYLE, 
   ROW_DROP_ACTIVE_STYLE, 
   ROW_DROP_CONTAINER_SX,
   ROW_DROP_LABEL_SX 
 } from '../../styles/rowDropStyles';
+import DropZone from '../DropZone';
 
 interface RowDropZoneProps {
   lineNumber: number;

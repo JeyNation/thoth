@@ -1,5 +1,5 @@
-import { IconButton as MuiIconButton, Tooltip } from '@mui/material';
 import type { SvgIconComponent } from '@mui/icons-material';
+import { IconButton as MuiIconButton, Tooltip } from '@mui/material';
 import React from 'react';
 
 interface IconButtonProps {

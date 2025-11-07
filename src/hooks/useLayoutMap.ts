@@ -1,43 +1,50 @@
 "use client";
 
 import { useCallback, useEffect, useState } from 'react';
+
+import type { AnchorRule, LayoutMap, PositionConfig } from '../types/extractionRules';
 import { readLayoutMapFromStorage, writeLayoutMapToStorage } from '../utils/layoutStorage';
-import type { AnchorRule, LayoutMap } from '../types/extractionRules';
 
 function migrateStartingPosition(map: LayoutMap): LayoutMap {
   try {
-    const next: LayoutMap = { ...map, fields: map.fields?.map(f => ({
-      ...f,
-      rules: f.rules?.map((r: any) => {
-        if (r.ruleType !== 'anchor') return r;
-        let rule = r as AnchorRule;
-        const pos = rule.positionConfig || ({} as any);
-        
-        // Clean up: remove direction property if it exists and ensure startingPosition
-        let startingPosition = pos.startingPosition;
-        if (!startingPosition) {
-          // Use direction to set default startingPosition, then remove direction
-          const dir = ((pos as any).direction || '').toLowerCase();
-          if (dir === 'right') startingPosition = 'topRight';
-          else if (dir === 'bottom' || dir === 'below' || dir === '') startingPosition = 'bottomLeft';
-          else if (dir === 'left') startingPosition = 'topLeft';
-          else if (dir === 'top' || dir === 'above') startingPosition = 'topLeft';
-          else startingPosition = 'bottomLeft'; // fallback
-        }
-        
-        // Create new position config without direction property
-        const { direction, ...cleanPos } = pos as any;
-        rule = {
-          ...rule,
-          positionConfig: {
-            ...cleanPos,
-            startingPosition
+    const next: LayoutMap = {
+      ...map,
+      fields: map.fields?.map(f => ({
+        ...f,
+        rules: f.rules?.map((r) => {
+          if (r.ruleType !== 'anchor') return r;
+          let rule = r as AnchorRule;
+          const pos = (rule.positionConfig || {}) as Partial<PositionConfig>;
+
+          // Clean up: remove direction property if it exists and ensure startingPosition
+          let startingPosition = pos.startingPosition;
+          if (!startingPosition) {
+            // Use legacy 'direction' key (if present) to set default startingPosition, then remove direction
+            const dir = String(((pos as unknown) as Record<string, unknown>).direction || '').toLowerCase();
+            if (dir === 'right') startingPosition = 'topRight';
+            else if (dir === 'bottom' || dir === 'below' || dir === '') startingPosition = 'bottomLeft';
+            else if (dir === 'left') startingPosition = 'topLeft';
+            else if (dir === 'top' || dir === 'above') startingPosition = 'topLeft';
+            else startingPosition = 'bottomLeft'; // fallback
           }
-        } as any;
-        
-        return rule;
-      }) || []
-    })) || [] };
+
+          // Create new position config without direction property (legacy 'direction' key sanitized)
+          const rawPos = pos as unknown as Record<string, unknown>;
+          const cleanPosRecord: Record<string, unknown> = { ...rawPos };
+          delete (cleanPosRecord as Record<string, unknown>)['direction'];
+          rule = {
+            ...rule,
+            positionConfig: {
+              // cast via unknown to acknowledge runtime migration from legacy shape
+              ...(cleanPosRecord as unknown as PositionConfig),
+              startingPosition
+            }
+          } as AnchorRule;
+
+          return rule;
+        }) || []
+      })) || []
+    };
     return next;
   } catch (e) {
     console.warn('migrateStartingPosition failed, returning original map', e);

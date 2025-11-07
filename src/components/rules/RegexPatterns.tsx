@@ -1,10 +1,11 @@
-import React, { useImperativeHandle, forwardRef } from 'react';
-import { Paper, Stack, Typography, Chip, List, ListItemButton, ListItemText, ClickAwayListener, Box } from '@mui/material';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AddIcon from '@mui/icons-material/Add';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import { Paper, Stack, Typography, Chip, List, ListItemButton, ListItemText, ClickAwayListener, Box } from '@mui/material';
+import React, { useImperativeHandle, forwardRef } from 'react';
+
 import { RegexPatternsProps } from '../../types/rulesComponents';
 import { IconButton } from '../common/IconButton';
 import { TextButton } from '../common/TextButton';
@@ -91,12 +92,13 @@ export const RegexPatterns = forwardRef<RegexPatternsRef, RegexPatternsProps>(fu
             setOpen(false);
         },
         getPendingChanges: () => {
+            type Pending = { pendingPattern?: string | { regex: string; label?: string }; pendingPatternEdit?: { index: number; pattern: string | { regex: string; label?: string } } };
             const val = inputValue.trim();
-            if (!val) return {};
+            if (!val) return {} as Pending;
             if (editingIndex !== null) {
-                return { pendingPatternEdit: { index: editingIndex, pattern: val } } as any;
+                return { pendingPatternEdit: { index: editingIndex, pattern: val } } as Pending;
             }
-            return { pendingPattern: val } as any;
+            return { pendingPattern: val } as Pending;
         }
     }), [inputValue, editingIndex, onAdd, onUpdate]);
 

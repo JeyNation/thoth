@@ -84,29 +84,32 @@ const DropZone: React.FC<DropZoneProps> = ({
     ? (() => {
         const { background, backgroundColor, backgroundImage, ...restActive } = (activeStyle || {} as React.CSSProperties);
 
-        const expandBorder = (s: React.CSSProperties) => {
-          const out: Record<string, string> = {};
+        const expandBorder = (s?: React.CSSProperties) => {
+          const out: Partial<Record<'borderWidth' | 'borderStyle' | 'borderColor', string>> = {};
           if (!s) return out;
-          const borderVal = (s as any).border as string | undefined;
-          if (typeof borderVal === 'string') {
+          const borderVal = typeof s.border === 'string' ? s.border : undefined;
+          if (borderVal) {
             const m = borderVal.trim().match(/^([0-9.]+[a-z%]*)\s+([a-z]+)\s+(.*)$/i);
             if (m) {
-              out['borderWidth'] = m[1];
-              out['borderStyle'] = m[2];
-              out['borderColor'] = m[3];
+              out.borderWidth = m[1];
+              out.borderStyle = m[2];
+              out.borderColor = m[3];
             }
           }
-          if ((s as any).borderWidth) out['borderWidth'] = (s as any).borderWidth;
-          if ((s as any).borderStyle) out['borderStyle'] = (s as any).borderStyle;
-          if ((s as any).borderColor) out['borderColor'] = (s as any).borderColor;
+          const bw = s.borderWidth;
+          if (bw !== undefined && bw !== null) out.borderWidth = String(bw);
+          const bs = s.borderStyle;
+          if (bs !== undefined && bs !== null) out.borderStyle = String(bs);
+          const bc = s.borderColor;
+          if (bc !== undefined && bc !== null) out.borderColor = String(bc);
           return out;
         };
 
-        const base = { ...(baseStyle || {}) } as Record<string, any>;
+        const base = { ...(baseStyle || {}) } as React.CSSProperties;
         const activeParts = expandBorder(restActive as React.CSSProperties);
         const baseParts = expandBorder(baseStyle as React.CSSProperties);
 
-        const merged = { ...base, ...restActive } as Record<string, any>;
+        const merged = { ...(base as Record<string, unknown>), ...(restActive as Record<string, unknown>) } as Record<string, unknown>;
 
         delete merged.border;
         delete merged.borderStyle;

@@ -49,8 +49,6 @@ const ConnectionOverlay: React.FC<Props> = ({ connections, onCenterIconClick, fo
     CLEAR_ICON_FILL,
     CLEAR_ICON_STROKE,
     MARKER_RADIUS,
-    ARROW_SIZE,
-    ARROW_HALF,
     GAP,
     ICON_R,
     ICON_STROKE,
@@ -121,8 +119,8 @@ const ConnectionOverlay: React.FC<Props> = ({ connections, onCenterIconClick, fo
         };
         const startOut = start === epA ? conn.aOut : conn.bOut;
         const endOut = end === epA ? conn.aOut : conn.bOut;
-        const tStart = start.clamped ? (forcedStartTangent(startOut as any, start.clampSides) || { x: na.nx, y: na.ny }) : { x: na.nx, y: na.ny };
-        const tEnd = end.clamped ? (forcedEndTangent(endOut as any, end.clampSides) || { x: -nb.nx, y: -nb.ny }) : { x: -nb.nx, y: -nb.ny };
+        const tStart = start.clamped ? (forcedStartTangent(startOut as OutFlags, start.clampSides) || { x: na.nx, y: na.ny }) : { x: na.nx, y: na.ny };
+        const tEnd = end.clamped ? (forcedEndTangent(endOut as OutFlags, end.clampSides) || { x: -nb.nx, y: -nb.ny }) : { x: -nb.nx, y: -nb.ny };
 
         const mixedOrientation = (Math.abs(na.nx) > 0) !== (Math.abs(nb.nx) > 0);
 
@@ -156,20 +154,10 @@ const ConnectionOverlay: React.FC<Props> = ({ connections, onCenterIconClick, fo
 
         const d = `M ${pStart.x},${pStart.y} C ${c1x},${c1y} ${c2x},${c2y} ${pEnd.x},${pEnd.y}`;
 
-        const Arrow = ({ x, y, dir }: { x: number; y: number; dir: { x: number; y: number } }) => {
-          const len = Math.hypot(dir.x, dir.y) || 1;
-          const ux = dir.x / len; const uy = dir.y / len;
-          const angle = (Math.atan2(dir.y, dir.x) * 180) / Math.PI;
-          const cx = x + ux * (2 * ARROW_SIZE / 3);
-          const cy = y + uy * (2 * ARROW_SIZE / 3);
-          const points = `0,0 ${-ARROW_SIZE},${ARROW_HALF} ${-ARROW_SIZE},${-ARROW_HALF}`;
-          return <polygon points={points} fill={PATH_STROKE_COLOR} transform={`translate(${cx},${cy}) rotate(${angle})`} />;
-        };
-
-        const stopAll = (e: any) => {
+        const stopAll = (e: React.MouseEvent<SVGGElement, MouseEvent>) => {
           if (e && typeof e.preventDefault === 'function') e.preventDefault();
           if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-          const ne = e?.nativeEvent as any;
+          const ne = e?.nativeEvent as MouseEvent | undefined;
           if (ne && typeof ne.stopImmediatePropagation === 'function') ne.stopImmediatePropagation();
         };
         const ClearIcon = ({ x, y }: { x: number; y: number }) => (

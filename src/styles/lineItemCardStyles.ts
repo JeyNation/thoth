@@ -1,4 +1,4 @@
-import type { SxProps } from '@mui/material';
+import type { SxProps, StackProps } from '@mui/material';
 import type { Theme } from '@mui/material/styles';
 
 export const LINE_ITEM_PAPER_SX: SxProps<Theme> = {
@@ -14,19 +14,19 @@ export const LINE_ITEM_STACK_SX: SxProps<Theme> = {
 };
 
 // Layout/prop groups for Stack components to centralize layout decisions
-export const LINE_ITEM_OUTER_STACK_PROPS: Record<string, any> = {
+export const LINE_ITEM_OUTER_STACK_PROPS: StackProps = {
   direction: 'row',
   spacing: 0,
   alignItems: 'flex-start',
 };
 
-export const LINE_ITEM_INNER_STACK_PROPS: Record<string, any> = {
+export const LINE_ITEM_INNER_STACK_PROPS: StackProps = {
   spacing: 0,
   useFlexGap: true,
   sx: LINE_ITEM_STACK_SX,
 };
 
-export const LINE_ITEM_HEADER_STACK_PROPS: Record<string, any> = {
+export const LINE_ITEM_HEADER_STACK_PROPS: StackProps = {
   direction: 'row',
   spacing: 0,
   alignItems: 'flex-start',
@@ -34,13 +34,13 @@ export const LINE_ITEM_HEADER_STACK_PROPS: Record<string, any> = {
   mb: 1.5,
 };
 
-export const LINE_ITEM_ACTIONS_STACK_PROPS: Record<string, any> = {
+export const LINE_ITEM_ACTIONS_STACK_PROPS: StackProps = {
   direction: 'row',
   spacing: 0.5,
   alignItems: 'flex-start',
 };
 
-export const LINE_ITEM_FIELDS_STACK_PROPS: Record<string, any> = {
+export const LINE_ITEM_FIELDS_STACK_PROPS: StackProps = {
   spacing: 1.5,
 };
 

@@ -1,15 +1,17 @@
-import React, { useEffect, useMemo, useState, useImperativeHandle, forwardRef, useRef } from 'react';
-import { Stack, Chip, Box, FormControl, InputLabel, Select, MenuItem, FormControlLabel, Switch } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { Stack, Chip, Box, FormControl, InputLabel, Select, MenuItem, FormControlLabel, Switch } from '@mui/material';
+import React, { useEffect, useMemo, useState, useImperativeHandle, forwardRef, useRef } from 'react';
+
+import { RegexPatterns, RegexPatternsRef } from './RegexPatterns';
+import { SearchZone } from './SearchZone';
+import type { AnchorMatchMode, StartingPositionCorner } from '../../types/extractionRules';
 import { AnchorConfigProps } from '../../types/rulesComponents';
 import { SubsectionLabel } from '../common/SubsectionLabel';
-import { TextInput } from '../common/TextInput';
 import { TextButton } from '../common/TextButton';
-import { SearchZone } from './SearchZone';
-import { RegexPatterns, RegexPatternsRef } from './RegexPatterns';
+import { TextInput } from '../common/TextInput';
 
 export interface AnchorConfigRef {
     applyPendingChanges: () => void;
@@ -194,11 +196,11 @@ export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(({
                     value={rule.anchorConfig?.matchMode || ''}
                     label="Match Mode"
                     onChange={(e) => onUpdateField({
-                        anchorConfig: {
-                            ...rule.anchorConfig,
-                            matchMode: e.target.value as any
-                        }
-                    })}
+                            anchorConfig: {
+                                ...rule.anchorConfig,
+                                matchMode: e.target.value as AnchorMatchMode
+                            }
+                        })}
                 >
                     <MenuItem value=""><em>Select match mode</em></MenuItem>
                     <MenuItem value="exact">Exact Match</MenuItem>
@@ -213,11 +215,11 @@ export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(({
                     <InputLabel>Pick From</InputLabel>
                     <Select
                         label="Pick From"
-                        value={(rule.anchorConfig as any)?.instanceFrom || 'start'}
+                        value={rule.anchorConfig?.instanceFrom || 'start'}
                         onChange={(e) => onUpdateField({
                             anchorConfig: {
                                 ...rule.anchorConfig,
-                                instanceFrom: e.target.value as any
+                                instanceFrom: e.target.value as 'start' | 'end'
                             }
                         })}
                     >
@@ -283,11 +285,11 @@ export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(({
                     <InputLabel>Pages</InputLabel>
                     <Select
                         label="Pages"
-                        value={(rule.anchorConfig as any)?.pageScope || 'first'}
+                        value={rule.anchorConfig?.pageScope || 'first'}
                         onChange={(e) => onUpdateField({
                             anchorConfig: {
                                 ...rule.anchorConfig,
-                                pageScope: e.target.value as any
+                                pageScope: e.target.value as 'first' | 'last' | 'any'
                             }
                         })}
                     >
@@ -402,7 +404,7 @@ export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(({
                         onChange={(e) => onUpdateField({
                             positionConfig: {
                                 ...rule.positionConfig,
-                                startingPosition: e.target.value as any
+                                startingPosition: e.target.value as StartingPositionCorner
                             }
                         })}
                     >
