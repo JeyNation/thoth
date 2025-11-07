@@ -3,6 +3,7 @@
 This document tracks a prioritized, component-by-component refactor plan to bring the project into the modern, opinionated standards described in `.github/copilot-instructions.md`.
 
 Rules and constraints summary (from instructions)
+
 - Domain-Driven Design (DDD): group by `src/features/{domain}` for domain code.
 - TypeScript strict: avoid `any`, prefer `unknown` or concrete types.
 - UI: import only from `src/components/ui/` design wrappers; use Tailwind classes for styling; avoid `sx` prop.
@@ -12,17 +13,19 @@ Rules and constraints summary (from instructions)
 - Testing: colocated tests, RTL for components, Playwright for E2E.
 - Imports: use absolute alias `@/...`.
 
-
 How to use this file
+
 - Each item has: Scope, Tasks, Owner, Priority, Estimate (days), Status, Acceptance Criteria.
 - Update the Status as you make progress. This file is a living checklist.
 
 Primary refactor principles
+
 - TDD-first: write tests before moving or changing behavior. Each refactor step must include automated tests (unit/integration) that validate behavior before and after the change.
 - Incremental: break moves into the smallest safe pieces. Move one component or small cohesive unit at a time and run tests and manual checks.
 - Scaffold-first: create new feature folder structure and a minimal test harness before moving production files to avoid large refactor PRs that break imports.
 
 -Pre-refactor checklist (scaffold & safety)
+
 - Create feature folder scaffolds for each target domain under `src/features/{domain}` with placeholder `index.ts` and `README.md`.
 - Follow the colocation principle for tests: do NOT create a centralized `tests/` folder inside the scaffold. Instead, add guidance or an example showing that tests should live next to the component (e.g., `components/RuleEditor/RuleEditor.test.tsx`).
 - Add a migration README inside each scaffold explaining what will be moved and why.
@@ -37,6 +40,7 @@ Primary refactor principles
 ---
 
 ## Global housekeeping
+
 - Scope: repo-wide build/lint/test infra
 - Tasks:
   - Ensure `tsconfig.json` strict settings are enabled and consistent.
@@ -47,7 +51,16 @@ Primary refactor principles
 - Owner: infra
 - Priority: High
 - Estimate: 1-2 days
-- Status: todo
+- Status: done
+
+Notes:
+
+- CI workflow pinned Node to 20 and pnpm to 8.10.0; pnpm store caching was added for reproducible CI runs.
+- `tsconfig.json` is strict and contains `@/*` path alias; Vitest resolves the alias via `vitest.config.ts`.
+- Prettier + `.prettierignore`, `lint-staged`, and Husky pre-commit are configured and active.
+- Updated `@typescript-eslint` packages to 8.x to be compatible with TypeScript 5.8+. Local lint/build/test/typecheck verified.
+- Legacy `src/__tests__` folder removed; `src/test/setup.ts` present for Vitest.
+- Remaining recommendation: consider full ESLint major upgrade or pin TypeScript version; these are documented in the repo notes.
 - Acceptance:
   - CI pipeline runs lint + typecheck + tests and succeeds.
   - Pre-commit prevents bad commits.
@@ -55,6 +68,7 @@ Primary refactor principles
 ---
 
 ## 1) Design system & UI wrappers
+
 - Scope: `src/components/ui/` and usage across the app
 - Tasks:
   - Audit `src/components/ui/` for components that wrap MUI. Ensure all UI comes from this folder.
@@ -73,6 +87,7 @@ Primary refactor principles
 ---
 
 ## 2) Domain re-organization (DDD)
+
 - Scope: move feature code into `src/features/` subfolders; avoid cross-domain imports
 - Tasks:
   - Identify feature candidates: `document-processing`, `extraction-rules`, `mapping`, etc.
@@ -92,6 +107,7 @@ Primary refactor principles
 ---
 
 ## 3) API routes and service layer
+
 - Scope: `src/app/api/**` and `src/features/**/api` services
 - Tasks:
   - Convert API route handlers to "thin" entry points that validate via zod and call service functions.
@@ -107,12 +123,14 @@ Primary refactor principles
   - zod schemas exist and are used for validation.
 
 Additional infra tasks (install & scaffold)
+
 - Initialize Prisma: add `prisma/` folder and run `npx prisma init` locally to create `schema.prisma`.
 - Add `prisma` scripts to `package.json`: `prisma:generate`, `prisma:migrate:dev`, `prisma:studio`.
 - Add `.env.example` with placeholders for `DATABASE_URL` and `DIRECT_URL` and document local SQLite fallback for dev.
 - Add `prisma/seed.ts` to import sample layout maps and documents from `public/data`.
 
 TDD and migration approach for API/DB
+
 1. Add zod schemas and unit tests for validation logic (no DB access yet).
 2. Design minimal Prisma models for persisted artifacts (layout maps, documents, rules) and add migrations.
 3. Implement repository functions with tests using SQLite in-memory or a test DB.
@@ -121,6 +139,7 @@ TDD and migration approach for API/DB
 ---
 
 ## 4) Database access
+
 - Scope: `src/lib/db.ts`, prisma usage across repo
 - Tasks:
   - Ensure a single Prisma client export at `src/lib/db.ts`.
@@ -135,18 +154,21 @@ TDD and migration approach for API/DB
   - Database queries are called from services/repositories in feature folders.
 
 Installation & setup tasks
+
 - Add Prisma as a dependency and commit `prisma/schema.prisma` with initial models.
 - Create `prisma/seed.ts` to load sample JSON from `public/data/` into the DB.
 - Provide a SQLite dev database option (`prisma/dev.db`) for local testing before Neon is provisioned.
 - Document environment setup in `.env.example` and `README.md`.
 
 Acceptance for DB setup:
+
 - Local dev can run migrations and seed data using `pnpm prisma:migrate:dev && pnpm prisma:seed`.
 - Tests can run against SQLite or a disposable test DB.
 
 ---
 
 ## 5) Types and schemas
+
 - Scope: `src/types/`, feature-level `types/`, and zod schemas
 - Tasks:
   - Audit `src/types` for global types; move domain types into feature `types` when appropriate.
@@ -163,6 +185,7 @@ Acceptance for DB setup:
 ---
 
 ## 6) Services & extraction engine
+
 - Scope: `src/services/extractionEngine.ts`, `src/services/*`
 - Tasks:
   - Audit `extractionEngine` for public API and side-effects; extract pure functions where possible.
@@ -178,6 +201,7 @@ Acceptance for DB setup:
   - No runtime-only side effects; parsing behavior well-documented.
 
 TDD & incremental refactor
+
 1. Write unit tests that capture the current engine behavior (golden inputs => expected outputs).
 2. Refactor one small pure function at a time (e.g., normalize text, calculateBounds, findAnchor) and run tests after each change.
 3. Add edge-case tests (multi-page anchors, empty input, overlapping boxes) before and after changes.
@@ -186,6 +210,7 @@ TDD & incremental refactor
 ---
 
 ## 7) Components: Rules editor & RegexPatterns
+
 - Scope: `src/components/Rules.tsx`, `src/components/rules/*` → move to `src/features/extraction-rules/components/*`
 - Tasks:
   - Move rule-specific components into the `extraction-rules` feature folder, one component at a time.
@@ -205,6 +230,7 @@ TDD & incremental refactor
 ---
 
 ## 8) Hooks & client utilities
+
 - Scope: `src/hooks/*`, `src/utils/*`
 - Tasks:
   - Move universal hooks used across domains into `src/lib/hooks` or retain under feature if domain-specific.
@@ -220,6 +246,7 @@ TDD & incremental refactor
 ---
 
 ## 9) Tests
+
 - Scope: `src/test` (or colocated tests next to components), feature test files
 - Tasks:
   - Move or create tests as part of each component migration step (TDD-first).
@@ -236,6 +263,7 @@ TDD & incremental refactor
 ---
 
 ## 10) Public data and presets
+
 - Scope: `public/data/*` and any in-repo JSON presets
 - Tasks:
   - Standardize preset locations (prefer `public/data/regex_presets.json` or `src/features/extraction-rules/data/` for headless access).
@@ -251,9 +279,10 @@ TDD & incremental refactor
 ---
 
 ## 11) Logging & Error Reporting
+
 - Scope: app-wide
 - Tasks:
-  - Replace stray console.* with a small logging wrapper in `src/lib/logger.ts`.
+  - Replace stray console.\* with a small logging wrapper in `src/lib/logger.ts`.
   - Ensure parsing/engine warnings use console.warn or logger.warn; errors use logger.error.
   - Integrate optional Sentry/monitoring later (add as a follow-up).
 - Owner: infra
@@ -266,19 +295,23 @@ TDD & incremental refactor
 ---
 
 ## Granular migration checklist (example sequence)
+
 Each bullet corresponds to a small PR with the pattern: add tests → scaffold → move/refactor one file → run tests → manual verify → merge.
 
 - Feature: `extraction-rules`
+
   - Move `src/components/rules/RegexPatterns.tsx` → `src/features/extraction-rules/components/RegexPatterns/`
   - Move `src/components/rules/AnchorConfig.tsx` → `src/features/extraction-rules/components/AnchorConfig/`
   - Move `src/components/Rules.tsx` → `src/features/extraction-rules/components/Rules/`
   - For each move: add unit/integration tests and manual verification steps.
 
 - Feature: `document-processing`
+
   - Move `Viewer.tsx`, `Workspace.tsx`, `DropZone.tsx` into `src/features/document-processing/components/`
   - Add engine integration smoke tests that exercise document loading and simple extraction flows.
 
 - Feature: `services`
+
   - Extract `src/services/extractionEngine.ts` into `src/features/extraction-rules/services/extractionEngine.ts` (after engine tests exist)
 
 - Feature: `form` / `mapping`
@@ -291,6 +324,7 @@ When you are ready, I can scaffold the feature folders and add the initial per-f
 ---
 
 ## 12) Backlog & Nice-to-haves
+
 - Add Storybook for UI components
 - Add visual regression tests for critical pages
 - Improve UX feedback (snackbars) on rule save
@@ -299,6 +333,7 @@ When you are ready, I can scaffold the feature folders and add the initial per-f
 ---
 
 ## Migration plan and ordering (recommended)
+
 1. Global infra: lint, tsconfig, CI (reduce PR friction)
 2. Design system audit + replace direct MUI imports
 3. Domain re-organization: move feature code incrementally, one feature at a time
@@ -313,8 +348,8 @@ When you are ready, I can scaffold the feature folders and add the initial per-f
 ---
 
 ## How to update this file
+
 - Mark Status: todo -> in-progress -> done and add a short note when completed.
 - Add PR references and checklist items under each section when you implement changes.
 
-
-*Created by automation on behalf of the engineering team. Update as you iterate.*
+_Created by automation on behalf of the engineering team. Update as you iterate._
