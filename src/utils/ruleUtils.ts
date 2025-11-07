@@ -124,45 +124,38 @@ export function generatePseudoRule(rule: FieldRule): string[] {
         // POSITION SECTION
         const position = anchorRule.positionConfig;
         if (position) {
-            let positionDescription = '<strong>Position:</strong> look for ';
+            let positionDescription = '<strong>Position:</strong> select text from ';
             
             // Dimensions
             if (position.point.width > 0 || position.point.height > 0) {
-                const parts: string[] = [];
-                if (position.point.width > 0) {
-                    parts.push(`<code>${Math.round(position.point.width)}px</code> wide`);
-                }
-                if (position.point.height > 0) {
-                    parts.push(`<code>${Math.round(position.point.height)}px</code> tall`);
-                }
-                positionDescription += parts.join(' and ') + ' ';
+                positionDescription += `<code>${Math.round(position.point.width)}px</code> by <code>${Math.round(position.point.height)}px</code> `;
             } else {
                 positionDescription += '<code>auto-sized area</code> ';
-            }
-            
-            // Starting position
-            if (position.startingPosition) {
-                const cornerMap = {
-                    'topLeft': 'top-left corner',
-                    'topRight': 'top-right corner', 
-                    'bottomLeft': 'bottom-left corner',
-                    'bottomRight': 'bottom-right corner'
-                };
-                positionDescription += ` area from <code>${cornerMap[position.startingPosition]}</code>`;
             }
             
             // Offset
             if (position.point.top !== 0 || position.point.left !== 0) {
                 const offsetParts: string[] = [];
                 if (position.point.top !== 0) {
-                    offsetParts.push(`<code>${position.point.top > 0 ? '' : '-'}${Math.round(position.point.top)}px</code> vertical`);
+                    offsetParts.push(`<code>${Math.round(position.point.top)}px</code> ${position.point.top > 0 ? 'down' : 'up'}`);
                 }
                 if (position.point.left !== 0) {
-                    offsetParts.push(`<code>${position.point.left > 0 ? '' : '-'}${Math.round(position.point.left)}px</code> horizontal`);
+                    offsetParts.push(`<code>${Math.round(position.point.left)}px</code> ${position.point.left > 0 ? 'right' : 'left'}`);
                 }
                 if (offsetParts.length > 0) {
-                    positionDescription += ` with ${offsetParts.join(', ')} offset`;
+                    positionDescription += ` area with ${offsetParts.join(', ')} `;
                 }
+            }
+            
+            // Starting position
+            if (position.startingPosition) {
+                const cornerMap = {
+                    'topLeft': 'top-left',
+                    'topRight': 'top-right', 
+                    'bottomLeft': 'bottom-left',
+                    'bottomRight': 'bottom-right'
+                };
+                positionDescription += ` from <code>${cornerMap[position.startingPosition]}</code> corner of anchor`;
             }
             
             lines.push(positionDescription);
@@ -209,7 +202,6 @@ export const createDefaultAnchorRule = (fieldId: string): AnchorRule => ({
         pageScope: 'first'
     },
     positionConfig: {
-        type: 'relative',
         point: { top: 0, left: 0, width: 0, height: 0 },
         startingPosition: 'topRight'
     },
@@ -239,7 +231,6 @@ export const createRuleByType = (ruleId: string, ruleType: RuleType): FieldRule 
                 pageScope: 'first'
             },
             positionConfig: {
-                type: 'relative',
                 point: { top: 0, left: 0, width: 0, height: 0 },
                 startingPosition: 'topRight'
             },

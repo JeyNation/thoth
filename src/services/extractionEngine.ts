@@ -259,27 +259,20 @@ export class ExtractionEngine {
 
     private findExtractionBox(anchorBox: BoundingBox, config: AnchorRule['positionConfig'], excludeFieldId?: string): BoundingBox[] {
         const anchorBounds = this.calculateBounds(anchorBox.points);
-        
-        let searchArea: { top: number; left: number; right: number; bottom: number };
+        const startingPosition = config.startingPosition || 'bottomLeft'; // Default fallback
+        const baseTop = (startingPosition === 'topLeft' || startingPosition === 'topRight')
+            ? anchorBounds.top
+            : anchorBounds.bottom;
+        const baseLeft = (startingPosition === 'topLeft' || startingPosition === 'bottomLeft')
+            ? anchorBounds.left
+            : anchorBounds.right;
 
-        if (config.type === 'relative') {
-            const startingPosition = config.startingPosition || 'bottomLeft'; // Default fallback
-            const baseTop = (startingPosition === 'topLeft' || startingPosition === 'topRight')
-                ? anchorBounds.top
-                : anchorBounds.bottom;
-            const baseLeft = (startingPosition === 'topLeft' || startingPosition === 'bottomLeft')
-                ? anchorBounds.left
-                : anchorBounds.right;
-
-            searchArea = {
-                top: baseTop + config.point.top,
-                left: baseLeft + config.point.left,
-                right: baseLeft + config.point.left + config.point.width,
-                bottom: baseTop + config.point.top + config.point.height,
-            };
-        } else {
-            searchArea = anchorBounds;
-        }
+        const searchArea = {
+            top: baseTop + config.point.top,
+            left: baseLeft + config.point.left,
+            right: baseLeft + config.point.left + config.point.width,
+            bottom: baseTop + config.point.top + config.point.height,
+        };
 
         const candidateBoxes = this.boundingBoxes.filter(box => {
             if (box.page !== anchorBox.page) return false;

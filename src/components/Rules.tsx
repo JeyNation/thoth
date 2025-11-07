@@ -124,9 +124,7 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
                                 pageScope: (rule.anchorConfig as any)?.pageScope || 'first'
                             },
                         positionConfig: {
-                            type: rule.positionConfig?.type || 'relative',
                             point: rule.positionConfig?.point || DEFAULT_POSITION_POINT,
-                            // Preserve startingPosition if present in stored layout
                             ...(rule.positionConfig && 'startingPosition' in (rule.positionConfig as any)
                                 ? { startingPosition: (rule.positionConfig as any).startingPosition }
                                 : {})
