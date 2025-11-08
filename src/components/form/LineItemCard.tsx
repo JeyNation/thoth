@@ -27,7 +27,6 @@ import {
 } from '../../types/lineItemColumns';
 import type { LineItem } from '../../types/PurchaseOrder';
 import { IconButton } from '../ui/Button/IconButton';
-import { SubsectionLabel } from '../ARCHIVED_common/SubsectionLabel';
 
 export interface LineItemCardProps {
   item: LineItem;

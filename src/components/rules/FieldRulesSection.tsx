@@ -7,7 +7,7 @@ import { FieldRulesList, FieldRulesListRef } from './FieldRulesList';
 import { AnchorRule, RegexMatchRule, AbsoluteRule } from '../../types/extractionRules';
 import { FieldRule } from '../../types/rulesComponents';
 import { IconButton } from '../ui/Button/IconButton';
-import { SectionLabel } from '../ARCHIVED_common/SectionLabel';
+import { SectionLabel } from '../ui/Label/SectionLabel';
 
 export type { FieldRulesListRef };
 

@@ -34,8 +34,7 @@ import {
   ensureLineNumberExists,
   insertBlankLineItem,
 } from '../utils/purchaseOrderMutations';
-import { SectionLabel } from './ARCHIVED_common/SectionLabel';
-import { SubsectionLabel } from './ARCHIVED_common/SubsectionLabel';
+import { SectionLabel } from './ui/Label/SectionLabel';
 import ColumnMappingDialog from './dialogs/ColumnMappingDialog';
 import RowMappingDialog from './dialogs/RowMappingDialog';
 import {

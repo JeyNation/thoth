@@ -35,7 +35,7 @@ Checklist (small, incremental PRs)
 
    - [ ] LoadingIndicator -> `src/components/ui/Loading/LoadingIndicator.tsx`
    - [ ] EmptyState -> `src/components/ui/EmptyState.tsx`
-   - [ ] Labels -> `src/components/ui/Labels/SectionLabel.tsx` & `SubsectionLabel.tsx`
+   - [ ] Labels -> `src/components/ui/Labels/SectionLabel.tsx`
    - Acceptance: callers updated and UI unchanged.
 
 5. Migrate ThemeRegistry and update app layout (PR: ui/app)
@@ -97,7 +97,6 @@ Mapping of current files (scan results)
   - `src/components/common/LoadingIndicator.tsx`
   - `src/components/common/EmptyState.tsx`
   - `src/components/common/SectionLabel.tsx`
-  - `src/components/common/SubsectionLabel.tsx`
 - theme & top-level:
   - `src/components/ThemeRegistry.tsx`
   - `src/app/layout.tsx`

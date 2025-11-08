@@ -1,15 +1,5 @@
-import React, {
-  useEffect,
-  useMemo,
-  useState,
-  useImperativeHandle,
-  forwardRef,
-  useRef,
-} from 'react';
+import React, { useEffect, useState, useImperativeHandle, forwardRef, useRef } from 'react';
 
-import AddIcon from '@mui/icons-material/Add';
-import CheckIcon from '@mui/icons-material/Check';
-import CloseIcon from '@mui/icons-material/Close';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import {
   Stack,
@@ -27,9 +17,9 @@ import { RegexPatterns, RegexPatternsRef } from './RegexPatterns';
 import { SearchZone } from './SearchZone';
 import type { AnchorMatchMode, StartingPositionCorner } from '../../types/extractionRules';
 import { AnchorConfigProps } from '../../types/rulesComponents';
-import { SubsectionLabel } from '../ARCHIVED_common/SubsectionLabel';
 import { TextButton } from '../ui/Button/TextButton';
 import { TextInput } from '../ui/Input/TextInput';
+import { SubsectionLabel } from '../ui/Label/SubsectionLabel';
 
 export interface AnchorConfigRef {
   applyPendingChanges: () => void;
