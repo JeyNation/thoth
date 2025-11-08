@@ -1,3 +1,5 @@
+import React from 'react';
+
 import {
   Button,
   Dialog,
@@ -18,9 +20,12 @@ import {
   Typography,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material/Select';
-import React from 'react';
 
-import { LINE_ITEM_COLUMNS, humanizeColumnKey, type LineItemColumnKey } from '../../types/lineItemColumns';
+import {
+  LINE_ITEM_COLUMNS,
+  humanizeColumnKey,
+  type LineItemColumnKey,
+} from '../../types/lineItemColumns';
 import type { MultiFieldPair } from '../../types/mapping';
 
 export interface ColumnMappingDialogProps {
@@ -32,7 +37,14 @@ export interface ColumnMappingDialogProps {
   onCancel: () => void;
 }
 
-const ColumnMappingDialog: React.FC<ColumnMappingDialogProps> = ({ lineNumber, pairs, proposed, onChange, onApply, onCancel }) => {
+const ColumnMappingDialog: React.FC<ColumnMappingDialogProps> = ({
+  lineNumber,
+  pairs,
+  proposed,
+  onChange,
+  onApply,
+  onCancel,
+}) => {
   const handleSelectChange = (fieldId: string) => (event: SelectChangeEvent) => {
     const value = event.target.value as '' | LineItemColumnKey;
     onChange({ ...proposed, [fieldId]: value });
@@ -54,7 +66,11 @@ const ColumnMappingDialog: React.FC<ColumnMappingDialogProps> = ({ lineNumber, p
           Review predicted column assignments. Adjust before applying.
         </Typography>
         <TableContainer component={Paper} variant="outlined">
-          <Table size="small" aria-label="Column mapping table" sx={{ '& .MuiTableBody-root tr:last-of-type td': { borderBottom: 'none' } }}>
+          <Table
+            size="small"
+            aria-label="Column mapping table"
+            sx={{ '& .MuiTableBody-root tr:last-of-type td': { borderBottom: 'none' } }}
+          >
             <TableHead>
               <TableRow>
                 <TableCell width="35%">Source Text</TableCell>
@@ -62,10 +78,12 @@ const ColumnMappingDialog: React.FC<ColumnMappingDialogProps> = ({ lineNumber, p
               </TableRow>
             </TableHead>
             <TableBody>
-              {pairs.map((pair) => (
+              {pairs.map(pair => (
                 <TableRow key={pair.boxId} hover>
                   <TableCell title={pair.text} sx={{ maxWidth: 220 }}>
-                    <Typography variant="body2" noWrap>{pair.text}</Typography>
+                    <Typography variant="body2" noWrap>
+                      {pair.text}
+                    </Typography>
                   </TableCell>
                   <TableCell>
                     <FormControl fullWidth size="small">
@@ -77,7 +95,7 @@ const ColumnMappingDialog: React.FC<ColumnMappingDialogProps> = ({ lineNumber, p
                         onChange={handleSelectChange(pair.fieldId)}
                       >
                         <MenuItem value="">None</MenuItem>
-                        {LINE_ITEM_COLUMNS.map((col) => (
+                        {LINE_ITEM_COLUMNS.map(col => (
                           <MenuItem key={col} value={col}>
                             {humanizeColumnKey(col)}
                           </MenuItem>

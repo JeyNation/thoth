@@ -1,5 +1,7 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
+
 import DescriptionIcon from '@mui/icons-material/Description';
 import {
   Box,
@@ -11,7 +13,6 @@ import {
   ListItemText,
   Alert,
 } from '@mui/material';
-import React, { useState, useEffect } from 'react';
 
 export interface DocumentMetadata {
   id: string;
@@ -145,7 +146,12 @@ const DocumentList: React.FC<DocumentListProps> = ({ onDocumentSelect }) => {
                     </Box>
                   </ListItemButton>
                 </ListItem>
-                {index < documents.length - 1 && <Box component="hr" sx={{ m: 0, border: 'none', borderBottom: 1, borderColor: 'divider' }} />}
+                {index < documents.length - 1 && (
+                  <Box
+                    component="hr"
+                    sx={{ m: 0, border: 'none', borderBottom: 1, borderColor: 'divider' }}
+                  />
+                )}
               </React.Fragment>
             ))}
           </List>

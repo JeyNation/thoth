@@ -1,5 +1,7 @@
 'use client';
 
+import React, { useMemo } from 'react';
+
 import {
   Button,
   Dialog,
@@ -20,7 +22,6 @@ import {
   Typography,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material/Select';
-import React, { useMemo } from 'react';
 
 import { humanizeColumnKey } from '../../types/lineItemColumns';
 import type { LineItemColumnKey } from '../../types/lineItemColumns';
@@ -35,11 +36,23 @@ export interface RowMappingDialogProps {
   onCancel: () => void;
 }
 
-const RowMappingDialog: React.FC<RowMappingDialogProps> = ({ column, pairs, proposedRows, onChange, onApply, onCancel }) => {
+const RowMappingDialog: React.FC<RowMappingDialogProps> = ({
+  column,
+  pairs,
+  proposedRows,
+  onChange,
+  onApply,
+  onCancel,
+}) => {
   const rowOptions = useMemo(() => {
-    const assignedNums = Object.values(proposedRows).filter((v): v is number => typeof v === 'number');
+    const assignedNums = Object.values(proposedRows).filter(
+      (v): v is number => typeof v === 'number',
+    );
     const maxAssigned = assignedNums.length ? Math.max(...assignedNums) : 0;
-    const unassignedCount = pairs.reduce((acc, p) => acc + (typeof proposedRows[p.fieldId] === 'number' ? 0 : 1), 0);
+    const unassignedCount = pairs.reduce(
+      (acc, p) => acc + (typeof proposedRows[p.fieldId] === 'number' ? 0 : 1),
+      0,
+    );
     const maxRow = Math.max(5, maxAssigned + unassignedCount);
     const EXTRA = 10;
     return Array.from({ length: maxRow + EXTRA }, (_, idx) => idx + 1);
@@ -66,7 +79,11 @@ const RowMappingDialog: React.FC<RowMappingDialogProps> = ({ column, pairs, prop
           Review predicted row assignments. Adjust before applying.
         </Typography>
         <TableContainer component={Paper} variant="outlined">
-          <Table size="small" aria-label="Row mapping table" sx={{ '& .MuiTableBody-root tr:last-of-type td': { borderBottom: 'none' } }}>
+          <Table
+            size="small"
+            aria-label="Row mapping table"
+            sx={{ '& .MuiTableBody-root tr:last-of-type td': { borderBottom: 'none' } }}
+          >
             <TableHead>
               <TableRow>
                 <TableCell width="40%">Source Text</TableCell>
@@ -74,10 +91,12 @@ const RowMappingDialog: React.FC<RowMappingDialogProps> = ({ column, pairs, prop
               </TableRow>
             </TableHead>
             <TableBody>
-              {pairs.map((pair) => (
+              {pairs.map(pair => (
                 <TableRow key={pair.boxId} hover>
                   <TableCell title={pair.text} sx={{ maxWidth: 240 }}>
-                    <Typography variant="body2" noWrap>{pair.text}</Typography>
+                    <Typography variant="body2" noWrap>
+                      {pair.text}
+                    </Typography>
                   </TableCell>
                   <TableCell>
                     <FormControl fullWidth size="small">
@@ -85,11 +104,15 @@ const RowMappingDialog: React.FC<RowMappingDialogProps> = ({ column, pairs, prop
                       <Select
                         labelId={`row-select-${pair.fieldId}`}
                         label="Row"
-                        value={proposedRows[pair.fieldId] == null ? '' : String(proposedRows[pair.fieldId])}
+                        value={
+                          proposedRows[pair.fieldId] == null
+                            ? ''
+                            : String(proposedRows[pair.fieldId])
+                        }
                         onChange={handleRowChange(pair.fieldId)}
                       >
                         <MenuItem value="">None</MenuItem>
-                        {rowOptions.map((row) => (
+                        {rowOptions.map(row => (
                           <MenuItem key={row} value={row}>
                             {row}
                           </MenuItem>

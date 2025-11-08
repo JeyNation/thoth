@@ -1,5 +1,6 @@
-import { TextInput } from '@/components/ui';
 import React, { useEffect, useState } from 'react';
+
+import { TextInput } from '@/components/ui';
 
 import ClearAdornment from './ClearAdornment';
 
@@ -175,7 +176,7 @@ const FieldInput: React.FC<FieldInputProps> = ({
   const type =
     kind === 'integer' ? 'number' : kind === 'decimal' ? 'text' : kind === 'date' ? 'date' : 'text';
 
-  const inputNativeProps: Record<string, any> = {
+  const inputNativeProps: Record<string, unknown> = {
     'data-field-kind': kind,
     'data-field-id': id,
     ...(kind === 'integer'
@@ -185,8 +186,13 @@ const FieldInput: React.FC<FieldInputProps> = ({
           inputMode: 'decimal',
           pattern: '[0-9]*[.]?[0-9]*',
           style: { textAlign: 'right' } as React.CSSProperties,
-          onKeyDown: handleKeyDown as any,
-          onPaste: handlePaste as any,
+          // Narrow to the appropriate handler types without using `any`.
+          onKeyDown: handleKeyDown as unknown as React.EventHandler<
+            React.KeyboardEvent<HTMLInputElement>
+          >,
+          onPaste: handlePaste as unknown as React.EventHandler<
+            React.ClipboardEvent<HTMLInputElement>
+          >,
         }
       : {}),
   };

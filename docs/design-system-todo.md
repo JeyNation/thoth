@@ -14,8 +14,8 @@ Checklist (small, incremental PRs)
 
 1. Scaffold design system (PR: scaffold/design-system)
 
-   - [ ] Create `src/components/ui/` with subfolders: `Button/`, `Input/`, `Icons/`, `Loading/`, `Labels/`, `Theme/`.
-   - [ ] Add `src/components/ui/index.ts` that re-exports primitives.
+   - [x] Create `src/components/ui/` with subfolders: `Button/`, `Input/`, `Icons/`, `Loading/`, `Labels/`, `Theme/`.
+   - [x] Add `src/components/ui/index.ts` that re-exports primitives.
    - Acceptance: files exist and build passes.
 
 2. Theme & Tokens (PR: ui/theme)

@@ -1,6 +1,7 @@
+import React from 'react';
+
 import CloseIcon from '@mui/icons-material/Close';
 import InputAdornment from '@mui/material/InputAdornment';
-import React from 'react';
 
 import { IconButton } from '../common/IconButton';
 
@@ -12,12 +13,7 @@ interface ClearAdornmentProps {
 const ClearAdornment: React.FC<ClearAdornmentProps> = ({ onClear, title = 'Clear field' }) => {
   return (
     <InputAdornment position="end">
-      <IconButton
-        icon={CloseIcon}
-        tooltip={title}
-        size="small"
-        onClick={onClear}
-      />
+      <IconButton icon={CloseIcon} tooltip={title} size="small" onClick={onClear} />
     </InputAdornment>
   );
 };

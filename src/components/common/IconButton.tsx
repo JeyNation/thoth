@@ -1,6 +1,7 @@
+import React from 'react';
+
 import type { SvgIconComponent } from '@mui/icons-material';
 import { IconButton as MuiIconButton, Tooltip } from '@mui/material';
-import React from 'react';
 
 interface IconButtonProps {
   icon: SvgIconComponent;
@@ -11,13 +12,13 @@ interface IconButtonProps {
   disabled?: boolean;
 }
 
-export const IconButton = ({ 
-  icon: Icon, 
-  tooltip, 
-  onClick, 
+export const IconButton = ({
+  icon: Icon,
+  tooltip,
+  onClick,
   color = 'primary',
   size = 'small',
-  disabled = false
+  disabled = false,
 }: IconButtonProps) => {
   return (
     <Tooltip title={tooltip}>
@@ -32,7 +33,7 @@ export const IconButton = ({
             '&:hover': {
               bgcolor: 'action.hover',
             },
-            transition: 'background-color 0.2s'
+            transition: 'background-color 0.2s',
           }}
         >
           <Icon fontSize="small" />

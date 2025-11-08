@@ -1,5 +1,6 @@
-import type { SxProps, Theme } from '@mui/material';
 import type { CSSProperties } from 'react';
+
+import type { SxProps, Theme } from '@mui/material';
 
 import { DROP_BORDER_RADIUS_PX, DROP_ZONE_ACTIVE_STYLE } from './dropHighlight';
 
@@ -18,11 +19,11 @@ export const COLUMN_DROP_BASE_STYLE: CSSProperties = {
   textAlign: 'center',
   minHeight: 40,
   transition: 'border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease',
-  boxShadow: 'inset 0 0 0 0 rgba(25,118,210,0.08)'
+  boxShadow: 'inset 0 0 0 0 rgba(25,118,210,0.08)',
 };
 
 export const COLUMN_DROP_ACTIVE_STYLE: CSSProperties = {
-  ...DROP_ZONE_ACTIVE_STYLE
+  ...DROP_ZONE_ACTIVE_STYLE,
 };
 
 export const COLUMN_DROP_CONTAINER_SX: SxProps<Theme> = {
@@ -36,7 +37,8 @@ export const COLUMN_DROP_CONTAINER_SX: SxProps<Theme> = {
     md: 'repeat(4, minmax(0, 1fr))',
   },
   gap: 1,
-  backgroundImage: (theme: Theme) => `linear-gradient(${theme.palette.background.paper} 0%, ${theme.palette.background.paper} 60%, rgba(255,255,255,0) 100%)`,
+  backgroundImage: (theme: Theme) =>
+    `linear-gradient(${theme.palette.background.paper} 0%, ${theme.palette.background.paper} 60%, rgba(255,255,255,0) 100%)`,
   pb: 1,
 };
 

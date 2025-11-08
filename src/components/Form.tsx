@@ -1,8 +1,9 @@
 'use client';
 
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+
 import { Box, Button, Divider, Stack, Typography } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material';
-import React, { useState, useEffect, useRef, useMemo } from 'react';
 
 import { BASIC_INFO_FIELDS, type FormFieldConfig } from '../config/formFields';
 import { useMapping } from '../context/MappingContext';
