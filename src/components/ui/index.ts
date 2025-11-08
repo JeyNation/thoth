@@ -8,3 +8,4 @@ export { default as TextInput } from './Input/TextInput';
 
 // Export the design-system IconButton primitive (canonical location)
 export { default as IconButton } from './Button/IconButton';
+export { LoadingIndicator } from './Feedback';

@@ -20,15 +20,15 @@ Checklist (small, incremental PRs)
 
 2. Theme & Tokens (PR: ui/theme)
 
-   - [ ] Create `src/components/ui/Theme/ThemeRegistry.tsx` (wrap MUI ThemeProvider + CssBaseline).
-   - [ ] Add a small `theme.ts` with tokens used across the app.
+   - [x] Create `src/components/ui/Theme/ThemeRegistry.tsx` (wrap MUI ThemeProvider + CssBaseline).
+   - [x] Add a small `theme.ts` with tokens used across the app.
    - Acceptance: App starts with ThemeRegistry and no runtime errors.
 
 3. Primitives (PR: ui/primitives-1)
 
-   - [ ] Input: `src/components/ui/Input/TextInput.tsx` (wraps MUI TextField)
-   - [ ] Button: `src/components/ui/Button/TextButton.tsx` and a generic `Button.tsx`
-   - [ ] IconButton: `src/components/ui/IconButton.tsx`
+   - [x] Input: `src/components/ui/Input/TextInput.tsx` (wraps MUI TextField)
+   - [x] Button: `src/components/ui/Button/TextButton.tsx` and a generic `Button.tsx`
+   - [x] IconButton: `src/components/ui/IconButton.tsx`
    - Acceptance: unit tests for primitives exist and pass; one consumer replaced successfully.
 
 4. Common UI (PR: ui/primitives-2)

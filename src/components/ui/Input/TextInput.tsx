@@ -8,7 +8,10 @@ export interface TextInputProps {
   endAdornment?: React.ReactNode;
   fullWidth?: boolean;
   id?: string;
-  inputProps?: React.InputHTMLAttributes<HTMLInputElement | HTMLTextAreaElement>;
+  // Allow arbitrary data-* attributes and other custom props consumers may forward.
+  // Use Record<string, unknown> instead of `any` to keep typings permissive but safe.
+  inputProps?: React.InputHTMLAttributes<HTMLInputElement | HTMLTextAreaElement> &
+    Record<string, unknown>;
   label?: React.ReactNode;
   minRows?: number;
   multiline?: boolean;
