@@ -3,33 +3,25 @@ import React from 'react';
 import TextField, { TextFieldProps } from '@mui/material/TextField';
 
 export interface TextInputProps {
-  /** CSS class applied to the outer TextField root — used for semantic state classes */
-  className?: string;
-  id?: string;
-  value?: string | number;
-  onChange?: React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
-  onFocus?: React.FocusEventHandler<HTMLInputElement | HTMLTextAreaElement>;
-  onBlur?: React.FocusEventHandler<HTMLInputElement | HTMLTextAreaElement>;
-
   ariaLabel?: string;
-  label?: React.ReactNode;
-
-  multiline?: boolean;
-  minRows?: number;
-  type?: string;
-
-  shrinkLabel?: boolean;
-
+  className?: string;
   endAdornment?: React.ReactNode;
-
-  inputProps?: React.InputHTMLAttributes<HTMLInputElement | HTMLTextAreaElement>;
-
-  onDragOver?: React.DragEventHandler;
-  onDragLeave?: React.DragEventHandler;
-  onDrop?: React.DragEventHandler;
-
   fullWidth?: boolean;
+  id?: string;
+  inputProps?: React.InputHTMLAttributes<HTMLInputElement | HTMLTextAreaElement>;
+  label?: React.ReactNode;
+  minRows?: number;
+  multiline?: boolean;
+  onBlur?: React.FocusEventHandler<HTMLInputElement | HTMLTextAreaElement>;
+  onChange?: React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
+  onDragLeave?: React.DragEventHandler;
+  onDragOver?: React.DragEventHandler;
+  onDrop?: React.DragEventHandler;
+  onFocus?: React.FocusEventHandler<HTMLInputElement | HTMLTextAreaElement>;
+  shrinkLabel?: boolean;
   size?: 'small' | 'medium';
+  type?: string;
+  value?: string | number;
   variant?: 'outlined' | 'filled' | 'standard';
 }
 
@@ -38,25 +30,26 @@ const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>(function Te
   ref,
 ) {
   const {
-    value,
-    onChange,
-    onFocus,
-    onBlur,
     ariaLabel,
-    label,
-    multiline,
-    minRows,
-    type,
+    className,
     endAdornment,
-    inputProps,
-    onDragOver,
-    onDragLeave,
-    onDrop,
     fullWidth = false,
-    size = 'medium',
-    variant = 'outlined',
     id,
+    inputProps,
+    label,
+    minRows,
+    multiline,
+    onBlur,
+    onChange,
+    onDragLeave,
+    onDragOver,
+    onDrop,
+    onFocus,
     shrinkLabel,
+    size = 'medium',
+    type,
+    value,
+    variant = 'outlined',
   } = props;
 
   const builtSlotProps: TextFieldProps['slotProps'] = {
@@ -70,24 +63,24 @@ const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>(function Te
   return (
     <TextField
       inputRef={ref}
-      className={props.className}
+      aria-label={ariaLabel}
+      className={className}
       id={id}
       fullWidth={fullWidth}
-      size={size}
-      variant={variant}
-      value={value}
-      type={type}
-      aria-label={ariaLabel}
-      slotProps={builtSlotProps}
       label={label}
-      multiline={multiline}
       minRows={minRows}
-      onChange={onChange}
-      onFocus={onFocus}
+      multiline={multiline}
       onBlur={onBlur}
-      onDragOver={onDragOver}
+      onChange={onChange}
       onDragLeave={onDragLeave}
+      onDragOver={onDragOver}
       onDrop={onDrop}
+      onFocus={onFocus}
+      size={size}
+      slotProps={builtSlotProps}
+      type={type}
+      value={value}
+      variant={variant}
     />
   );
 });
