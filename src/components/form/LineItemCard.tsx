@@ -19,7 +19,11 @@ import {
   LINE_ITEM_FIELDS_STACK_PROPS,
 } from '../../styles/lineItemCardStyles';
 import { makeLineItemField } from '../../types/fieldIds';
-import { LINE_ITEM_COLUMNS, humanizeColumnKey, type LineItemColumnKey } from '../../types/lineItemColumns';
+import {
+  LINE_ITEM_COLUMNS,
+  humanizeColumnKey,
+  type LineItemColumnKey,
+} from '../../types/lineItemColumns';
 import type { LineItem } from '../../types/PurchaseOrder';
 import { IconButton } from '../common/IconButton';
 import { SubsectionLabel } from '../common/SubsectionLabel';
@@ -32,12 +36,26 @@ export interface LineItemCardProps {
   onRemove: () => void;
   getTextFieldSx: (fieldId: string) => Record<string, unknown>;
   activeColumnDrop: { lineNumber: number; field: LineItemColumnKey } | null;
-  setActiveColumnDrop: React.Dispatch<React.SetStateAction<{ lineNumber: number; field: LineItemColumnKey } | null>>;
+  setActiveColumnDrop: React.Dispatch<
+    React.SetStateAction<{ lineNumber: number; field: LineItemColumnKey } | null>
+  >;
   onFieldFocus: (fieldId: string) => void;
   onFieldBlur: () => void;
-  handleLineItemChange: (lineNumber: number, field: string, value: string | number, kind: string, opts?: { explicitClear?: boolean }) => void;
+  linkedFieldIdSet: Set<string>;
+  handleLineItemChange: (
+    lineNumber: number,
+    field: string,
+    value: string | number,
+    kind: string,
+    opts?: { explicitClear?: boolean },
+  ) => void;
   clearLineItemField: (lineNumber: number, field: string, kind: string) => void;
-  handleLineItemDrop: (e: React.DragEvent, lineNumber: number, field: string, kind: 'text' | 'textarea' | 'integer' | 'decimal') => void;
+  handleLineItemDrop: (
+    e: React.DragEvent,
+    lineNumber: number,
+    field: string,
+    kind: 'text' | 'textarea' | 'integer' | 'decimal',
+  ) => void;
 }
 
 const LineItemCard: React.FC<LineItemCardProps> = ({
@@ -54,41 +72,56 @@ const LineItemCard: React.FC<LineItemCardProps> = ({
   handleLineItemChange,
   clearLineItemField,
   handleLineItemDrop,
+  linkedFieldIdSet,
 }) => {
   const renderField = (field: 'sku' | 'description' | 'quantity' | 'unitPrice') => {
     const fieldId = makeLineItemField(item.lineNumber, field);
     const kind: 'text' | 'textarea' | 'integer' | 'decimal' =
-      field === 'description' ? 'textarea' : field === 'quantity' ? 'integer' : field === 'unitPrice' ? 'decimal' : 'text';
+      field === 'description'
+        ? 'textarea'
+        : field === 'quantity'
+        ? 'integer'
+        : field === 'unitPrice'
+        ? 'decimal'
+        : 'text';
     const value = item[field];
-    const isDropActive = !!(activeColumnDrop && activeColumnDrop.lineNumber === item.lineNumber && activeColumnDrop.field === field);
-    const baseSx = getTextFieldSx(fieldId);
+    const isDropActive = !!(
+      activeColumnDrop &&
+      activeColumnDrop.lineNumber === item.lineNumber &&
+      activeColumnDrop.field === field
+    );
+    // baseSx removed — styling now handled via semantic classes
     const aria = `${humanizeColumnKey(field)} for line ${item.lineNumber}`;
+
+    const isLinked = linkedFieldIdSet.has(fieldId);
 
     return (
       <FieldInput
         id={fieldId}
         kind={kind}
         value={value}
-        baseSx={baseSx}
         isDragActive={isDropActive || externallyActive}
+        isLinked={isLinked}
         ariaLabel={aria}
         label={humanizeColumnKey(field)}
         onChange={(val, opts) => handleLineItemChange(item.lineNumber, field, val, kind, opts)}
         onClear={() => clearLineItemField(item.lineNumber, field, kind)}
         onFocus={() => onFieldFocus(fieldId)}
         onBlur={() => onFieldBlur()}
-        onDragOver={(e) => {
+        onDragOver={e => {
           if (e.dataTransfer.types.includes('application/json')) {
             e.preventDefault();
             if (!isDropActive) setActiveColumnDrop({ lineNumber: item.lineNumber, field });
           }
         }}
-        onDragLeave={(e) => {
+        onDragLeave={e => {
           const next = e.relatedTarget as Node | null;
           if (next && (e.currentTarget as HTMLElement).contains(next)) return;
-          setActiveColumnDrop((prev) => (prev && prev.lineNumber === item.lineNumber && prev.field === field ? null : prev));
+          setActiveColumnDrop(prev =>
+            prev && prev.lineNumber === item.lineNumber && prev.field === field ? null : prev,
+          );
         }}
-        onDrop={(e) => {
+        onDrop={e => {
           setActiveColumnDrop(null);
           handleLineItemDrop(e, item.lineNumber, field, kind);
         }}
@@ -107,7 +140,7 @@ const LineItemCard: React.FC<LineItemCardProps> = ({
         <Stack {...LINE_ITEM_INNER_STACK_PROPS}>
           <Stack {...LINE_ITEM_HEADER_STACK_PROPS}>
             <Typography variant="body2" sx={LINE_ITEM_TOTAL_SX}>
-              ${ (item.quantity * item.unitPrice).toFixed(2) }
+              ${(item.quantity * item.unitPrice).toFixed(2)}
             </Typography>
             <Stack {...LINE_ITEM_ACTIONS_STACK_PROPS}>
               <IconButton
@@ -127,10 +160,8 @@ const LineItemCard: React.FC<LineItemCardProps> = ({
             </Stack>
           </Stack>
           <Stack {...LINE_ITEM_FIELDS_STACK_PROPS}>
-            {LINE_ITEM_COLUMNS.map((col) => (
-              <Box key={`${item.lineNumber}-${col}`}>
-                {renderField(col)}
-              </Box>
+            {LINE_ITEM_COLUMNS.map(col => (
+              <Box key={`${item.lineNumber}-${col}`}>{renderField(col)}</Box>
             ))}
           </Stack>
           <Box sx={LINE_ITEM_DIVIDER_SX} />
