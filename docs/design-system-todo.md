@@ -33,14 +33,14 @@ Checklist (small, incremental PRs)
 
 4. Common UI (PR: ui/primitives-2)
 
-   - [ ] LoadingIndicator -> `src/components/ui/Loading/LoadingIndicator.tsx`
-   - [ ] EmptyState -> `src/components/ui/EmptyState.tsx`
-   - [ ] Labels -> `src/components/ui/Labels/SectionLabel.tsx`
+   - [x] LoadingIndicator -> `src/components/ui/Loading/LoadingIndicator.tsx`
+   - [x] EmptyState -> `src/components/ui/EmptyState.tsx`
+   - [x] Labels -> `src/components/ui/Labels/SectionLabel.tsx`
    - Acceptance: callers updated and UI unchanged.
 
 5. Migrate ThemeRegistry and update app layout (PR: ui/app)
 
-   - [ ] Replace `src/components/ThemeRegistry.tsx` references with new ThemeRegistry and import from `@/components/ui`.
+   - [x] Replace `src/components/ThemeRegistry.tsx` references with new ThemeRegistry and import from `@/components/ui`.
    - Acceptance: app builds and pages render the themed UI.
 
 6. Feature migration: extraction-rules (PRs: feature/extraction-rules/\*)
