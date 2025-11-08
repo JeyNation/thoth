@@ -6,4 +6,5 @@ export { default as TextButton } from './Button/TextButton';
 
 export { default as TextInput } from './Input/TextInput';
 
-export { default as IconButton } from './IconButton/IconButton';
+// Export the design-system IconButton primitive (canonical location)
+export { default as IconButton } from './Button/IconButton';

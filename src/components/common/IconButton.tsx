@@ -1,7 +1,9 @@
 import React from 'react';
 
 import type { SvgIconComponent } from '@mui/icons-material';
-import { IconButton as MuiIconButton, Tooltip } from '@mui/material';
+import Tooltip from '@mui/material/Tooltip';
+
+import { IconButton as DsIconButton } from '@/components/ui';
 
 interface IconButtonProps {
   icon: SvgIconComponent;
@@ -23,21 +25,15 @@ export const IconButton = ({
   return (
     <Tooltip title={tooltip}>
       <span>
-        <MuiIconButton
+        <DsIconButton
+          ariaLabel={tooltip}
           size={size}
           color={color}
           onClick={onClick}
           disabled={disabled}
-          sx={{
-            bgcolor: 'transparent',
-            '&:hover': {
-              bgcolor: 'action.hover',
-            },
-            transition: 'background-color 0.2s',
-          }}
         >
           <Icon fontSize="small" />
-        </MuiIconButton>
+        </DsIconButton>
       </span>
     </Tooltip>
   );
