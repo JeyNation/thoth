@@ -18,9 +18,9 @@ import {
 } from '@mui/material';
 
 import { RegexPatternsProps } from '../../types/rulesComponents';
-import { IconButton } from '../common/IconButton';
-import { TextButton } from '../common/TextButton';
-import { TextInput } from '../common/TextInput';
+import { IconButton } from '../ui/Button/IconButton';
+import { TextButton } from '../ui/Button/TextButton';
+import { TextInput } from '../ui/Input/TextInput';
 
 export interface RegexPatternsRef {
   applyPendingChanges: () => void;
@@ -266,11 +266,12 @@ export const RegexPatterns = forwardRef<RegexPatternsRef, RegexPatternsProps>(
               </Typography>
             </Box>
             <IconButton
-              icon={DeleteOutlineIcon}
-              tooltip="Delete pattern"
+              ariaLabel="Delete pattern"
               onClick={() => onDelete(patternIndex)}
               color="error"
-            />
+            >
+              <DeleteOutlineIcon />
+            </IconButton>
           </Paper>
         ))}
 
@@ -282,44 +283,30 @@ export const RegexPatterns = forwardRef<RegexPatternsRef, RegexPatternsProps>(
                 fullWidth
                 value={inputValue}
                 onChange={val => {
-                  setInputValue(val);
+                  setInputValue(typeof val === 'string' ? val : val.target.value);
                   setOpen(true);
                   setHighlighted(0);
                 }}
-                onKeyPress={handleKeyDown}
-                placeholder="e.g. Email, Numbers only, or ^([A-Z0-9-]+)"
+                onKeyDown={handleKeyDown}
               />
               {editingIndex !== null ? (
                 <>
-                  <TextButton
-                    size="medium"
-                    onClick={handleSubmit}
-                    startIcon={<CheckIcon fontSize="small" />}
-                    sx={{ px: 2.5, minWidth: 105 }}
-                  >
+                  <TextButton size="medium" onClick={handleSubmit}>
                     Update
                   </TextButton>
                   <TextButton
                     size="medium"
-                    variant="outlined"
                     onClick={() => {
                       setEditingIndex(null);
                       setInputValue('');
                       setOpen(false);
                     }}
-                    startIcon={<CloseIcon fontSize="small" />}
-                    sx={{ px: 2.5, minWidth: 105 }}
                   >
                     Cancel
                   </TextButton>
                 </>
               ) : (
-                <TextButton
-                  size="medium"
-                  onClick={handleSubmit}
-                  startIcon={<AddIcon fontSize="small" />}
-                  sx={{ minWidth: 80 }}
-                >
+                <TextButton size="medium" onClick={handleSubmit}>
                   Add
                 </TextButton>
               )}

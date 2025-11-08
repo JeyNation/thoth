@@ -10,15 +10,15 @@ interface EmptyStateProps {
 
 export const EmptyState = ({ message, description, sx }: EmptyStateProps) => {
   return (
-    <Box 
-      sx={{ 
-        height: '100%', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
         p: 2,
-        ...sx
+        ...sx,
       }}
     >
       <Typography color="text.secondary">{message}</Typography>

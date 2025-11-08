@@ -6,8 +6,8 @@ import { Box, Stack } from '@mui/material';
 import { FieldRulesList, FieldRulesListRef } from './FieldRulesList';
 import { AnchorRule, RegexMatchRule, AbsoluteRule } from '../../types/extractionRules';
 import { FieldRule } from '../../types/rulesComponents';
-import { IconButton } from '../common/IconButton';
-import { SectionLabel } from '../common/SectionLabel';
+import { IconButton } from '../ui/Button/IconButton';
+import { SectionLabel } from '../ARCHIVED_common/SectionLabel';
 
 export type { FieldRulesListRef };
 
@@ -51,7 +51,9 @@ export const FieldRulesSection = forwardRef<FieldRulesListRef, FieldRulesSection
       <Box>
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
           <SectionLabel>{fieldLabel}</SectionLabel>
-          <IconButton icon={AddIcon} tooltip="Add rule" onClick={onAddRule} />
+          <IconButton ariaLabel="Add rule" onClick={onAddRule}>
+            <AddIcon />
+          </IconButton>
         </Stack>
         <FieldRulesList
           ref={ref}

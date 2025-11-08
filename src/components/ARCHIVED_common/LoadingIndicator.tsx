@@ -7,19 +7,18 @@ interface LoadingIndicatorProps {
   sx?: SxProps<Theme>;
 }
 
-export const LoadingIndicator = ({ 
-  message = 'Loading...', 
-  sx 
-}: LoadingIndicatorProps) => {
+export const LoadingIndicator = ({ message = 'Loading...', sx }: LoadingIndicatorProps) => {
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      padding: 2,
-      color: 'text.secondary',
-      ...sx
-    }}>
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 2,
+        color: 'text.secondary',
+        ...sx,
+      }}
+    >
       <Typography fontStyle="italic">{message}</Typography>
     </Box>
   );

@@ -126,7 +126,6 @@ select {
 /* Field state classes for design-system primitives */
 .thoth-drop-active .MuiOutlinedInput-root {
   background: var(--thoth-drop-active-bg, rgba(227, 242, 253, 0.82));
-  border-radius: 12px;
 }
 .thoth-drop-active .MuiOutlinedInput-root fieldset {
   border-width: 2px;

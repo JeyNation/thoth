@@ -15,7 +15,7 @@ import {
 import { AnchorConfig, AnchorConfigRef } from './AnchorConfig';
 import { AnchorRule } from '../../types/extractionRules';
 import { EditRuleProps } from '../../types/rulesComponents';
-import { IconButton } from '../common/IconButton';
+import { IconButton } from '../ui/Button/IconButton';
 
 export interface EditRuleRef {
   applyPendingChanges: () => void;
@@ -153,7 +153,9 @@ export const EditRule = forwardRef<EditRuleRef, EditRuleProps>(
                 variant="outlined"
               />
             </Stack>
-            <IconButton icon={CheckIcon} tooltip="Done" onClick={handleDone} color="primary" />
+            <IconButton ariaLabel="Done" onClick={handleDone} color="primary">
+              <CheckIcon />
+            </IconButton>
           </Stack>
 
           <FormControl fullWidth size="small">

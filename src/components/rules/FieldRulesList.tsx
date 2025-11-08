@@ -6,7 +6,7 @@ import { EditRule, EditRuleRef } from './EditRule';
 import { ViewRule } from './ViewRule';
 import { AnchorRule, RegexMatchRule, AbsoluteRule } from '../../types/extractionRules';
 import { FieldRule } from '../../types/rulesComponents';
-import { EmptyState } from '../common/EmptyState';
+import { EmptyDataIndicator } from '../ui/Feedback/Indicator/EmptyDataIndicator';
 
 export interface FieldRulesListRef {
   applyAllPendingChanges: () => void;
@@ -95,9 +95,8 @@ export const FieldRulesList = forwardRef<FieldRulesListRef, FieldRulesListProps>
     );
     if (rules.length === 0) {
       return (
-        <EmptyState
-          sx={{ pb: 6 }}
-          message="No rules defined for this field."
+        <EmptyDataIndicator
+          title="No rules defined for this field."
           description='Click "+" to create your first rule'
         />
       );

@@ -34,9 +34,8 @@ import {
   ensureLineNumberExists,
   insertBlankLineItem,
 } from '../utils/purchaseOrderMutations';
-import { EmptyState } from './common/EmptyState';
-import { SectionLabel } from './common/SectionLabel';
-import { SubsectionLabel } from './common/SubsectionLabel';
+import { SectionLabel } from './ARCHIVED_common/SectionLabel';
+import { SubsectionLabel } from './ARCHIVED_common/SubsectionLabel';
 import ColumnMappingDialog from './dialogs/ColumnMappingDialog';
 import RowMappingDialog from './dialogs/RowMappingDialog';
 import {
@@ -49,6 +48,7 @@ import {
 import ColumnDropZone from './form/ColumnDropZone';
 import FieldInput from './form/FieldInput';
 import LineItemCard from './form/LineItemCard';
+import { EmptyDataIndicator } from './ui/Feedback';
 
 type BasicFieldKey = Exclude<keyof PurchaseOrder, 'lineItems'>;
 
@@ -884,7 +884,10 @@ const Form: React.FC<FormProps> = ({
                 </Stack>
               </>
             ) : (
-              <EmptyState message="No line items yet. Add one below or drop structured data to populate the table." />
+              <EmptyDataIndicator
+                title={'No line items yet.'}
+                description={'Add one below or drop structured data to populate the table.'}
+              />
             )}
           </Box>
 

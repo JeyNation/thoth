@@ -16,7 +16,7 @@ import {
 } from '../styles/viewerStyles';
 import type { BoundingBox as BaseBoundingBox } from '../types/boundingBox';
 import { normalizeBoundingBoxes } from '../types/mapping';
-import { LoadingIndicator } from './common/LoadingIndicator';
+import { LoadingIndicator } from './ui/Feedback/Indicator/LoadingIndicator';
 import { ViewerControls } from './viewer/ViewerControls';
 import { ViewerPage } from './viewer/ViewerPage';
 import type { BoundingBox } from '../types/mapping';
@@ -743,7 +743,7 @@ const Viewer = ({
   };
 
   if (loading) {
-    return <LoadingIndicator message="Loading document..." sx={{ p: 3, height: '100%' }} />;
+    return <LoadingIndicator title="Loading document..." />;
   }
 
   return (
@@ -814,7 +814,7 @@ const Viewer = ({
             />
           );
         })}
-        {isLoadingMore && <LoadingIndicator message="Loading more pages..." />}
+        {isLoadingMore && <LoadingIndicator title="Loading more pages..." />}
       </Box>
     </Box>
   );

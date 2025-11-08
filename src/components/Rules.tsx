@@ -5,8 +5,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Box, Stack } from '@mui/material';
 import { Divider } from '@mui/material';
 
-import { EmptyState } from './common/EmptyState';
-import { LoadingIndicator } from './common/LoadingIndicator';
+import { EmptyDataIndicator } from './ui/Feedback/Indicator/EmptyDataIndicator';
+import { LoadingIndicator } from './ui/Feedback/Indicator/LoadingIndicator';
 import { RerunExtractionDialog } from './dialogs/RerunExtractionDialog';
 import { FieldRulesSection, FieldRulesListRef } from './rules/FieldRulesSection';
 import { RulesActionBar } from './rules/RulesActionBar';
@@ -340,26 +340,21 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
 
   if (!vendorId) {
     return (
-      <EmptyState
-        message="No document selected"
+      <EmptyDataIndicator
+        title="No document selected"
         description="Please select a document to view and edit its rules"
       />
     );
   }
 
   if (loading) {
-    return (
-      <LoadingIndicator
-        message={`Loading rules for ${vendorId}...`}
-        sx={{ height: '100%', p: 2 }}
-      />
-    );
+    return <LoadingIndicator title={`Loading rules for ${vendorId}...`} />;
   }
 
   if (!layoutMap) {
     return (
-      <EmptyState
-        message={`No layout map found for ${vendorId}`}
+      <EmptyDataIndicator
+        title={`No layout map found for ${vendorId}`}
         description="Create a layout map file for this vendor to enable rule editing"
       />
     );

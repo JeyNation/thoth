@@ -1,2 +1,2 @@
-export { default } from './LoadingIndicator';
-export * from './LoadingIndicator';
+export { LoadingIndicator } from './LoadingIndicator';
+export { EmptyDataIndicator } from './EmptyDataIndicator';

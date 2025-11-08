@@ -21,6 +21,7 @@ export interface TextInputProps {
   onDragOver?: React.DragEventHandler;
   onDrop?: React.DragEventHandler;
   onFocus?: React.FocusEventHandler<HTMLInputElement | HTMLTextAreaElement>;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   shrinkLabel?: boolean;
   size?: 'small' | 'medium';
   type?: string;
@@ -48,6 +49,7 @@ const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>(function Te
     onDragOver,
     onDrop,
     onFocus,
+    onKeyDown,
     shrinkLabel,
     size = 'medium',
     type,
@@ -79,6 +81,7 @@ const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>(function Te
       onDragOver={onDragOver}
       onDrop={onDrop}
       onFocus={onFocus}
+      onKeyDown={onKeyDown}
       size={size}
       slotProps={builtSlotProps}
       type={type}

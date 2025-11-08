@@ -1,19 +1,20 @@
 import { Typography } from '@mui/material';
 
-interface SubsectionLabelProps {
+interface SectionLabelProps {
   children: React.ReactNode;
 }
 
-export const SubsectionLabel = ({ children }: SubsectionLabelProps) => {
+export const SectionLabel = ({ children }: SectionLabelProps) => {
   return (
-    <Typography 
-      variant="caption" 
+    <Typography
+      variant="caption"
       color="text.secondary"
-      sx={{ 
+      sx={{
         display: 'block',
         textTransform: 'uppercase',
         fontWeight: 'bold',
-        mb: 1
+        fontSize: '0.875rem',
+        mb: 1,
       }}
     >
       {children}

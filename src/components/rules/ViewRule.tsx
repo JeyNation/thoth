@@ -8,7 +8,7 @@ import { Paper, Stack } from '@mui/material';
 import { RuleText } from './RuleText';
 import { ViewRuleProps } from '../../types/rulesComponents';
 import { generatePseudoRule } from '../../utils/ruleUtils';
-import { IconButton } from '../common/IconButton';
+import { IconButton } from '../ui/Button/IconButton';
 
 export const ViewRule: React.FC<ViewRuleProps> = ({
   rule,
@@ -59,13 +59,12 @@ export const ViewRule: React.FC<ViewRuleProps> = ({
           alignItems={isSingleLine ? 'center' : 'flex-start'}
           sx={{ mt: isSingleLine ? 0 : -0.5 }}
         >
-          <IconButton icon={EditIcon} tooltip="Edit rule" onClick={onEdit} color="default" />
-          <IconButton
-            icon={DeleteOutlineIcon}
-            tooltip="Delete rule"
-            onClick={onDelete}
-            color="error"
-          />
+          <IconButton ariaLabel="Edit rule" onClick={onEdit} color="default">
+            <EditIcon />
+          </IconButton>
+          <IconButton ariaLabel="Delete rule" onClick={onDelete} color="error">
+            <DeleteOutlineIcon />
+          </IconButton>
         </Stack>
       </Stack>
     </Paper>

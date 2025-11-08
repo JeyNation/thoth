@@ -27,9 +27,9 @@ import { RegexPatterns, RegexPatternsRef } from './RegexPatterns';
 import { SearchZone } from './SearchZone';
 import type { AnchorMatchMode, StartingPositionCorner } from '../../types/extractionRules';
 import { AnchorConfigProps } from '../../types/rulesComponents';
-import { SubsectionLabel } from '../common/SubsectionLabel';
-import { TextButton } from '../common/TextButton';
-import { TextInput } from '../common/TextInput';
+import { SubsectionLabel } from '../ARCHIVED_common/SubsectionLabel';
+import { TextButton } from '../ui/Button/TextButton';
+import { TextInput } from '../ui/Input/TextInput';
 
 export interface AnchorConfigRef {
   applyPendingChanges: () => void;
@@ -184,8 +184,8 @@ export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(
             label="Anchor Text"
             fullWidth
             value={inputValue}
-            onChange={onInputChange}
-            onKeyPress={e => {
+            onChange={e => onInputChange}
+            onKeyDown={e => {
               if (e.key === 'Enter') {
                 if (editingIndex !== null) {
                   onUpdate(inputValue);
@@ -197,31 +197,15 @@ export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(
           />
           {editingIndex !== null ? (
             <>
-              <TextButton
-                size="medium"
-                onClick={() => onUpdate(inputValue)}
-                startIcon={<CheckIcon fontSize="small" />}
-                sx={{ px: 2.5, minWidth: 105 }}
-              >
+              <TextButton size="medium" onClick={() => onUpdate(inputValue)}>
                 Update
               </TextButton>
-              <TextButton
-                size="medium"
-                variant="outlined"
-                onClick={onCancel}
-                startIcon={<CloseIcon fontSize="small" />}
-                sx={{ px: 2.5, minWidth: 105 }}
-              >
+              <TextButton size="medium" onClick={onCancel}>
                 Cancel
               </TextButton>
             </>
           ) : (
-            <TextButton
-              size="medium"
-              onClick={() => onAdd(inputValue)}
-              startIcon={<AddIcon fontSize="small" />}
-              sx={{ minWidth: 80 }}
-            >
+            <TextButton size="medium" onClick={() => onAdd(inputValue)}>
               Add
             </TextButton>
           )}
@@ -285,7 +269,6 @@ export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(
               });
             }}
             inputProps={{ step: 1, min: 1 }}
-            sx={{ flex: 1 }}
           />
         </Stack>
         {/* Flags (placed after Match Mode within Anchor Text section) */}
@@ -496,7 +479,6 @@ export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(
                 });
               }}
               inputProps={{ step: 1 }}
-              sx={{ flex: 1 }}
             />
             <TextInput
               type="number"
@@ -521,7 +503,6 @@ export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(
                 });
               }}
               inputProps={{ step: 1 }}
-              sx={{ flex: 1 }}
             />
             <TextInput
               type="number"
@@ -546,7 +527,6 @@ export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(
                 });
               }}
               inputProps={{ step: 1, min: 0 }}
-              sx={{ flex: 1 }}
             />
             <TextInput
               type="number"
@@ -571,7 +551,6 @@ export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(
                 });
               }}
               inputProps={{ step: 1, min: 0 }}
-              sx={{ flex: 1 }}
             />
           </Stack>
         </Box>

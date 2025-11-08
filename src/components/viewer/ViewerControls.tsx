@@ -7,7 +7,8 @@ import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import { Stack, Chip } from '@mui/material';
 
-import { IconButton } from '../common/IconButton';
+import { IconButton } from '../ui/Button/IconButton';
+import { ZoomOut } from '@mui/icons-material';
 
 interface ViewerControlsProps {
   boundingBoxCount: number;
@@ -49,20 +50,22 @@ export const ViewerControls: React.FC<ViewerControlsProps> = ({
         )}
       </Stack>
       <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap">
-        <IconButton icon={ZoomInIcon} tooltip="Zoom In" onClick={onZoomIn} color="primary" />
-        <IconButton icon={ZoomOutIcon} tooltip="Zoom Out" onClick={onZoomOut} color="primary" />
+        <IconButton ariaLabel="Zoom In" onClick={onZoomIn} color="primary">
+          <ZoomInIcon />
+        </IconButton>
+        <IconButton ariaLabel="Zoom Out" onClick={onZoomOut} color="primary">
+          <ZoomOutIcon />
+        </IconButton>
+        <IconButton ariaLabel="Reset View" onClick={onResetView} color="primary">
+          <RestartAltIcon />
+        </IconButton>
         <IconButton
-          icon={RestartAltIcon}
-          tooltip="Reset View"
-          onClick={onResetView}
-          color="primary"
-        />
-        <IconButton
-          icon={showOverlays ? VisibilityOffIcon : VisibilityIcon}
-          tooltip={showOverlays ? 'Hide Field Overlays' : 'Show Field Overlays'}
+          ariaLabel={showOverlays ? 'Hide Field Overlays' : 'Show Field Overlays'}
           onClick={onToggleOverlays}
           color={showOverlays ? 'primary' : 'default'}
-        />
+        >
+          {showOverlays ? <VisibilityIcon /> : <VisibilityOffIcon />}
+        </IconButton>
       </Stack>
     </Stack>
   );

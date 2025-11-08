@@ -3,7 +3,7 @@ import React from 'react';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { Box } from '@mui/material';
 
-import { TextButton } from '../common/TextButton';
+import { TextButton } from '../ui/Button/TextButton';
 
 interface RulesActionBarProps {
   hasUnsavedChanges: boolean;
@@ -29,11 +29,9 @@ export const RulesActionBar: React.FC<RulesActionBarProps> = ({
       }}
     >
       <TextButton
-        variant="outlined"
         size="medium"
         onClick={onRerunExtraction || (() => {})}
         disabled={!onRerunExtraction}
-        startIcon={<PlayArrowIcon fontSize="small" />}
       >
         {hasUnsavedChanges ? 'Save & Rerun Extraction' : 'Rerun Extraction'}
       </TextButton>

@@ -26,8 +26,8 @@ import {
   type LineItemColumnKey,
 } from '../../types/lineItemColumns';
 import type { LineItem } from '../../types/PurchaseOrder';
-import { IconButton } from '../common/IconButton';
-import { SubsectionLabel } from '../common/SubsectionLabel';
+import { IconButton } from '../ui/Button/IconButton';
+import { SubsectionLabel } from '../ARCHIVED_common/SubsectionLabel';
 
 export interface LineItemCardProps {
   item: LineItem;
@@ -145,19 +145,21 @@ const LineItemCard: React.FC<LineItemCardProps> = ({
             </Typography>
             <Stack {...LINE_ITEM_ACTIONS_STACK_PROPS}>
               <IconButton
-                icon={AddIcon}
-                tooltip="Add line (hold Ctrl to insert above)"
+                ariaLabel="Add line (hold Ctrl to insert above)"
                 size="small"
                 color="primary"
                 onClick={(event: React.MouseEvent) => onInsertRelative(!!event.ctrlKey)}
-              />
+              >
+                <AddIcon />
+              </IconButton>
               <IconButton
-                icon={DeleteOutlineIcon}
-                tooltip={`Remove line ${item.lineNumber}`}
+                ariaLabel={`Remove line ${item.lineNumber}`}
                 size="small"
                 color="error"
                 onClick={onRemove}
-              />
+              >
+                <DeleteOutlineIcon />
+              </IconButton>
             </Stack>
           </Stack>
           <Stack {...LINE_ITEM_FIELDS_STACK_PROPS}>

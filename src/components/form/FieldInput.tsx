@@ -180,12 +180,12 @@ const FieldInput: React.FC<FieldInputProps> = ({
     'data-field-kind': kind,
     'data-field-id': id,
     ...(kind === 'integer'
-      ? { min: 0, step: 1, style: { textAlign: 'right' } as React.CSSProperties }
+      ? { min: 0, step: 1, style: { textAlign: 'left' } as React.CSSProperties }
       : kind === 'decimal'
       ? {
           inputMode: 'decimal',
           pattern: '[0-9]*[.]?[0-9]*',
-          style: { textAlign: 'right' } as React.CSSProperties,
+          style: { textAlign: 'left' } as React.CSSProperties,
           // Narrow to the appropriate handler types without using `any`.
           onKeyDown: handleKeyDown as unknown as React.EventHandler<
             React.KeyboardEvent<HTMLInputElement>
