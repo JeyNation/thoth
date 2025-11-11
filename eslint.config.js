@@ -22,7 +22,7 @@ export default [
     'react',
     'react-hooks',
     'jsx-a11y',
-    '@next/next'
+    '@next/next',
   ),
   {
     files: ['eslint.config.js', 'tailwind.config.js', 'postcss.config.js'],
@@ -39,17 +39,32 @@ export default [
       'import/order': [
         'warn',
         {
-          'groups': ['builtin', 'external', 'internal', ['parent', 'sibling', 'index']],
-          'pathGroups': [
+          groups: ['builtin', 'external', 'internal', ['parent', 'sibling', 'index']],
+          pathGroups: [
             {
               pattern: '@/**',
-              group: 'internal'
-            }
+              group: 'internal',
+            },
           ],
-          'pathGroupsExcludedImportTypes': ['builtin'],
+          // Ensure React imports appear before other external imports for readability
+          // and to match the common convention of importing React at the top.
+          // This places `react` before other externals while still alphabetizing
+          // the remainder.
+          pathGroups: [
+            {
+              pattern: 'react',
+              group: 'external',
+              position: 'before',
+            },
+            {
+              pattern: '@/**',
+              group: 'internal',
+            },
+          ],
+          pathGroupsExcludedImportTypes: ['builtin'],
           'newlines-between': 'always',
-          'alphabetize': { order: 'asc', caseInsensitive: true }
-        }
+          alphabetize: { order: 'asc', caseInsensitive: true },
+        },
       ],
     },
   },

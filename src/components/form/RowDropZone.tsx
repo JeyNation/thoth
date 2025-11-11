@@ -1,11 +1,12 @@
-import { Box, Typography } from '@mui/material';
 import React from 'react';
 
-import { 
-  ROW_DROP_BASE_STYLE, 
-  ROW_DROP_ACTIVE_STYLE, 
+import { Box, Typography } from '@mui/material';
+
+import {
+  ROW_DROP_BASE_STYLE,
+  ROW_DROP_ACTIVE_STYLE,
   ROW_DROP_CONTAINER_SX,
-  ROW_DROP_LABEL_SX 
+  ROW_DROP_LABEL_SX,
 } from '../../styles/rowDropStyles';
 import DropZone from '../DropZone';
 
@@ -15,7 +16,11 @@ interface RowDropZoneProps {
   onDrop: (e: React.DragEvent) => void;
 }
 
-const RowDropZone: React.FC<RowDropZoneProps> = ({ lineNumber, externallyActive = false, onDrop }) => {
+const RowDropZone: React.FC<RowDropZoneProps> = ({
+  lineNumber,
+  externallyActive = false,
+  onDrop,
+}) => {
   return (
     <Box sx={ROW_DROP_CONTAINER_SX}>
       <DropZone

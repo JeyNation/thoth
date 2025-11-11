@@ -1,8 +1,8 @@
-import { TextField } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 
+import { TextInput } from '@/components/ui';
+
 import ClearAdornment from './ClearAdornment';
-import { applyDropHighlightSx } from '../../styles/dropHighlight';
 
 export type FieldKind = 'text' | 'textarea' | 'integer' | 'decimal' | 'date';
 
@@ -14,9 +14,9 @@ export interface FieldInputProps {
   kind: FieldKind;
   value: string | number;
 
-  baseSx: Record<string, unknown>;
-  isDragActive: boolean;
   ariaLabel?: string;
+  isDragActive: boolean;
+  isLinked?: boolean;
   label: string;
 
   onChange: (value: string | number, opts?: { explicitClear?: boolean }) => void;
@@ -32,8 +32,8 @@ const FieldInput: React.FC<FieldInputProps> = ({
   id,
   kind,
   value,
-  baseSx,
   isDragActive,
+  isLinked,
   ariaLabel,
   label,
   onChange,
@@ -44,20 +44,27 @@ const FieldInput: React.FC<FieldInputProps> = ({
   onDragLeave,
   onDrop,
 }) => {
-  const sx = (isDragActive) ? applyDropHighlightSx(baseSx) : baseSx;
   const isNumeric = kind === 'integer' || kind === 'decimal';
-  const showClear = (isNumeric) 
+  const showClear = isNumeric
     ? value != null && value !== 0
     : typeof value === 'string' && value.trim() !== '';
-    
-  const [display, setDisplay] = useState<string>(() => (isNumeric ? String(value ?? 0) : (typeof value === 'string' ? value : '')));
+
+  const [display, setDisplay] = useState<string>(() =>
+    isNumeric ? String(value ?? 0) : typeof value === 'string' ? value : '',
+  );
   const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
     if (!isNumeric) return;
     if (!isFocused) {
-      const parentNum = typeof value === 'number' ? value : (kind === 'integer' ? parseInt(String(value || '0'), 10) || 0 : parseFloat(String(value || '0')) || 0);
-      const displayNum = (kind === 'integer') ? (parseInt(display || '0', 10) || 0) : (parseFloat(display || '0') || 0);
+      const parentNum =
+        typeof value === 'number'
+          ? value
+          : kind === 'integer'
+          ? parseInt(String(value || '0'), 10) || 0
+          : parseFloat(String(value || '0')) || 0;
+      const displayNum =
+        kind === 'integer' ? parseInt(display || '0', 10) || 0 : parseFloat(display || '0') || 0;
       if (displayNum !== parentNum) {
         setDisplay(String(value ?? 0));
       }
@@ -123,13 +130,26 @@ const FieldInput: React.FC<FieldInputProps> = ({
     onBlur();
   };
 
-  const handleFocus = () => { setIsFocused(true); onFocus(); };
+  const handleFocus = () => {
+    setIsFocused(true);
+    onFocus();
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (kind !== 'decimal') return;
     if (e.ctrlKey || e.metaKey) return;
     const key = e.key;
-    const nav = ['Backspace','Delete','ArrowLeft','ArrowRight','Home','End','Tab','Enter','Escape'];
+    const nav = [
+      'Backspace',
+      'Delete',
+      'ArrowLeft',
+      'ArrowRight',
+      'Home',
+      'End',
+      'Tab',
+      'Enter',
+      'Escape',
+    ];
     if (nav.includes(key)) return;
     if (key >= '0' && key <= '9') return;
     if (key === '.') {
@@ -147,55 +167,66 @@ const FieldInput: React.FC<FieldInputProps> = ({
       cleaned = cleaned.replace(/\./g, '');
     } else {
       const firstDot = cleaned.indexOf('.');
-      if (firstDot !== -1) cleaned = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, '');
+      if (firstDot !== -1)
+        cleaned = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, '');
     }
     if (cleaned.length === 0) e.preventDefault();
   };
 
-  const type = kind === 'integer' ? 'number' : (kind === 'decimal' ? 'text' : (kind === 'date' ? 'date' : 'text'));
+  const type =
+    kind === 'integer' ? 'number' : kind === 'decimal' ? 'text' : kind === 'date' ? 'date' : 'text';
+
+  const inputNativeProps: Record<string, unknown> = {
+    'data-field-kind': kind,
+    'data-field-id': id,
+    ...(kind === 'integer'
+      ? { min: 0, step: 1, style: { textAlign: 'left' } as React.CSSProperties }
+      : kind === 'decimal'
+      ? {
+          inputMode: 'decimal',
+          pattern: '[0-9]*[.]?[0-9]*',
+          style: { textAlign: 'left' } as React.CSSProperties,
+          // Narrow to the appropriate handler types without using `any`.
+          onKeyDown: handleKeyDown as unknown as React.EventHandler<
+            React.KeyboardEvent<HTMLInputElement>
+          >,
+          onPaste: handlePaste as unknown as React.EventHandler<
+            React.ClipboardEvent<HTMLInputElement>
+          >,
+        }
+      : {}),
+  };
+
+  const classes = (() => {
+    if (isDragActive) return 'thoth-drop-active drop-active';
+    if (isLinked && isFocused) return 'thoth-field-linked-focused field-linked-focused';
+    if (isLinked) return 'thoth-field-linked field-linked';
+    if (isFocused) return 'thoth-field-focused field-focused';
+    return '';
+  })();
 
   return (
-    <TextField
+    <TextInput
       key={id}
       fullWidth
       size="small"
       variant="outlined"
-      value={isNumeric ? display : (typeof value === 'string' ? value : String(value))}
+      value={isNumeric ? display : typeof value === 'string' ? value : String(value)}
       type={type}
-      aria-label={ariaLabel}
+      ariaLabel={ariaLabel}
       label={label}
       multiline={kind === 'textarea'}
       minRows={kind === 'textarea' ? 2 : undefined}
-      sx={sx}
+      shrinkLabel
+      className={classes}
       onChange={handleChange}
       onFocus={handleFocus}
       onBlur={handleBlur}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
-      slotProps={{
-        inputLabel: {
-          shrink: true,
-        },
-        input: {
-          endAdornment: showClear ? <ClearAdornment onClear={onClear} /> : undefined,
-          inputProps: {
-            'data-field-kind': kind,
-            'data-field-id': id,
-            ...(kind === 'integer'
-              ? { min: 0, step: 1, style: { textAlign: 'right' } }
-              : kind === 'decimal'
-                ? { 
-                  inputMode: 'decimal', 
-                  pattern: '[0-9]*[.]?[0-9]*', 
-                  style: { textAlign: 'right' }, 
-                  onKeyDown: handleKeyDown, 
-                  onPaste: handlePaste 
-                }
-                : {}),
-          },
-        },
-      }}
+      endAdornment={showClear ? <ClearAdornment onClear={onClear} /> : undefined}
+      inputProps={inputNativeProps}
     />
   );
 };

@@ -14,33 +14,33 @@ Checklist (small, incremental PRs)
 
 1. Scaffold design system (PR: scaffold/design-system)
 
-   - [ ] Create `src/components/ui/` with subfolders: `Button/`, `Input/`, `Icons/`, `Loading/`, `Labels/`, `Theme/`.
-   - [ ] Add `src/components/ui/index.ts` that re-exports primitives.
+   - [x] Create `src/components/ui/` with subfolders: `Button/`, `Input/`, `Icons/`, `Loading/`, `Labels/`, `Theme/`.
+   - [x] Add `src/components/ui/index.ts` that re-exports primitives.
    - Acceptance: files exist and build passes.
 
 2. Theme & Tokens (PR: ui/theme)
 
-   - [ ] Create `src/components/ui/Theme/ThemeRegistry.tsx` (wrap MUI ThemeProvider + CssBaseline).
-   - [ ] Add a small `theme.ts` with tokens used across the app.
+   - [x] Create `src/components/ui/Theme/ThemeRegistry.tsx` (wrap MUI ThemeProvider + CssBaseline).
+   - [x] Add a small `theme.ts` with tokens used across the app.
    - Acceptance: App starts with ThemeRegistry and no runtime errors.
 
 3. Primitives (PR: ui/primitives-1)
 
-   - [ ] Input: `src/components/ui/Input/TextInput.tsx` (wraps MUI TextField)
-   - [ ] Button: `src/components/ui/Button/TextButton.tsx` and a generic `Button.tsx`
-   - [ ] IconButton: `src/components/ui/IconButton.tsx`
+   - [x] Input: `src/components/ui/Input/TextInput.tsx` (wraps MUI TextField)
+   - [x] Button: `src/components/ui/Button/TextButton.tsx` and a generic `Button.tsx`
+   - [x] IconButton: `src/components/ui/IconButton.tsx`
    - Acceptance: unit tests for primitives exist and pass; one consumer replaced successfully.
 
 4. Common UI (PR: ui/primitives-2)
 
-   - [ ] LoadingIndicator -> `src/components/ui/Loading/LoadingIndicator.tsx`
-   - [ ] EmptyState -> `src/components/ui/EmptyState.tsx`
-   - [ ] Labels -> `src/components/ui/Labels/SectionLabel.tsx` & `SubsectionLabel.tsx`
+   - [x] LoadingIndicator -> `src/components/ui/Loading/LoadingIndicator.tsx`
+   - [x] EmptyState -> `src/components/ui/EmptyState.tsx`
+   - [x] Labels -> `src/components/ui/Labels/SectionLabel.tsx`
    - Acceptance: callers updated and UI unchanged.
 
 5. Migrate ThemeRegistry and update app layout (PR: ui/app)
 
-   - [ ] Replace `src/components/ThemeRegistry.tsx` references with new ThemeRegistry and import from `@/components/ui`.
+   - [x] Replace `src/components/ThemeRegistry.tsx` references with new ThemeRegistry and import from `@/components/ui`.
    - Acceptance: app builds and pages render the themed UI.
 
 6. Feature migration: extraction-rules (PRs: feature/extraction-rules/\*)
@@ -97,7 +97,6 @@ Mapping of current files (scan results)
   - `src/components/common/LoadingIndicator.tsx`
   - `src/components/common/EmptyState.tsx`
   - `src/components/common/SectionLabel.tsx`
-  - `src/components/common/SubsectionLabel.tsx`
 - theme & top-level:
   - `src/components/ThemeRegistry.tsx`
   - `src/app/layout.tsx`

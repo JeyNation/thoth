@@ -1,9 +1,9 @@
 'use client';
 
-import { Box } from '@mui/material';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import type { CSSProperties } from 'react';
 
+import { Box } from '@mui/material';
 
 import { useMapping } from '../context/MappingContext';
 import { useAreaSelection } from '../hooks/useAreaSelection';
@@ -16,16 +16,19 @@ import {
 } from '../styles/viewerStyles';
 import type { BoundingBox as BaseBoundingBox } from '../types/boundingBox';
 import { normalizeBoundingBoxes } from '../types/mapping';
-import { LoadingIndicator } from './common/LoadingIndicator';
+import { LoadingIndicator } from './ui/Feedback/Indicator/LoadingIndicator';
 import { ViewerControls } from './viewer/ViewerControls';
 import { ViewerPage } from './viewer/ViewerPage';
 import type { BoundingBox } from '../types/mapping';
 
-const DEFAULT_AUTO_FIT_CONFIG = (svgContent: string, svgHostRef: React.RefObject<HTMLDivElement>) => ({
+const DEFAULT_AUTO_FIT_CONFIG = (
+  svgContent: string,
+  svgHostRef: React.RefObject<HTMLDivElement>,
+) => ({
   svgContent,
   svgHostRef,
   mode: 'width' as const,
-  retries: 4
+  retries: 4,
 });
 
 interface ViewerProps {
@@ -38,13 +41,24 @@ interface ViewerProps {
   onOverlaysVisibilityChange?: (visible: boolean) => void;
 }
 
-const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputField, onBoundingBoxesUpdate, onViewerTransformChange, onBoundingBoxFocus, onOverlaysVisibilityChange }: ViewerProps) => {
+const Viewer = ({
+  svgImages,
+  boundingBoxes: incomingBoundingBoxes,
+  focusedInputField,
+  onBoundingBoxesUpdate,
+  onViewerTransformChange,
+  onBoundingBoxFocus,
+  onOverlaysVisibilityChange,
+}: ViewerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<HTMLDivElement>(null);
   const boxStyleCacheRef = useRef<Map<string, { key: string; style: CSSProperties }>>(new Map());
   const lastBoxesRef = useRef<BoundingBox[] | null>(null);
-  
-  const [baseSvgDims, setBaseSvgDims] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+
+  const [baseSvgDims, setBaseSvgDims] = useState<{ width: number; height: number }>({
+    width: 0,
+    height: 0,
+  });
   const [svgContent, setSvgContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [boundingBoxes, setBoundingBoxes] = useState<BoundingBox[]>([]);
@@ -57,12 +71,22 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const { fieldSources, reverseIndex } = useMapping();
-  const { scale, setScale, resetView } = useZoom({ 
+  const { scale, setScale, resetView } = useZoom({
     containerRef,
-    autoFit: DEFAULT_AUTO_FIT_CONFIG(svgContent, svgRef)
+    autoFit: DEFAULT_AUTO_FIT_CONFIG(svgContent, svgRef),
   });
-  const { isDragging, isKeyActive, position, beginPanAt, resetPan, setIsDragging } = usePan({ containerRef });
-  const { isAreaSelecting, selectionStart, selectionEnd, beginSelection, updateSelection, cancelSelection, getSelectionRectStyle } = useAreaSelection();
+  const { isDragging, isKeyActive, position, beginPanAt, resetPan, setIsDragging } = usePan({
+    containerRef,
+  });
+  const {
+    isAreaSelecting,
+    selectionStart,
+    selectionEnd,
+    beginSelection,
+    updateSelection,
+    cancelSelection,
+    getSelectionRectStyle,
+  } = useAreaSelection();
 
   const focusedInputLinkedBoxIds = useMemo(() => {
     if (!focusedInputField) return new Set<string>();
@@ -80,55 +104,71 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
     return s;
   }, [fieldSources, reverseIndex]);
 
-  const getBoundingBoxStyle = useCallback((boundingBox: BoundingBox) => {
-    const isSelected = selectedFields.has(boundingBox.fieldId);
-    const isLinked = allLinkedBoxIds.has(boundingBox.id);
-    const isFocusedLinked = focusedInputLinkedBoxIds.has(boundingBox.id);
-    const isDragged = draggedField === boundingBox.fieldId;
+  const getBoundingBoxStyle = useCallback(
+    (boundingBox: BoundingBox) => {
+      const isSelected = selectedFields.has(boundingBox.fieldId);
+      const isLinked = allLinkedBoxIds.has(boundingBox.id);
+      const isFocusedLinked = focusedInputLinkedBoxIds.has(boundingBox.id);
+      const isDragged = draggedField === boundingBox.fieldId;
 
-    const key = `${boundingBox.minX}|${boundingBox.minY}|${boundingBox.width}|${boundingBox.height}|${isSelected?1:0}${isLinked?1:0}${isFocusedLinked?1:0}${isDragged?1:0}`;
-    const cached = boxStyleCacheRef.current.get(boundingBox.fieldId);
-    if (cached && cached.key === key) return cached.style;
+      const key = `${boundingBox.minX}|${boundingBox.minY}|${boundingBox.width}|${
+        boundingBox.height
+      }|${isSelected ? 1 : 0}${isLinked ? 1 : 0}${isFocusedLinked ? 1 : 0}${isDragged ? 1 : 0}`;
+      const cached = boxStyleCacheRef.current.get(boundingBox.fieldId);
+      if (cached && cached.key === key) return cached.style;
 
-    let backgroundColor = 'rgba(0, 123, 255, 0.1)';
-    let borderColor = '#007bff';
-    if (isLinked) { backgroundColor = 'rgba(76, 175, 80, 0.2)'; borderColor = '#4caf50'; }
-    if (isFocusedLinked) { backgroundColor = 'rgba(46, 125, 50, 0.32)'; borderColor = '#2e7d32'; }
-    if (isSelected) {
-      if (isLinked || isFocusedLinked) { backgroundColor = 'rgba(46,125,50,0.40)'; borderColor = '#1b5e20'; }
-      else { backgroundColor = 'rgba(33,150,243,0.4)'; borderColor = '#1976d2'; }
-    }
+      let backgroundColor = 'rgba(0, 123, 255, 0.1)';
+      let borderColor = '#007bff';
+      if (isLinked) {
+        backgroundColor = 'rgba(76, 175, 80, 0.2)';
+        borderColor = '#4caf50';
+      }
+      if (isFocusedLinked) {
+        backgroundColor = 'rgba(46, 125, 50, 0.32)';
+        borderColor = '#2e7d32';
+      }
+      if (isSelected) {
+        if (isLinked || isFocusedLinked) {
+          backgroundColor = 'rgba(46,125,50,0.40)';
+          borderColor = '#1b5e20';
+        } else {
+          backgroundColor = 'rgba(33,150,243,0.4)';
+          borderColor = '#1976d2';
+        }
+      }
 
-    let boxShadow = 'none';
-    if (isSelected) boxShadow = `0 0 10px ${borderColor}66`;
-    else if (isFocusedLinked) boxShadow = '0 0 8px rgba(46,125,50,0.45)';
-    else if (isLinked) boxShadow = '0 0 5px rgba(76, 175, 80, 0.3)';
+      let boxShadow = 'none';
+      if (isSelected) boxShadow = `0 0 10px ${borderColor}66`;
+      else if (isFocusedLinked) boxShadow = '0 0 8px rgba(46,125,50,0.45)';
+      else if (isLinked) boxShadow = '0 0 5px rgba(76, 175, 80, 0.3)';
 
-    const style: CSSProperties = {
-      position: 'absolute',
-      left: boundingBox.minX,
-      top: boundingBox.minY,
-      width: boundingBox.width,
-      height: boundingBox.height,
-      backgroundColor,
-      border: `${isSelected ? '3' : '2'}px solid ${borderColor}`,
-      borderRadius: 3,
-      cursor: 'grab',
-      zIndex: 10,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: 10,
-      fontWeight: 'bold',
-      color: borderColor,
-      opacity: 1,
-      boxShadow,
-      transition: 'all 0.2s ease'
-    };
+      const style: CSSProperties = {
+        position: 'absolute',
+        left: boundingBox.minX,
+        top: boundingBox.minY,
+        width: boundingBox.width,
+        height: boundingBox.height,
+        backgroundColor,
+        border: `${isSelected ? '3' : '2'}px solid ${borderColor}`,
+        borderRadius: 3,
+        cursor: 'grab',
+        zIndex: 10,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: borderColor,
+        opacity: 1,
+        boxShadow,
+        transition: 'all 0.2s ease',
+      };
 
-    boxStyleCacheRef.current.set(boundingBox.fieldId, { key, style });
-    return style;
-  }, [selectedFields, allLinkedBoxIds, focusedInputLinkedBoxIds, draggedField]);
+      boxStyleCacheRef.current.set(boundingBox.fieldId, { key, style });
+      return style;
+    },
+    [selectedFields, allLinkedBoxIds, focusedInputLinkedBoxIds, draggedField],
+  );
 
   useEffect(() => {
     if (svgImages && svgImages.length > 0) {
@@ -136,7 +176,7 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
       setTotalPages(images.length);
       setLoadedPages(1);
       setSvgContent(images[0]);
-      setLoading((prev) => (prev ? false : prev));
+      setLoading(prev => (prev ? false : prev));
     }
 
     if (incomingBoundingBoxes && incomingBoundingBoxes.length > 0) {
@@ -146,12 +186,19 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
       let same = !!prev && sameLength;
       if (same) {
         for (let i = 0; i < prev!.length; i++) {
-          const a = prev![i]; const b = normalized[i];
+          const a = prev![i];
+          const b = normalized[i];
           if (
             a.fieldId !== b.fieldId ||
             a.id !== b.id ||
-            a.minX !== b.minX || a.minY !== b.minY || a.width !== b.width || a.height !== b.height
-          ) { same = false; break; }
+            a.minX !== b.minX ||
+            a.minY !== b.minY ||
+            a.width !== b.width ||
+            a.height !== b.height
+          ) {
+            same = false;
+            break;
+          }
         }
       }
       if (!same) {
@@ -169,24 +216,37 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
     if (!host) return;
 
     const tryMeasure = () => {
-      const svgEl = host.querySelector('svg') as (SVGSVGElement | null);
+      const svgEl = host.querySelector('svg') as SVGSVGElement | null;
       if (!svgEl) return false;
 
-      let w = 0; let h = 0;
-      if (svgEl.viewBox && svgEl.viewBox.baseVal && svgEl.viewBox.baseVal.width && svgEl.viewBox.baseVal.height) {
+      let w = 0;
+      let h = 0;
+      if (
+        svgEl.viewBox &&
+        svgEl.viewBox.baseVal &&
+        svgEl.viewBox.baseVal.width &&
+        svgEl.viewBox.baseVal.height
+      ) {
         w = svgEl.viewBox.baseVal.width;
         h = svgEl.viewBox.baseVal.height;
-      } else if (svgEl.width && svgEl.height && typeof svgEl.width.baseVal?.value === 'number' && svgEl.width.baseVal.value && svgEl.height.baseVal.value) {
-        w = svgEl.width.baseVal.value; h = svgEl.height.baseVal.value;
+      } else if (
+        svgEl.width &&
+        svgEl.height &&
+        typeof svgEl.width.baseVal?.value === 'number' &&
+        svgEl.width.baseVal.value &&
+        svgEl.height.baseVal.value
+      ) {
+        w = svgEl.width.baseVal.value;
+        h = svgEl.height.baseVal.value;
       } else {
         const bb = svgEl.getBBox?.();
-        if (bb && bb.width && bb.height) { 
-          w = bb.width; 
+        if (bb && bb.width && bb.height) {
+          w = bb.width;
           h = bb.height;
-        }
-        else {
+        } else {
           const rect = svgEl.getBoundingClientRect();
-          w = rect.width; h = rect.height;
+          w = rect.width;
+          h = rect.height;
         }
       }
       if (w && h) {
@@ -195,17 +255,20 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
       }
       return false;
     };
-    let attempts = 0; let raf: number;
+    let attempts = 0;
+    let raf: number;
     const loop = () => {
       if (tryMeasure() || attempts++ > 5) return;
       raf = requestAnimationFrame(loop);
     };
     loop();
-    return () => { if (raf) cancelAnimationFrame(raf); };
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, [svgContent]);
 
-  useEffect(() => { 
-    onViewerTransformChange?.(scale, position); 
+  useEffect(() => {
+    onViewerTransformChange?.(scale, position);
   }, [scale, position, onViewerTransformChange]);
 
   useEffect(() => {
@@ -285,7 +348,7 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
 
   const handleFieldSelection = (fieldId: string, event: React.MouseEvent) => {
     event.stopPropagation();
-    
+
     if (event.ctrlKey || event.metaKey) {
       const newSelection = new Set(selectedFields);
       if (newSelection.has(fieldId)) {
@@ -307,33 +370,33 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
 
   const handleFieldDragStart = (e: React.DragEvent, boundingBox: BoundingBox) => {
     setDraggedField(boundingBox.fieldId);
-    
+
     let dragText = boundingBox.fieldText;
     let dragFieldIds = [boundingBox.fieldId];
-    
+
     if (selectedFields.has(boundingBox.fieldId) && selectedFields.size > 1) {
       const selectedBoxes = boundingBoxes.filter(box => selectedFields.has(box.fieldId));
-      
+
       selectedBoxes.sort((a, b) => {
         const aTop = Math.min(...a.points.map(p => p.y));
         const bTop = Math.min(...b.points.map(p => p.y));
         const aLeft = Math.min(...a.points.map(p => p.x));
         const bLeft = Math.min(...b.points.map(p => p.x));
-        
+
         if (Math.abs(aTop - bTop) < 10) {
           return aLeft - bLeft;
         }
         return aTop - bTop;
       });
-      
+
       const textParts: string[] = [];
       for (let i = 0; i < selectedBoxes.length; i++) {
         textParts.push(selectedBoxes[i].fieldText);
-        
+
         if (i < selectedBoxes.length - 1) {
           const currentTop = Math.min(...selectedBoxes[i].points.map(p => p.y));
           const nextTop = Math.min(...selectedBoxes[i + 1].points.map(p => p.y));
-          
+
           if (Math.abs(nextTop - currentTop) > 10) {
             textParts.push('\n');
           } else {
@@ -341,14 +404,15 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
           }
         }
       }
-      
+
       dragText = textParts.join('');
       dragFieldIds = selectedBoxes.map(box => box.fieldId);
     }
-    
-    const selectedBoxesForDrag = (selectedFields.has(boundingBox.fieldId) && selectedFields.size > 1)
-      ? boundingBoxes.filter(box => selectedFields.has(box.fieldId))
-      : [boundingBox];
+
+    const selectedBoxesForDrag =
+      selectedFields.has(boundingBox.fieldId) && selectedFields.size > 1
+        ? boundingBoxes.filter(box => selectedFields.has(box.fieldId))
+        : [boundingBox];
 
     const pairsWithCenters = selectedBoxesForDrag.map(b => {
       const xs = b.points.map(p => p.x);
@@ -357,38 +421,52 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
       const maxXb = Math.max(...xs);
       let minYb = Math.min(...ys);
       let maxYb = Math.max(...ys);
-      
+
       // Adjust Y coordinates for page offset when dealing with multi-page selections
       const pageIndex = (b.page || 1) - 1;
-          if (pageIndex > 0) {
+      if (pageIndex > 0) {
         // Calculate cumulative vertical offset for this bounding box's page (in unscaled coordinates)
         let cumulativeOffset = 0;
         for (let i = 0; i < pageIndex; i++) {
           const prevParser = new DOMParser();
-          	  const prevDoc = prevParser.parseFromString((svgImages?.[i]) || '', 'image/svg+xml');
+          const prevDoc = prevParser.parseFromString(svgImages?.[i] || '', 'image/svg+xml');
           const prevSvgEl = prevDoc.querySelector('svg');
           let prevPageHeight = baseSvgDims.height;
-          
+
           if (prevSvgEl) {
-            if (prevSvgEl.viewBox && prevSvgEl.viewBox.baseVal && prevSvgEl.viewBox.baseVal.height) {
+            if (
+              prevSvgEl.viewBox &&
+              prevSvgEl.viewBox.baseVal &&
+              prevSvgEl.viewBox.baseVal.height
+            ) {
               prevPageHeight = prevSvgEl.viewBox.baseVal.height;
             } else if (prevSvgEl.getAttribute('height')) {
               prevPageHeight = parseFloat(prevSvgEl.getAttribute('height')!);
             }
           }
-          
+
           // Account for page height + divider spacing (33px total = 32px margin + 1px height)
-          cumulativeOffset += prevPageHeight + (33 / scale);
+          cumulativeOffset += prevPageHeight + 33 / scale;
         }
-        
+
         // Add the page offset to Y coordinates
         minYb += cumulativeOffset;
         maxYb += cumulativeOffset;
       }
-      
+
       const centerX = (minXb + maxXb) / 2;
       const centerY = (minYb + maxYb) / 2;
-      return { fieldId: b.fieldId, boxId: b.id!, text: b.fieldText, centerX, left: minXb, right: maxXb, top: minYb, bottom: maxYb, centerY };
+      return {
+        fieldId: b.fieldId,
+        boxId: b.id!,
+        text: b.fieldText,
+        centerX,
+        left: minXb,
+        right: maxXb,
+        top: minYb,
+        bottom: maxYb,
+        centerY,
+      };
     });
 
     const dragData = {
@@ -397,9 +475,9 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
       fieldIds: dragFieldIds,
       boundingBoxIds: selectedBoxesForDrag.map(b => b.id!),
       pairs: pairsWithCenters,
-      isMultiField: dragFieldIds.length > 1
+      isMultiField: dragFieldIds.length > 1,
     };
-    
+
     e.dataTransfer.setData('application/json', JSON.stringify(dragData));
     e.dataTransfer.effectAllowed = 'copy';
   };
@@ -408,7 +486,10 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
     setMouseDownPos({ x: e.clientX, y: e.clientY });
     const target = e.target as HTMLElement;
     const active = document.activeElement as HTMLElement | null;
-    const isEditable = !!(active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable));
+    const isEditable = !!(
+      active &&
+      (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)
+    );
     if (isEditable) return;
     if (isKeyActive) {
       beginPanAt(e.clientX, e.clientY);
@@ -449,31 +530,33 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
         left: Math.min(selectionStart!.x, selectionEnd!.x),
         top: Math.min(selectionStart!.y, selectionEnd!.y),
         right: Math.max(selectionStart!.x, selectionEnd!.x),
-        bottom: Math.max(selectionStart!.y, selectionEnd!.y)
+        bottom: Math.max(selectionStart!.y, selectionEnd!.y),
       };
       const ids = new Set<string>();
-      
+
       // Create a cache for page offsets to avoid recalculating
       const pageOffsets = new Map<number, number>();
       const containerEl = containerRef.current;
-      
+
       // Try to get actual page elements for accurate spacing measurement
       let useActualSpacing = false;
       if (containerEl) {
         const pageElements = containerEl.querySelectorAll('[data-page-index]');
         const firstPageEl = pageElements[0] as HTMLElement;
-        
+
         if (firstPageEl && pageElements.length > 1) {
-          const firstSvgContainer = firstPageEl.querySelector('[data-svg-container]') as HTMLElement;
-          
+          const firstSvgContainer = firstPageEl.querySelector(
+            '[data-svg-container]',
+          ) as HTMLElement;
+
           if (firstSvgContainer) {
             const containerRect = containerEl.getBoundingClientRect();
             const scrollTop = containerEl.scrollTop;
             const firstSvgRect = firstSvgContainer.getBoundingClientRect();
             const firstSvgTop = firstSvgRect.top - containerRect.top + scrollTop;
-            
+
             pageOffsets.set(0, 0); // First page has no offset
-            
+
             for (let i = 1; i < pageElements.length; i++) {
               const pageEl = pageElements[i] as HTMLElement;
               const svgContainer = pageEl.querySelector('[data-svg-container]') as HTMLElement;
@@ -487,35 +570,39 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
           }
         }
       }
-      
+
       // For multi-page documents, we need to check bounding boxes against their actual page positions
       boundingBoxes.forEach(b => {
         const pageIndex = (b.page || 1) - 1;
         let cumulativeOffset = 0;
-        
+
         if (useActualSpacing && pageOffsets.has(pageIndex)) {
           cumulativeOffset = pageOffsets.get(pageIndex)!;
         } else {
           // Fallback to calculated offset
           for (let i = 0; i < pageIndex; i++) {
             const prevParser = new DOMParser();
-            const prevDoc = prevParser.parseFromString((svgImages?.[i]) || '', 'image/svg+xml');
+            const prevDoc = prevParser.parseFromString(svgImages?.[i] || '', 'image/svg+xml');
             const prevSvgEl = prevDoc.querySelector('svg');
             let prevPageHeight = baseSvgDims.height;
-            
+
             if (prevSvgEl) {
-              if (prevSvgEl.viewBox && prevSvgEl.viewBox.baseVal && prevSvgEl.viewBox.baseVal.height) {
+              if (
+                prevSvgEl.viewBox &&
+                prevSvgEl.viewBox.baseVal &&
+                prevSvgEl.viewBox.baseVal.height
+              ) {
                 prevPageHeight = prevSvgEl.viewBox.baseVal.height;
               } else if (prevSvgEl.getAttribute('height')) {
                 prevPageHeight = parseFloat(prevSvgEl.getAttribute('height')!);
               }
             }
-            
+
             // Use measured spacing - divider has my: 2 (32px) + height: 1px = 33px total
-            cumulativeOffset += prevPageHeight + (33 / scale);
+            cumulativeOffset += prevPageHeight + 33 / scale;
           }
         }
-        
+
         // Adjust bounding box coordinates to global coordinate system
         const xs = b.points.map(p => p.x);
         const ys = b.points.map(p => p.y + cumulativeOffset);
@@ -523,13 +610,20 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
         const maxX = Math.max(...xs);
         const minY = Math.min(...ys);
         const maxY = Math.max(...ys);
-        
+
         // Check if bounding box intersects with selection rectangle
-        if (!(maxX < selectionRect.left || minX > selectionRect.right || maxY < selectionRect.top || minY > selectionRect.bottom)) {
+        if (
+          !(
+            maxX < selectionRect.left ||
+            minX > selectionRect.right ||
+            maxY < selectionRect.top ||
+            minY > selectionRect.bottom
+          )
+        ) {
           ids.add(b.fieldId);
         }
       });
-      
+
       setSelectedFields(ids);
       onBoundingBoxFocus?.(null);
       cancelSelection();
@@ -540,7 +634,8 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
         onBoundingBoxFocus?.(null);
       }
     }
-    setIsDragging(false); setDraggedField(null);
+    setIsDragging(false);
+    setDraggedField(null);
   };
 
   const handlePanelMouseLeave = () => {
@@ -560,49 +655,55 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
     // Calculate cumulative vertical offset for this page
     let cumulativeOffset = 0;
     const containerEl = containerRef.current;
-    
+
     // Try to get accurate page spacing by measuring DOM elements
     if (containerEl && pageIndex > 0) {
       const pageElements = containerEl.querySelectorAll('[data-page-index]');
-      
+
       if (pageElements.length > pageIndex) {
         const firstPageEl = pageElements[0] as HTMLElement;
         const currentPageEl = pageElements[pageIndex] as HTMLElement;
-        
+
         // Get the SVG elements within each page to measure their actual positions
         const firstSvgContainer = firstPageEl.querySelector('[data-svg-container]') as HTMLElement;
-        const currentSvgContainer = currentPageEl.querySelector('[data-svg-container]') as HTMLElement;
-        
+        const currentSvgContainer = currentPageEl.querySelector(
+          '[data-svg-container]',
+        ) as HTMLElement;
+
         if (firstSvgContainer && currentSvgContainer) {
           const containerRect = containerEl.getBoundingClientRect();
           const scrollTop = containerEl.scrollTop;
-          
+
           const firstSvgRect = firstSvgContainer.getBoundingClientRect();
           const currentSvgRect = currentSvgContainer.getBoundingClientRect();
-          
+
           const firstSvgTop = firstSvgRect.top - containerRect.top + scrollTop;
           const currentSvgTop = currentSvgRect.top - containerRect.top + scrollTop;
-          
+
           cumulativeOffset = (currentSvgTop - firstSvgTop) / scale;
         } else {
           // Fallback: calculate based on page heights and Material-UI spacing
           for (let i = 0; i < pageIndex; i++) {
             const prevParser = new DOMParser();
-            const prevDoc = prevParser.parseFromString((svgImages?.[i]) || '', 'image/svg+xml');
+            const prevDoc = prevParser.parseFromString(svgImages?.[i] || '', 'image/svg+xml');
             const prevSvgEl = prevDoc.querySelector('svg');
             let prevPageHeight = baseSvgDims.height;
-            
+
             if (prevSvgEl) {
-              if (prevSvgEl.viewBox && prevSvgEl.viewBox.baseVal && prevSvgEl.viewBox.baseVal.height) {
+              if (
+                prevSvgEl.viewBox &&
+                prevSvgEl.viewBox.baseVal &&
+                prevSvgEl.viewBox.baseVal.height
+              ) {
                 prevPageHeight = prevSvgEl.viewBox.baseVal.height;
               } else if (prevSvgEl.getAttribute('height')) {
                 prevPageHeight = parseFloat(prevSvgEl.getAttribute('height')!);
               }
             }
-            
+
             // Account for page height + divider spacing
             // The divider has my: 2 (32px total) and height: 1px = 33px total
-            cumulativeOffset += prevPageHeight + (33 / scale);
+            cumulativeOffset += prevPageHeight + 33 / scale;
           }
         }
       }
@@ -637,12 +738,12 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
       left: `${intersectionLeft}px`,
       top: `${intersectionTop}px`,
       width: `${intersectionRight - intersectionLeft}px`,
-      height: `${intersectionBottom - intersectionTop}px`
+      height: `${intersectionBottom - intersectionTop}px`,
     });
   };
 
   if (loading) {
-    return <LoadingIndicator message="Loading document..." sx={{ p: 3, height: '100%' }} />;
+    return <LoadingIndicator title="Loading document..." />;
   }
 
   return (
@@ -654,7 +755,10 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
         showOverlays={showOverlays}
         onZoomIn={() => setScale(s => Math.min(5, s * 1.2))}
         onZoomOut={() => setScale(s => Math.max(0.1, s / 1.2))}
-        onResetView={() => { resetView(); resetPan(); }}
+        onResetView={() => {
+          resetView();
+          resetPan();
+        }}
         onToggleOverlays={() => setShowOverlays(prev => !prev)}
       />
 
@@ -668,13 +772,13 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
         onMouseUp={handlePanelMouseUp}
         onMouseLeave={handlePanelMouseLeave}
       >
-  {(svgImages ?? []).slice(0, loadedPages).map((pageContent: string, pageIndex: number) => {
+        {(svgImages ?? []).slice(0, loadedPages).map((pageContent: string, pageIndex: number) => {
           const parser = new DOMParser();
           const doc = parser.parseFromString(pageContent, 'image/svg+xml');
           const svgEl = doc.querySelector('svg');
           let pageWidth = baseSvgDims.width;
           let pageHeight = baseSvgDims.height;
-          
+
           if (svgEl) {
             if (svgEl.viewBox && svgEl.viewBox.baseVal && svgEl.viewBox.baseVal.width) {
               pageWidth = svgEl.viewBox.baseVal.width;
@@ -684,10 +788,10 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
               pageHeight = parseFloat(svgEl.getAttribute('height')!);
             }
           }
-          
+
           const pageBoxes = boundingBoxes.filter(box => box.page === pageIndex + 1);
           const pageSelectionStyle = calculatePageSelectionStyle(pageIndex, pageHeight);
-          
+
           return (
             <ViewerPage
               key={pageIndex}
@@ -710,7 +814,7 @@ const Viewer = ({ svgImages, boundingBoxes: incomingBoundingBoxes, focusedInputF
             />
           );
         })}
-        {isLoadingMore && <LoadingIndicator message="Loading more pages..." />}
+        {isLoadingMore && <LoadingIndicator title="Loading more pages..." />}
       </Box>
     </Box>
   );

@@ -21,7 +21,8 @@ jobs:
       - name: Enable Corepack and activate pinned pnpm
         run: |
           corepack enable
-          corepack prepare pnpm@8.10.0 --activate
+          # Use pnpm v9 to match lockfileVersion: '9.0' in pnpm-lock.yaml
+          corepack prepare pnpm@9 --activate
 
       - name: Cache pnpm store
         uses: actions/cache@v4

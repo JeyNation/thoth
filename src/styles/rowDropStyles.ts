@@ -1,5 +1,6 @@
-import type { SxProps, Theme } from '@mui/material';
 import type { CSSProperties } from 'react';
+
+import type { SxProps, Theme } from '@mui/material';
 
 import { DROP_ZONE_ACTIVE_STYLE } from './dropHighlight';
 
@@ -21,7 +22,7 @@ export const ROW_DROP_BASE_STYLE: CSSProperties = {
 
 export const ROW_DROP_CONTAINER_SX: SxProps<Theme> = {
   width: 60,
-  alignSelf: 'stretch'
+  alignSelf: 'stretch',
 };
 
 export const ROW_DROP_ACTIVE_STYLE: CSSProperties = {

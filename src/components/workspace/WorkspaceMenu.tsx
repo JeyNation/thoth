@@ -1,6 +1,7 @@
+import { useState } from 'react';
+
 import MenuIcon from '@mui/icons-material/Menu';
 import { Box, IconButton, Tooltip, Menu, MenuItem, ListItemText } from '@mui/material';
-import { useState } from 'react';
 
 interface WorkspaceMenuProps {
   onBackToDocuments: () => void;

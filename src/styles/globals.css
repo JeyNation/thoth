@@ -14,7 +14,8 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -80,7 +81,9 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
-input, textarea, select {
+input,
+textarea,
+select {
   font-family: inherit;
 }
 
@@ -92,7 +95,7 @@ input, textarea, select {
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(120,120,120,0.35) transparent;
+  scrollbar-color: rgba(120, 120, 120, 0.35) transparent;
 }
 
 /* WebKit (Chromium, Safari, Edge) */
@@ -106,16 +109,40 @@ input, textarea, select {
   margin: 2px;
 }
 *::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(140,140,140,0.55), rgba(110,110,110,0.55));
+  background: linear-gradient(180deg, rgba(140, 140, 140, 0.55), rgba(110, 110, 110, 0.55));
   border-radius: 20px;
   border: 3px solid transparent;
   background-clip: content-box;
-  transition: background .2s ease;
+  transition: background 0.2s ease;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(150,150,150,0.7), rgba(120,120,120,0.7));
+  background: linear-gradient(180deg, rgba(150, 150, 150, 0.7), rgba(120, 120, 120, 0.7));
   background-clip: content-box;
 }
 *::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+/* Field state classes for design-system primitives */
+.thoth-drop-active .MuiOutlinedInput-root {
+  background: var(--thoth-drop-active-bg, rgba(227, 242, 253, 0.82));
+}
+.thoth-drop-active .MuiOutlinedInput-root fieldset {
+  border-width: 2px;
+  border-style: dashed;
+  border-color: var(--thoth-drop-active-border, rgba(25, 118, 210, 0.65));
+}
+.thoth-field-focused .MuiOutlinedInput-root fieldset {
+  border-style: dashed;
+  border-color: var(--thoth-field-focused-border, rgba(25, 118, 210, 0.65));
+}
+.thoth-field-linked .MuiOutlinedInput-root {
+  background: var(--thoth-field-linked-bg, rgba(76, 175, 80, 0.1));
+}
+.thoth-field-linked-focused .MuiOutlinedInput-root {
+  background: var(--thoth-field-linked-bg, rgba(76, 175, 80, 0.1));
+}
+.thoth-field-linked-focused .MuiOutlinedInput-root fieldset {
+  border-style: dashed;
+  border-color: var(--thoth-field-linked-border, rgb(76, 175, 80));
 }
