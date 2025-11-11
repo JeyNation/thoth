@@ -1,6 +1,8 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act } from 'react';
+
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
 import IconButton from './IconButton';
 import { createTestRoot } from '../../../test/utils/createTestRoot';
 

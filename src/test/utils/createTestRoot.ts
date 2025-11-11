@@ -1,6 +1,7 @@
 import React from 'react';
-import { createRoot, Root } from 'react-dom/client';
 import { act } from 'react';
+
+import { createRoot, Root } from 'react-dom/client';
 
 export type TestRoot = {
   container: HTMLDivElement;

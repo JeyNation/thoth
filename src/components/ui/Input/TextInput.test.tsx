@@ -1,6 +1,8 @@
 import React from 'react';
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { act } from 'react';
+
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+
 import TextInput from './TextInput';
 import { createTestRoot } from '../../../test/utils/createTestRoot';
 
@@ -57,7 +59,16 @@ describe('TextInput', () => {
 
   it('passes inputProps through to the native input', () => {
     rootHelpers.render(
-      <TextInput label="Phone" id="phone" inputProps={{ 'data-qa': 'phone-input' } as any} />,
+      <TextInput
+        label="Phone"
+        id="phone"
+        inputProps={
+          { 'data-qa': 'phone-input' } as React.InputHTMLAttributes<
+            HTMLInputElement | HTMLTextAreaElement
+          > &
+            Record<string, unknown>
+        }
+      />,
     );
 
     const input = container.querySelector('input') as HTMLInputElement;

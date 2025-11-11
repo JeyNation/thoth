@@ -1,6 +1,7 @@
+import React from 'react';
+
 import MuiIconButton from '@mui/material/IconButton';
 import type { IconButtonProps as MuiIconButtonProps } from '@mui/material/IconButton';
-import React from 'react';
 
 // Design-system IconButton: expose a small, stable prop surface and hide
 // MUI-specific props. Consumers should use these props only.

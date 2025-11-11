@@ -29,7 +29,7 @@ function EmptyDataIndicator({
   role = 'status',
   headingLevel = 'h3',
 }: EmptyDataProps) {
-  const Heading = headingLevel as any;
+  const Tag = headingLevel as keyof JSX.IntrinsicElements;
 
   return (
     <div
@@ -44,9 +44,11 @@ function EmptyDataIndicator({
       {icon ? <div className="thoth-emptydata-icon mb-4">{icon}</div> : null}
 
       <div className="thoth-emptydata-content max-w-xl">
-        <Heading className="thoth-emptydata-title text-2xl font-semibold text-foreground">
-          {title}
-        </Heading>
+        {React.createElement(
+          Tag,
+          { className: 'thoth-emptydata-title text-2xl font-semibold text-foreground' },
+          title,
+        )}
 
         {description ? (
           <p className="thoth-emptydata-description mt-2 text-sm text-muted-foreground">

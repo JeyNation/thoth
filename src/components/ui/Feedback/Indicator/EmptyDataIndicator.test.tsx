@@ -1,7 +1,9 @@
 import React from 'react';
+
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { createTestRoot } from '../../../../test/utils/createTestRoot';
+
 import EmptyDataIndicator from './EmptyDataIndicator';
+import { createTestRoot } from '../../../../test/utils/createTestRoot';
 
 describe('EmptyDataIndicator', () => {
   let rootHelpers = createTestRoot();

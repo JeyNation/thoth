@@ -1,7 +1,8 @@
 import React from 'react';
 
-import Button from './Button';
 import type { ButtonProps as MuiButtonProps } from '@mui/material/Button';
+
+import Button from './Button';
 
 export type TextButtonColor = MuiButtonProps['color'];
 
@@ -35,7 +36,7 @@ const TextButton = React.forwardRef<HTMLButtonElement, TextButtonProps>(function
 
   return (
     <Button
-      ref={ref as any}
+      ref={ref}
       id={id}
       className={className}
       aria-label={ariaLabel}

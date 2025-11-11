@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { ZoomOut } from '@mui/icons-material';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
@@ -8,7 +9,6 @@ import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import { Stack, Chip } from '@mui/material';
 
 import { IconButton } from '../ui/Button/IconButton';
-import { ZoomOut } from '@mui/icons-material';
 
 interface ViewerControlsProps {
   boundingBoxCount: number;

@@ -34,7 +34,6 @@ import {
   ensureLineNumberExists,
   insertBlankLineItem,
 } from '../utils/purchaseOrderMutations';
-import { SectionLabel } from './ui/Label/SectionLabel';
 import ColumnMappingDialog from './dialogs/ColumnMappingDialog';
 import RowMappingDialog from './dialogs/RowMappingDialog';
 import {
@@ -48,6 +47,7 @@ import ColumnDropZone from './form/ColumnDropZone';
 import FieldInput from './form/FieldInput';
 import LineItemCard from './form/LineItemCard';
 import { EmptyDataIndicator } from './ui/Feedback';
+import { SectionLabel } from './ui/Label/SectionLabel';
 
 type BasicFieldKey = Exclude<keyof PurchaseOrder, 'lineItems'>;
 

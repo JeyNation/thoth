@@ -1,7 +1,9 @@
 import React from 'react';
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createTestRoot } from '../../../../test/utils/createTestRoot';
+
 import LoadingIndicator from './LoadingIndicator';
+import { createTestRoot } from '../../../../test/utils/createTestRoot';
 
 describe('LoadingIndicator', () => {
   let rootHelpers: ReturnType<typeof createTestRoot>;

@@ -5,8 +5,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Box, Stack } from '@mui/material';
 import { Divider } from '@mui/material';
 
-import { EmptyDataIndicator } from './ui/Feedback/Indicator/EmptyDataIndicator';
-import { LoadingIndicator } from './ui/Feedback/Indicator/LoadingIndicator';
 import { RerunExtractionDialog } from './dialogs/RerunExtractionDialog';
 import { FieldRulesSection, FieldRulesListRef } from './rules/FieldRulesSection';
 import { RulesActionBar } from './rules/RulesActionBar';
@@ -30,6 +28,8 @@ import {
   updateRule,
   reorderRules,
 } from '../utils/ruleUtils';
+import { EmptyDataIndicator } from './ui/Feedback/Indicator/EmptyDataIndicator';
+import { LoadingIndicator } from './ui/Feedback/Indicator/LoadingIndicator';
 
 type FieldRule = AnchorRule | RegexMatchRule | AbsoluteRule;
 

@@ -1,7 +1,9 @@
 import React from 'react';
+
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { createTestRoot } from '../../../test/utils/createTestRoot';
+
 import { SubsectionLabel } from './SubsectionLabel';
+import { createTestRoot } from '../../../test/utils/createTestRoot';
 
 describe('SubsectionLabel', () => {
   let rootHelpers: ReturnType<typeof createTestRoot>;

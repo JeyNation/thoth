@@ -44,7 +44,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
 
   return (
     <MuiButton
-      ref={ref as React.ForwardedRef<any>}
+      ref={ref as React.ForwardedRef<HTMLButtonElement>}
       id={id}
       className={className}
       aria-label={ariaLabel}

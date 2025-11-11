@@ -1,5 +1,7 @@
 import React from 'react';
+
 import CircularProgress from '@mui/material/CircularProgress';
+import type { CircularProgressProps } from '@mui/material/CircularProgress';
 
 export type LoadingIndicatorSize = 'xs' | 'sm' | 'md' | 'lg' | number;
 export type LoadingIndicatorVariant = 'spinner' | 'dots' | 'bar';
@@ -79,7 +81,9 @@ const LoadingIndicator = React.forwardRef<HTMLDivElement, LoadingIndicatorProps>
         data-testid={testId}
         {...rest}
       >
-        {variant === 'spinner' && <CircularProgress size={computedSize} color={color as any} />}
+        {variant === 'spinner' && (
+          <CircularProgress size={computedSize} color={color as CircularProgressProps['color']} />
+        )}
 
         {label ? <span style={visuallyHiddenStyle}>{label}</span> : null}
       </div>
