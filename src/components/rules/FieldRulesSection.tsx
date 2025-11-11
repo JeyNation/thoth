@@ -71,17 +71,6 @@ export const FieldRulesSection = forwardRef<FieldRulesListRef, FieldRulesSection
           onRuleDragOver={onRuleDragOver}
           onRuleDrop={onRuleDrop}
         />
-        {/* Experimental: new RuleEditor placed at bottom of existing list; optional prop controls behavior */}
-        {typeof onChangeRules === 'function' ? (
-          <Box sx={{ mt: 2 }}>
-            {/* Render RuleEditor from feature folder using import - keep path consistent with tsconfig alias */}
-            {/* Using React.createElement to avoid static import if feature is optional */}
-            {React.createElement(require('@/features/rules/components/RuleEditor').default, {
-              rules,
-              onChange: onChangeRules,
-            })}
-          </Box>
-        ) : null}
       </Box>
     );
   },

@@ -450,8 +450,8 @@ export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(
               type="number"
               label="Offset X"
               value={String(rule.positionConfig?.point?.left ?? 0)}
-              onChange={value => {
-                const left = Number(value);
+              onChange={e => {
+                const left = Number(e.target.value);
                 const currentPoint = rule.positionConfig?.point || {
                   top: 0,
                   left: 0,
@@ -474,8 +474,8 @@ export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(
               type="number"
               label="Offset Y"
               value={String(rule.positionConfig?.point?.top ?? 0)}
-              onChange={value => {
-                const top = Number(value);
+              onChange={e => {
+                const top = Number(e.target.value);
                 const currentPoint = rule.positionConfig?.point || {
                   top: 0,
                   left: 0,
@@ -498,8 +498,8 @@ export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(
               type="number"
               label="Width"
               value={String(Math.abs(rule.positionConfig?.point?.width ?? 0))}
-              onChange={value => {
-                const width = Number(value);
+              onChange={e => {
+                const width = Number(e.target.value);
                 const currentPoint = rule.positionConfig?.point || {
                   top: 0,
                   left: 0,
@@ -522,8 +522,8 @@ export const AnchorConfig = forwardRef<AnchorConfigRef, AnchorConfigProps>(
               type="number"
               label="Height"
               value={String(Math.abs(rule.positionConfig?.point?.height ?? 0))}
-              onChange={value => {
-                const height = Number(value);
+              onChange={e => {
+                const height = Number(e.target.value);
                 const currentPoint = rule.positionConfig?.point || {
                   top: 0,
                   left: 0,
