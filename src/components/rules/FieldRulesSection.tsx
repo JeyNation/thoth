@@ -6,8 +6,8 @@ import { Box, Stack } from '@mui/material';
 import { FieldRulesList, FieldRulesListRef } from './FieldRulesList';
 import { AnchorRule, RegexMatchRule, AbsoluteRule } from '../../types/extractionRules';
 import { FieldRule } from '../../types/rulesComponents';
-import { IconButton } from '../ui/Button/IconButton';
-import { SectionLabel } from '../ui/Label/SectionLabel';
+import { IconButton } from '../atoms/Button/IconButton';
+import { SectionLabel } from '../atoms/Label/SectionLabel';
 
 export type { FieldRulesListRef };
 
@@ -52,12 +52,12 @@ export const FieldRulesSection = forwardRef<FieldRulesListRef, FieldRulesSection
   ) => {
     return (
       <Box>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
+        {/* <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
           <SectionLabel>{fieldLabel}</SectionLabel>
           <IconButton ariaLabel="Add rule" onClick={onAddRule}>
             <AddIcon />
           </IconButton>
-        </Stack>
+        </Stack> */}
         <FieldRulesList
           ref={ref}
           rules={rules}
@@ -67,21 +67,11 @@ export const FieldRulesSection = forwardRef<FieldRulesListRef, FieldRulesSection
           onDeleteRule={onDeleteRule}
           onDoneEditing={onDoneEditing}
           onUpdateField={onUpdateField}
+          onChangeRules={onChangeRules}
           onRuleDragStart={onRuleDragStart}
           onRuleDragOver={onRuleDragOver}
           onRuleDrop={onRuleDrop}
         />
-        {/* Experimental: new RuleEditor placed at bottom of existing list; optional prop controls behavior */}
-        {typeof onChangeRules === 'function' ? (
-          <Box sx={{ mt: 2 }}>
-            {/* Render RuleEditor from feature folder using import - keep path consistent with tsconfig alias */}
-            {/* Using React.createElement to avoid static import if feature is optional */}
-            {React.createElement(require('@/features/rules/components/RuleEditor').default, {
-              rules,
-              onChange: onChangeRules,
-            })}
-          </Box>
-        ) : null}
       </Box>
     );
   },

@@ -4,10 +4,11 @@ import React, { useState } from 'react';
 
 import { Stack } from '@mui/material';
 
-import { EditRule } from '@/components/rules/EditRule';
-import { ViewRule } from '@/components/rules/ViewRule';
-import Button from '@/components/ui/Button/Button';
+import Button from '@/components/atoms/Button/Button';
 import type { FieldRule } from '@/types/rulesComponents';
+
+import { RuleEditMode } from './RuleEditMode';
+import RuleItem from './RuleItem';
 
 export interface RuleEditorProps {
   rules: FieldRule[];
@@ -18,7 +19,6 @@ const makeEmptyAnchorRule = (index: number): FieldRule => ({
   id: `rule-${Date.now()}-${index}`,
   priority: index + 1,
   ruleType: 'anchor',
-  // Minimal defaults for anchor rule shape
   anchorConfig: {
     aliases: [],
     searchZone: { top: 0, left: 0, right: 0, bottom: 0 },
@@ -30,7 +30,7 @@ const makeEmptyAnchorRule = (index: number): FieldRule => ({
   parserConfig: {},
 });
 
-const RuleEditor: React.FC<RuleEditorProps> = ({ rules, onChange }) => {
+const RuleSection: React.FC<RuleEditorProps> = ({ rules, onChange }) => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const handleAdd = () => {
@@ -62,14 +62,14 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rules, onChange }) => {
         {rules.map((rule, index) => (
           <div key={rule.id}>
             {editingIndex === index ? (
-              <EditRule
+              <RuleEditMode
                 rule={rule}
                 index={index}
                 onDone={() => setEditingIndex(null)}
                 onUpdateField={u => handleUpdate(index, u)}
               />
             ) : (
-              <ViewRule
+              <RuleItem
                 rule={rule}
                 index={index}
                 onEdit={() => setEditingIndex(index)}
@@ -87,5 +87,5 @@ const RuleEditor: React.FC<RuleEditorProps> = ({ rules, onChange }) => {
   );
 };
 
-export default RuleEditor;
-export { RuleEditor };
+export default RuleSection;
+export { RuleSection };

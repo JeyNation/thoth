@@ -6,7 +6,7 @@ import { Box, Stack } from '@mui/material';
 import { Divider } from '@mui/material';
 
 import { RerunExtractionDialog } from './dialogs/RerunExtractionDialog';
-import { FieldRulesSection, FieldRulesListRef } from './rules/FieldRulesSection';
+import { FieldRulesListRef } from './rules/FieldRulesSection';
 import { RulesActionBar } from './rules/RulesActionBar';
 import { BASIC_INFO_FIELDS } from '../config/formFields';
 import { useLayoutMap } from '../hooks/useLayoutMap';
@@ -28,8 +28,9 @@ import {
   updateRule,
   reorderRules,
 } from '../utils/ruleUtils';
-import { EmptyDataIndicator } from './ui/Feedback/Indicator/EmptyDataIndicator';
-import { LoadingIndicator } from './ui/Feedback/Indicator/LoadingIndicator';
+import { EmptyDataIndicator } from './atoms/Feedback/Indicator/EmptyDataIndicator';
+import { LoadingIndicator } from './atoms/Feedback/Indicator/LoadingIndicator';
+import { RuleEditor } from '@/features/rules/components/Rules/RuleEditor';
 
 type FieldRule = AnchorRule | RegexMatchRule | AbsoluteRule;
 
@@ -363,43 +364,7 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
   return (
     <Box sx={RULES_ROOT_SX}>
       <Box sx={RULES_CONTENT_SX}>
-        <Stack spacing={2}>
-          {BASIC_INFO_FIELDS.map((field, fieldIndex) => {
-            const extractionFieldId = getExtractionFieldId(field.id);
-            return (
-              <React.Fragment key={field.id}>
-                <FieldRulesSection
-                  ref={fieldRulesSectionRef => {
-                    if (fieldRulesSectionRef) {
-                      fieldRulesSectionRefs.current.set(extractionFieldId, fieldRulesSectionRef);
-                    } else {
-                      fieldRulesSectionRefs.current.delete(extractionFieldId);
-                    }
-                  }}
-                  fieldLabel={field.label}
-                  rules={fieldRules[extractionFieldId] || []}
-                  editingRuleId={editingRuleId}
-                  draggedRuleIndex={draggedRuleIndex}
-                  onAddRule={() => handleAddRule(extractionFieldId)}
-                  onEditRule={setEditingRuleId}
-                  onChangeRules={nextRules => {
-                    setFieldRules(prev => ({ ...prev, [extractionFieldId]: nextRules }));
-                    setHasUnsavedChanges(true);
-                  }}
-                  onDeleteRule={ruleId => handleDeleteRule(extractionFieldId, ruleId)}
-                  onDoneEditing={() => setEditingRuleId(null)}
-                  onUpdateField={(ruleId, updates) =>
-                    updateRuleField(extractionFieldId, ruleId, updates)
-                  }
-                  onRuleDragStart={handleRuleDragStart}
-                  onRuleDragOver={handleRuleDragOver}
-                  onRuleDrop={index => handleRuleDrop(extractionFieldId, index)}
-                />
-                {fieldIndex < BASIC_INFO_FIELDS.length - 1 && <Divider sx={{ my: 2 }} />}
-              </React.Fragment>
-            );
-          })}
-        </Stack>
+        <RuleEditor rules={[]} onChange={() => {}} />
       </Box>
 
       {/* Sticky Button Bar */}

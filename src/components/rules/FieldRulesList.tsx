@@ -2,11 +2,13 @@ import React, { useRef, useImperativeHandle, forwardRef } from 'react';
 
 import { Stack } from '@mui/material';
 
+import { RuleSection } from '@/features/rules/components/Rules';
+
 import { EditRule, EditRuleRef } from './EditRule';
 import { ViewRule } from './ViewRule';
 import { AnchorRule, RegexMatchRule, AbsoluteRule } from '../../types/extractionRules';
 import { FieldRule } from '../../types/rulesComponents';
-import { EmptyDataIndicator } from '../ui/Feedback/Indicator/EmptyDataIndicator';
+import { EmptyDataIndicator } from '../atoms/Feedback/Indicator/EmptyDataIndicator';
 
 export interface FieldRulesListRef {
   applyAllPendingChanges: () => void;
@@ -35,6 +37,7 @@ interface FieldRulesListProps {
   onRuleDragStart: (index: number) => void;
   onRuleDragOver: (e: React.DragEvent) => void;
   onRuleDrop: (index: number) => void;
+  onChangeRules?: (rules: FieldRule[]) => void;
 }
 
 export const FieldRulesList = forwardRef<FieldRulesListRef, FieldRulesListProps>(
@@ -47,6 +50,7 @@ export const FieldRulesList = forwardRef<FieldRulesListRef, FieldRulesListProps>
       onDeleteRule,
       onDoneEditing,
       onUpdateField,
+      onChangeRules,
       onRuleDragStart,
       onRuleDragOver,
       onRuleDrop,
@@ -104,41 +108,7 @@ export const FieldRulesList = forwardRef<FieldRulesListRef, FieldRulesListProps>
 
     return (
       <Stack spacing={1.5} sx={{ mb: 1.5 }}>
-        {rules.map((rule, index) => {
-          const isEditingThisRule = editingRuleId === rule.id;
-          return (
-            <React.Fragment key={rule.id}>
-              {!isEditingThisRule && (
-                <ViewRule
-                  rule={rule}
-                  index={index}
-                  onEdit={() => onEditRule(rule.id)}
-                  onDelete={() => onDeleteRule(rule.id)}
-                  onDragStart={() => onRuleDragStart(index)}
-                  onDragOver={onRuleDragOver}
-                  onDrop={() => onRuleDrop(index)}
-                  isDragged={draggedRuleIndex === index}
-                />
-              )}
-
-              {isEditingThisRule && (
-                <EditRule
-                  ref={editRuleRef => {
-                    if (editRuleRef) {
-                      editRuleRefs.current.set(rule.id, editRuleRef);
-                    } else {
-                      editRuleRefs.current.delete(rule.id);
-                    }
-                  }}
-                  rule={rule}
-                  index={index}
-                  onDone={() => onDoneEditing(rule.id)}
-                  onUpdateField={updates => onUpdateField(rule.id, updates)}
-                />
-              )}
-            </React.Fragment>
-          );
-        })}
+        <RuleSection rules={rules} onChange={onChangeRules!} />
       </Stack>
     );
   },

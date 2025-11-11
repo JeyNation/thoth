@@ -16,7 +16,7 @@ import {
 } from '../styles/viewerStyles';
 import type { BoundingBox as BaseBoundingBox } from '../types/boundingBox';
 import { normalizeBoundingBoxes } from '../types/mapping';
-import { LoadingIndicator } from './ui/Feedback/Indicator/LoadingIndicator';
+import { LoadingIndicator } from './atoms/Feedback/Indicator/LoadingIndicator';
 import { ViewerControls } from './viewer/ViewerControls';
 import { ViewerPage } from './viewer/ViewerPage';
 import type { BoundingBox } from '../types/mapping';

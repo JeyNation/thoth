@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import { TextInput } from '@/components/ui';
+import { TextInput } from '@/components/atoms';
 
 import ClearAdornment from './ClearAdornment';
 

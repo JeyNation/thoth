@@ -3,7 +3,7 @@ import React from 'react';
 import CloseIcon from '@mui/icons-material/Close';
 import InputAdornment from '@mui/material/InputAdornment';
 
-import { IconButton } from '../ui/Button/IconButton';
+import { IconButton } from '../atoms/Button/IconButton';
 
 interface ClearAdornmentProps {
   onClear: () => void;

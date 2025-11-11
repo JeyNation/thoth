@@ -5,11 +5,10 @@ import TextField, { TextFieldProps } from '@mui/material/TextField';
 export interface TextInputProps {
   ariaLabel?: string;
   className?: string;
+  disabled?: boolean;
   endAdornment?: React.ReactNode;
   fullWidth?: boolean;
   id?: string;
-  // Allow arbitrary data-* attributes and other custom props consumers may forward.
-  // Use Record<string, unknown> instead of `any` to keep typings permissive but safe.
   inputProps?: React.InputHTMLAttributes<HTMLInputElement | HTMLTextAreaElement> &
     Record<string, unknown>;
   label?: React.ReactNode;
@@ -36,6 +35,7 @@ const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>(function Te
   const {
     ariaLabel,
     className,
+    disabled,
     endAdornment,
     fullWidth = false,
     id,
@@ -87,6 +87,7 @@ const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>(function Te
       type={type}
       value={value}
       variant={variant}
+      disabled={disabled}
     />
   );
 });

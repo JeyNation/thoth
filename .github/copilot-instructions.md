@@ -19,7 +19,7 @@
 **Key Constraints:**
 
 - API calls: Use `src/lib/api.ts` wrapper only
-- UI: Import from `/src/components/ui/` only
+- UI: Import from `/src/components/atoms/` or `/src/components/molecules` only
 - Styling: Tailwind classes only
 - Architecture: Domain-driven organization
 
@@ -28,7 +28,8 @@
 ```
 src/
 ├── app/                    # Next.js App Router
-├── components/ui/          # Design System (import from here)
+├── components/atoms/       # Design System for primitve UI (import from here)
+├── components/molecules/   # Design System for composite UI (import from here)
 ├── features/               # Business Domains
 │   ├── document-processing/
 │   │   ├── components/     # Domain components
@@ -59,7 +60,7 @@ Code that changes together should live together. Start private, promote when sha
 
 ```typescript
 // Single-file components (UI)
-src/components/ui/Button.tsx
+src/components/atoms/Button.tsx
 
 // Complex components (features)
 src/features/extraction-rules/components/RuleEditor/
@@ -103,7 +104,7 @@ src/features/extraction-rules/components/RuleEditor/
     ```
 
 - **Error Handling:** All async functions must include `try/catch` or equivalent.
-- **Imports:** Use absolute paths (`@/components/ui/Button`) not relative (`../../`).
+- **Imports:** Use absolute paths (`@/components/atoms/Button`) not relative (`../../`).
 - **Naming:** Components `PascalCase`, functions `camelCase`, types `PascalCase`.
 - **Components:** Default to Server Components. Use `"use client"` only when needed.
 
@@ -112,7 +113,7 @@ src/features/extraction-rules/components/RuleEditor/
 - ❌ Direct MUI imports: `import { Button } from '@mui/material'`
 - ❌ Using `sx` prop: `<Button sx={{ margin: 2 }}>`
 - ❌ Custom CSS files or styled-components
-- ❌ Relative imports: `../../../components/ui/Button`
+- ❌ Relative imports: `../../../components/atoms/Button`
 - ❌ Using `any` type in TypeScript
   - If `any` is introduced during a migration, it must follow the Pragmatic exceptions rules above and be removed before the next minor release.
 - ❌ Raw `fetch()` calls instead of `src/lib/api.ts`

@@ -15,7 +15,7 @@ import {
 import { AnchorConfig, AnchorConfigRef } from './AnchorConfig';
 import { AnchorRule } from '../../types/extractionRules';
 import { EditRuleProps } from '../../types/rulesComponents';
-import { IconButton } from '../ui/Button/IconButton';
+import { IconButton } from '../atoms/Button/IconButton';
 
 export interface EditRuleRef {
   applyPendingChanges: () => void;

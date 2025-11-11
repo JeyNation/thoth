@@ -18,9 +18,9 @@ import {
 } from '@mui/material';
 
 import { RegexPatternsProps } from '../../types/rulesComponents';
-import { IconButton } from '../ui/Button/IconButton';
-import { TextButton } from '../ui/Button/TextButton';
-import { TextInput } from '../ui/Input/TextInput';
+import { IconButton } from '../atoms/Button/IconButton';
+import { TextButton } from '../atoms/Button/TextButton';
+import { TextInput } from '../atoms/Input/TextInput';
 
 export interface RegexPatternsRef {
   applyPendingChanges: () => void;

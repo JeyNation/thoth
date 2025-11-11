@@ -26,7 +26,7 @@ import {
   type LineItemColumnKey,
 } from '../../types/lineItemColumns';
 import type { LineItem } from '../../types/PurchaseOrder';
-import { IconButton } from '../ui/Button/IconButton';
+import { IconButton } from '../atoms/Button/IconButton';
 
 export interface LineItemCardProps {
   item: LineItem;

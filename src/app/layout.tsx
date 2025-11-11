@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 
 import '../styles/globals.css';
 import { AppHeader } from '../components/AppHeader';
-import { ThemeRegistry } from '../components/ui';
+import { ThemeRegistry } from '../components/atoms';
 
 export const metadata: Metadata = {
   title: 'Purchase Order Management System',

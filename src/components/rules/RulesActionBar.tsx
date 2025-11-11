@@ -3,7 +3,7 @@ import React from 'react';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { Box } from '@mui/material';
 
-import { TextButton } from '../ui/Button/TextButton';
+import { TextButton } from '../atoms/Button/TextButton';
 
 interface RulesActionBarProps {
   hasUnsavedChanges: boolean;

@@ -8,7 +8,7 @@ import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import { Stack, Chip } from '@mui/material';
 
-import { IconButton } from '../ui/Button/IconButton';
+import { IconButton } from '../atoms/Button/IconButton';
 
 interface ViewerControlsProps {
   boundingBoxCount: number;

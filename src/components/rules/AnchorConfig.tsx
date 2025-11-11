@@ -17,9 +17,9 @@ import { RegexPatterns, RegexPatternsRef } from './RegexPatterns';
 import { SearchZone } from './SearchZone';
 import type { AnchorMatchMode, StartingPositionCorner } from '../../types/extractionRules';
 import { AnchorConfigProps } from '../../types/rulesComponents';
-import { TextButton } from '../ui/Button/TextButton';
-import { TextInput } from '../ui/Input/TextInput';
-import { SubsectionLabel } from '../ui/Label/SubsectionLabel';
+import { TextButton } from '../atoms/Button/TextButton';
+import { TextInput } from '../atoms/Input/TextInput';
+import { SubsectionLabel } from '../atoms/Label/SubsectionLabel';
 
 export interface AnchorConfigRef {
   applyPendingChanges: () => void;

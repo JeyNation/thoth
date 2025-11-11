@@ -43,11 +43,11 @@ import {
   predictColumn,
   commitColumnAssignments,
 } from '../utils/formUtils';
+import { EmptyDataIndicator } from './atoms/Feedback';
+import { SectionLabel } from './atoms/Label/SectionLabel';
 import ColumnDropZone from './form/ColumnDropZone';
 import FieldInput from './form/FieldInput';
 import LineItemCard from './form/LineItemCard';
-import { EmptyDataIndicator } from './ui/Feedback';
-import { SectionLabel } from './ui/Label/SectionLabel';
 
 type BasicFieldKey = Exclude<keyof PurchaseOrder, 'lineItems'>;
 

@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -5,12 +7,12 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import EditIcon from '@mui/icons-material/Edit';
 import { Paper, Stack } from '@mui/material';
 
-import { RuleText } from './RuleText';
-import { ViewRuleProps } from '../../types/rulesComponents';
-import { generatePseudoRule } from '../../utils/ruleUtils';
-import { IconButton } from '../atoms/Button/IconButton';
+import { IconButton } from '@/components/atoms/Button/IconButton';
+import { RuleText } from '@/components/rules/RuleText';
+import type { ViewRuleProps } from '@/types/rulesComponents';
+import { generatePseudoRule } from '@/utils/ruleUtils';
 
-export const ViewRule: React.FC<ViewRuleProps> = ({
+const RuleViewMode: React.FC<ViewRuleProps> = ({
   rule,
   onEdit,
   onDelete,
@@ -70,3 +72,6 @@ export const ViewRule: React.FC<ViewRuleProps> = ({
     </Paper>
   );
 };
+
+export default RuleViewMode;
+export { RuleViewMode };
