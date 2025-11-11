@@ -24,6 +24,8 @@ interface FieldRulesSectionProps {
     ruleId: string,
     updates: Partial<AnchorRule | RegexMatchRule | AbsoluteRule>,
   ) => void;
+  // New: allow replacing the full rules array for this field (used by the experimental RuleEditor)
+  onChangeRules?: (rules: FieldRule[]) => void;
   onRuleDragStart: (index: number) => void;
   onRuleDragOver: (e: React.DragEvent) => void;
   onRuleDrop: (index: number) => void;
@@ -41,6 +43,7 @@ export const FieldRulesSection = forwardRef<FieldRulesListRef, FieldRulesSection
       onDeleteRule,
       onDoneEditing,
       onUpdateField,
+      onChangeRules,
       onRuleDragStart,
       onRuleDragOver,
       onRuleDrop,
@@ -68,6 +71,17 @@ export const FieldRulesSection = forwardRef<FieldRulesListRef, FieldRulesSection
           onRuleDragOver={onRuleDragOver}
           onRuleDrop={onRuleDrop}
         />
+        {/* Experimental: new RuleEditor placed at bottom of existing list; optional prop controls behavior */}
+        {typeof onChangeRules === 'function' ? (
+          <Box sx={{ mt: 2 }}>
+            {/* Render RuleEditor from feature folder using import - keep path consistent with tsconfig alias */}
+            {/* Using React.createElement to avoid static import if feature is optional */}
+            {React.createElement(require('@/features/rules/components/RuleEditor').default, {
+              rules,
+              onChange: onChangeRules,
+            })}
+          </Box>
+        ) : null}
       </Box>
     );
   },

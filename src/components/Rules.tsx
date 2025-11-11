@@ -382,6 +382,10 @@ function Rules({ vendorId, onRerunExtraction }: RulesProps) {
                   draggedRuleIndex={draggedRuleIndex}
                   onAddRule={() => handleAddRule(extractionFieldId)}
                   onEditRule={setEditingRuleId}
+                  onChangeRules={nextRules => {
+                    setFieldRules(prev => ({ ...prev, [extractionFieldId]: nextRules }));
+                    setHasUnsavedChanges(true);
+                  }}
                   onDeleteRule={ruleId => handleDeleteRule(extractionFieldId, ruleId)}
                   onDoneEditing={() => setEditingRuleId(null)}
                   onUpdateField={(ruleId, updates) =>
