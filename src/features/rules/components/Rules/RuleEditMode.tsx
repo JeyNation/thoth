@@ -10,7 +10,7 @@ import Dropdown from '@/components/atoms/Dropdown';
 import {
   AnchorRule as AnchorRuleComponent,
   AnchorRuleRef,
-} from '@/features/rules/components/Editor/AnchorRule';
+} from '@/features/rules/components/EditorElements/Anchor/AnchorRule';
 import type { AnchorRule as AnchorRuleType } from '@/types/extractionRules';
 import type { EditRuleProps } from '@/types/rulesComponents';
 

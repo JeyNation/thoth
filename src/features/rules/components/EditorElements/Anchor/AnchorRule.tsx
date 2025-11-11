@@ -4,8 +4,11 @@ import { Box } from '@mui/material';
 
 import { SubsectionLabel } from '@/components/atoms/Label/SubsectionLabel';
 import { RegexPatterns, RegexPatternsRef } from '@/components/rules/RegexPatterns';
-import { SearchZoneRule, PositionRule } from '@/features/rules/components/Editor';
-import { AnchorTextRule } from '@/features/rules/components/Editor/AnchorTextRule';
+import {
+  SearchZoneRule,
+  PositionRule,
+  AnchorTextRule,
+} from '@/features/rules/components/EditorElements';
 import type { PositionConfig } from '@/types/extractionRules';
 import { AnchorConfigProps } from '@/types/rulesComponents';
 

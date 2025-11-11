@@ -10,6 +10,8 @@ import {
 
 export type FieldRule = AnchorRule | RegexMatchRule | AbsoluteRule;
 
+export interface RuleEditorProps {}
+
 export interface RuleHeaderProps {
   label: string;
   onAddRule: () => void;

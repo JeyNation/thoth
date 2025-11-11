@@ -13,7 +13,7 @@ const RuleEditor: React.FC<RuleEditorProps> = ({}) => {
     <>
       {BASIC_INFO_FIELDS.map(field => {
         const extractionFieldId = field.id;
-        return <div id={extractionFieldId}>{field.label}</div>;
+        return <div key={extractionFieldId}>{field.label}</div>;
       })}
     </>
   );
